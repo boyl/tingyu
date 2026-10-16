@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+# Debug/driver traffic must stay local even when the shell has an HTTP proxy.
+export NO_PROXY="${NO_PROXY:+$NO_PROXY,}localhost,127.0.0.1,::1"
+export no_proxy="${no_proxy:+$no_proxy,}localhost,127.0.0.1,::1"
 tingyu_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 tingyu_tools="$tingyu_root/../.toolchains"
 if [ -d "$tingyu_tools/android-sdk" ]; then

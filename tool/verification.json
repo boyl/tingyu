@@ -1,20 +1,54 @@
 {
+  "version": "0.1.1+2",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "staticAnalysis": "passed",
-  "offlineTests": 22,
-  "liveProbe": "tool/live-probe.json",
-  "androidBuild": "debug APK built successfully",
-  "apk": "artifacts/tingyu-0.1.0-android-debug.apk",
-  "apkBytes": 174794224,
-  "sha256": "de06d3db7933b4943c9d5c65b91bb5fb8397b10f5de2d1b83ff0032de634001e",
-  "abis": [
-    "arm64-v8a",
-    "armeabi-v7a",
-    "x86_64"
-  ],
+  "sourceSha256": "03c330050ee2f1d486106c0db48bcda84c757176a0b59b0b7a5b83656af4863f",
+  "staticAnalysis": "PASS",
+  "offlineTestsPassed": 22,
+  "liveProbeDefaultSkipped": 1,
+  "desktopPackagingTestsPassed": 3,
+  "androidEmulator": {
+    "api": 36,
+    "abi": "arm64-v8a",
+    "sizes": [
+      "360x800",
+      "412x915"
+    ],
+    "navigation": "PASS",
+    "loggedInFolderLayoutAndImport": "PASS - test responses, not a real account",
+    "fullscreenReleaseChecks": {
+      "cold-start": "PASS",
+      "keyboard-dismiss": "PASS",
+      "resume": "PASS",
+      "transient-bars": "PASS",
+      "transient-dismiss": "PASS"
+    },
+    "testedReleaseSha256": "bff2699353f2ad06c09fc9abdb8516b51d7bbc2cf60260648381bda7c3559a4c"
+  },
+  "artifactManifest": "tool/release-apks.json",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16.md",
+  "fullProductAcceptance": "NOT COMPLETE",
+  "humanHandoffReady": false,
   "macosBuild": "blocked: Xcode 27.1 installed, first-launch license not accepted",
   "windowsBuild": "requires Windows host",
-  "nativeRuntimeValidation": "not performed",
-  "apkEvidenceNote": "Historical pre-navigation-change APK; not acceptance evidence for current source"
+  "historicalDebugBuild": {
+    "flutter": "3.47.7",
+    "dart": "3.13.5",
+    "staticAnalysis": "passed",
+    "offlineTests": 22,
+    "liveProbe": "tool/live-probe.json",
+    "androidBuild": "debug APK built successfully",
+    "apk": "artifacts/tingyu-0.1.0-android-debug.apk",
+    "apkBytes": 174794224,
+    "sha256": "de06d3db7933b4943c9d5c65b91bb5fb8397b10f5de2d1b83ff0032de634001e",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "macosBuild": "blocked: Xcode 27.1 installed, first-launch license not accepted",
+    "windowsBuild": "requires Windows host",
+    "nativeRuntimeValidation": "not performed",
+    "apkEvidenceNote": "Historical pre-navigation-change APK; not acceptance evidence for current source"
+  }
 }

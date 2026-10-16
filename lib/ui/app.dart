@@ -183,9 +183,13 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  late final search = TextEditingController(
-    text: ref.read(libraryProvider).query,
-  );
+  late final TextEditingController search;
+  @override
+  void initState() {
+    super.initState();
+    search = TextEditingController(text: ref.read(libraryProvider).query);
+  }
+
   Timer? debounce;
   int searchPage = 1;
   @override
@@ -431,6 +435,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               children: [
                 Expanded(
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (desktop) SizedBox(width: 224, child: sidebar(p)),
                       Expanded(
@@ -1330,16 +1335,30 @@ class SettingsPanel extends StatelessWidget {
   );
 }
 
-Future<void> showAccount(BuildContext context, LibraryController p) async =>
-    showDialog<void>(
+Future<void> showAccount(BuildContext context, LibraryController p) async {
+  final size = MediaQuery.sizeOf(context);
+  if (size.width < 960) {
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.tokens.surface,
+      builder: (_) =>
+          SizedBox(height: size.height * .92, child: AccountPanel(p)),
+    );
+  } else {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        child: SizedBox(
+          width: 460,
+          height: (size.height - 64).clamp(280, 680).toDouble(),
           child: AccountPanel(p),
         ),
       ),
     );
+  }
+}
 
 class AccountPanel extends StatefulWidget {
   const AccountPanel(this.p, {super.key});
@@ -1351,13 +1370,17 @@ class AccountPanel extends StatefulWidget {
 class _AccountPanelState extends State<AccountPanel> {
   String? qr, key;
   String message = '扫码后可以导入你的 B 站收藏夹';
-  bool busy = false;
+  bool busy = false, polling = false;
+  Map<String, dynamic>? selectedFolder;
+  Playlist? imported;
   Timer? timer;
   List<Map<String, dynamic>> folders = [];
   @override
   void initState() {
     super.initState();
-    if (widget.p.api.hasSession) unawaited(loadProfile());
+    if (widget.p.api.hasSession || widget.p.profile != null) {
+      unawaited(loadProfile());
+    }
   }
 
   @override
@@ -1367,31 +1390,59 @@ class _AccountPanelState extends State<AccountPanel> {
   }
 
   Future<void> loadProfile() async {
-    setState(() => busy = true);
-    await widget.p.refreshProfile();
-    if (!mounted) return;
-    if (widget.p.profile == null) {
-      setState(() {
-        busy = false;
-        message = widget.p.error;
-      });
-      return;
-    }
+    setState(() {
+      busy = true;
+      message = '';
+    });
     try {
+      await widget.p.refreshProfile();
+      if (!mounted) return;
+      if (widget.p.profile == null) {
+        setState(() {
+          message = widget.p.error;
+          folders = [];
+          selectedFolder = null;
+        });
+        return;
+      }
       final found = await widget.p.api.folders(widget.p.profile!['mid']);
       if (mounted) {
         setState(() {
           folders = found;
-          busy = false;
+          selectedFolder = null;
         });
       }
     } on Exception catch (e) {
       if (mounted) {
+        setState(() => message = e is AppFailure ? e.message : '收藏夹加载失败，请重试');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> importSelected() async {
+    final folder = selectedFolder;
+    if (folder == null || busy) return;
+    setState(() {
+      busy = true;
+      message = '正在导入，请稍候…';
+      imported = null;
+    });
+    try {
+      final result = await widget.p.importFolder(folder);
+      if (mounted) {
         setState(() {
-          busy = false;
-          message = e is AppFailure ? e.message : '收藏夹加载失败，请重试';
+          imported = result;
+          message = '已导入 ${result.trackIds.length} 首到「${result.name}」';
         });
       }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => message = e is AppFailure ? e.message : '导入失败，请重试');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -1408,8 +1459,8 @@ class _AccountPanelState extends State<AccountPanel> {
         busy = false;
       });
       timer = Timer.periodic(const Duration(seconds: 2), (_) async {
-        if (busy || !mounted) return;
-        busy = true;
+        if (busy || polling || !mounted) return;
+        polling = true;
         try {
           final code = await widget.p.api.pollQr(key!);
           if (!mounted) return;
@@ -1431,7 +1482,7 @@ class _AccountPanelState extends State<AccountPanel> {
             );
           }
         } finally {
-          busy = false;
+          polling = false;
         }
       });
     } on Exception catch (e) {
@@ -1448,85 +1499,171 @@ class _AccountPanelState extends State<AccountPanel> {
   Widget build(BuildContext context) {
     final p = widget.p;
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '连接你的收藏',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '连接你的收藏',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
-                action(Icons.close, '关闭账号窗口', () => Navigator.pop(context)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (p.profile != null) ...[
-              Text('${p.profile!['uname']}'),
-              const SizedBox(height: 16),
-              if (message != '扫码后可以导入你的 B 站收藏夹') Text(message),
-              for (final f in folders)
-                labelButton(
-                  '导入 ${f['title']}（${f['media_count']}）',
-                  busy
-                      ? null
-                      : () async {
-                          setState(() => busy = true);
-                          try {
-                            await p.importFolder(f);
-                            if (!mounted) return;
-                            Navigator.pop(this.context);
-                          } on Exception catch (e) {
-                            if (mounted) {
-                              setState(() {
-                                busy = false;
-                                message = e is AppFailure
-                                    ? e.message
-                                    : '导入失败，请重试';
-                              });
-                            }
-                          }
-                        },
-                ),
-              labelButton('退出账号', () async {
-                await p.logout();
-                if (!mounted) return;
-                Navigator.pop(this.context);
-              }, icon: Icons.logout),
-            ] else ...[
-              if (qr != null)
-                ColoredBox(
-                  color: Colors.white,
-                  child: QrImageView(data: qr!, size: 210),
-                ),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.tokens.muted, height: 1.8),
               ),
-              const SizedBox(height: 16),
-              if (busy)
-                const CircularProgressIndicator()
-              else
-                labelButton(
-                  qr == null ? '生成登录二维码' : '刷新二维码',
-                  generate,
-                  icon: Icons.qr_code,
-                ),
+              action(Icons.close, '关闭账号窗口', () => Navigator.pop(context)),
             ],
-            labelButton('外观与设置', () {
-              Navigator.pop(context);
-              context.go('/settings');
-            }, icon: Icons.settings_outlined),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              key: const ValueKey('account-content'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (p.profile != null) ...[
+                    Text(
+                      '${p.profile!['uname']}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '选择一个收藏夹，导入为本地歌单。',
+                      style: TextStyle(color: context.tokens.muted),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!busy && folders.isEmpty) const Text('暂无可导入的收藏夹。'),
+                    for (final folder in folders)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: FolderChoice(
+                          folder: folder,
+                          selected: selectedFolder?['id'] == folder['id'],
+                          onSelect: busy
+                              ? null
+                              : () => setState(() {
+                                  selectedFolder = folder;
+                                  imported = null;
+                                  message = '';
+                                }),
+                        ),
+                      ),
+                    if (!busy)
+                      labelButton('刷新收藏夹', loadProfile, icon: Icons.refresh),
+                    labelButton(
+                      '退出账号',
+                      busy
+                          ? null
+                          : () async {
+                              await p.logout();
+                              if (!mounted) return;
+                              setState(() {
+                                folders = [];
+                                selectedFolder = null;
+                                imported = null;
+                                message = '扫码后可以导入你的 B 站收藏夹';
+                              });
+                            },
+                      icon: Icons.logout,
+                    ),
+                  ] else ...[
+                    if (qr != null)
+                      Center(
+                        child: ColoredBox(
+                          color: Colors.white,
+                          child: QrImageView(data: qr!, size: 210),
+                        ),
+                      ),
+                    if (!busy)
+                      labelButton(
+                        qr == null ? '生成登录二维码' : '刷新二维码',
+                        generate,
+                        icon: Icons.qr_code,
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (busy) const LinearProgressIndicator(minHeight: 3),
+          if (message.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  message,
+                  style: TextStyle(color: context.tokens.muted, height: 1.5),
+                ),
+              ),
+            ),
+          if (p.profile != null)
+            imported == null
+                ? labelButton(
+                    busy
+                        ? '正在导入或加载…'
+                        : selectedFolder == null
+                        ? '请先选择收藏夹'
+                        : '导入所选收藏夹',
+                    busy || selectedFolder == null ? null : importSelected,
+                    icon: Icons.playlist_add,
+                  )
+                : labelButton('查看已导入歌单', () {
+                    final router = GoRouter.of(context), id = imported!.id;
+                    Navigator.pop(context);
+                    router.go('/playlist/$id');
+                  }, icon: Icons.queue_music),
+          labelButton('外观与设置', () {
+            final router = GoRouter.of(context);
+            Navigator.pop(context);
+            router.go('/settings');
+          }, icon: Icons.settings_outlined),
+        ],
       ),
     );
   }
+}
+
+class FolderChoice extends StatelessWidget {
+  const FolderChoice({
+    super.key,
+    required this.folder,
+    required this.selected,
+    required this.onSelect,
+  });
+  final Map<String, dynamic> folder;
+  final bool selected;
+  final VoidCallback? onSelect;
+  @override
+  Widget build(BuildContext context) => Pressable(
+    key: ValueKey('folder-${folder['id']}'),
+    selected: selected,
+    onPressed: onSelect,
+    child: Row(
+      children: [
+        Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${folder['title']}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${folder['media_count'] ?? 0} 个视频',
+                style: TextStyle(fontSize: 12, color: context.tokens.muted),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 Future<void> showLyrics(BuildContext context, LibraryController p) async {

@@ -35,7 +35,7 @@ for folder in ['lib', 'android/app/src', 'test', 'integration_test']:
             fingerprint.update(str(file.relative_to(ROOT)).encode())
             fingerprint.update(file.read_bytes())
 report = {'checkedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sourceSha256': fingerprint.hexdigest(),
-          'checks': results, 'remainingGates': ([] if args.device and results.get('android-navigation', {}).get('status') == 'PASS' else ['G02 Android tab navigation']) + ['G03 full screen lifecycle', 'G04 complete-page visual review', 'G05 live end-to-end and offline replay',
+          'checks': results, 'notExecutedByThisCommand': ([] if args.device and results.get('android-navigation', {}).get('status') == 'PASS' else ['G02 Android tab navigation']) + ['G03 full screen lifecycle', 'G04 complete-page visual review', 'G05 live end-to-end and offline replay',
           'G06 failure recovery', 'G07 physical Android device', 'G08 matching release APK', 'D01 native desktops'],
           'humanHandoffReady': False}
 (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')

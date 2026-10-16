@@ -27,13 +27,16 @@
 | G06 | 空数据、无结果、无歌词、失效视频、断网、下载失败、登录过期均有恢复入口 | 故障注入+人工 |
 | G07 | 后台/锁屏播放控制、耳机拔出、来电音频焦点、蓝牙、切前后台不崩溃 | 安卓真机 |
 | G08 | APK ABI、签名类别、SHA256、版本与验收源代码一致 | 构建验证 |
+| G09 | 手机账号面板顶部和底部固定，中间独立滚动；25 个长标题收藏夹可选；未选择时禁止导入；导入成功后显示数量并可查看歌单 | Android 集成（账号响应夹具） |
 | D01 | macOS/Windows 关闭隐藏、托盘恢复、显式退出释放资源；整包启动 | 对应系统实机 |
 
 ## 执行顺序
 1. `sh tool/flutterw.sh analyze` 与 `sh tool/flutterw.sh test`。
 2. `python3 tool/run_acceptance.py --device <模拟器设备ID>`，保存完整日志。
 3. 模拟器执行 G03–G06，保存截图、系统窗口信息、日志；连接真实 API 的步骤需单列结果，风控不算通过。
-4. 构建 ABI 拆分 Release，校验 G08，并在模拟器重新安装同一 Release 复测启动/导航/全屏。
+4. 构建 ABI 拆分 Release，校验 G08；执行 `python3 tool/check_android_fullscreen.py --device emulator-5556 --apk build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` 对同一 APK 复测全屏生命周期。
 5. 工程侧门禁通过后，附结果报告提交人工验收；G07 与设备厂商差异留到指定真机执行，明确标为待验证，不冒充已通过。
 
 模拟器可以本机先验导航、布局、存储、网络和播放器，但蓝牙、来电、厂商省电与真实锁屏行为必须补充真机测试。
+
+本轮执行结果见 [ACCEPTANCE-2026-10-16.md](ACCEPTANCE-2026-10-16.md)。真实扫码、收藏夹权限与风控不能用响应夹具替代。

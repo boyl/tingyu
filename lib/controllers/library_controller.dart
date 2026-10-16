@@ -449,6 +449,7 @@ class LibraryController extends ChangeNotifier {
   Future<void> refreshProfile() async {
     try {
       profile = await api.profile();
+      error = '';
     } on AppFailure catch (e) {
       error = e.message;
       profile = null;
@@ -456,20 +457,20 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> importFolder(Map<String, dynamic> folder) async {
+  Future<Playlist> importFolder(Map<String, dynamic> folder) async {
     final found = await api.importFolder(folder['id']);
     for (final t in found) {
       await remember(t);
     }
-    playlists.add(
-      Playlist(
-        'bili-${folder['id']}-${DateTime.now().millisecondsSinceEpoch}',
-        folder['title'],
-        found.map((t) => t.id).toList(),
-      ),
+    final playlist = Playlist(
+      'bili-${folder['id']}-${DateTime.now().millisecondsSinceEpoch}',
+      folder['title'],
+      found.map((t) => t.id).toSet().toList(),
     );
+    playlists.add(playlist);
     notifyListeners();
     await save();
+    return playlist;
   }
 
   Future<void> logout() async {

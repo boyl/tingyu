@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tingyu/models/music.dart';
+import 'package:tingyu/ui/app.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tingyu/main.dart' as app;
 
@@ -14,6 +15,11 @@ void main() {
       await app.main();
       await tester.pumpAndSettle();
       expect(find.text('把喜欢的声音，留在身边。'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('YOUR PERSONAL SOUNDTRACK')).dy,
+        lessThan(80),
+      );
+
       final controller = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
       ).read(app.libraryProvider);
@@ -102,6 +108,94 @@ void main() {
         await binding.takeScreenshot('android-$theme-library');
       }
       await controller.setTheme('a');
+      // Logged-in layout fixture; never logs into or reads a real account.
+      controller.api.http.interceptors.clear();
+      controller.api.http.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            final data = options.path.contains('created/list-all')
+                ? {
+                    'list': [
+                      for (var i = 1; i <= 25; i++)
+                        {
+                          'id': i,
+                          'title': '收藏夹 $i 这是用于验证长标题换行和选择操作的本地示例',
+                          'media_count': 1,
+                        },
+                    ],
+                  }
+                : options.path.contains('resource/list')
+                ? {
+                    'has_more': false,
+                    'medias': [
+                      {
+                        'bvid': 'BV1xx411c7mD',
+                        'title': '本地导入验收示例',
+                        'upper': {'name': '本地测试'},
+                        'cover': '',
+                        'duration': 30,
+                      },
+                    ],
+                  }
+                : {'mid': 1, 'uname': '本地验收账号'};
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                data: {'code': 0, 'data': data},
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+      controller.profile = {'mid': 1, 'uname': '本地验收账号'};
+      await tester.tap(find.byKey(const ValueKey('账号与设置')));
+      await tester.pumpAndSettle();
+      expect(find.text('请先选择收藏夹'), findsOneWidget);
+      final accountScroll = find
+          .descendant(
+            of: find.byKey(const ValueKey('account-content')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('folder-25')),
+        300,
+        scrollable: accountScroll,
+      );
+      await tester.tap(find.byKey(const ValueKey('folder-25')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<FolderChoice>(find.byType(FolderChoice).last).selected,
+        isTrue,
+      );
+      final importButton = find.text('导入所选收藏夹');
+      expect(
+        tester.getBottomRight(importButton).dy,
+        lessThan(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio,
+        ),
+      );
+      await binding.takeScreenshot('android-account-selected');
+      final playlistCount = controller.playlists.length;
+      await tester.tap(importButton);
+      await tester.pumpAndSettle();
+      expect(find.text('查看已导入歌单'), findsOneWidget);
+      expect(controller.playlists.length, playlistCount + 1);
+      final imported = controller.playlists.last;
+      expect(imported.trackIds.length, 1);
+      await binding.takeScreenshot('android-account-imported');
+      await tester.tap(find.text('查看已导入歌单'));
+      await tester.pumpAndSettle();
+      expect(find.text('本地导入验收示例'), findsOneWidget);
+      await controller.editPlaylist(imported, delete: true);
+      for (final id in imported.trackIds) {
+        controller.library.remove(id);
+        await controller.db.deleteTrack(id);
+      }
+      controller.profile = null;
+      await controller.save();
+      expect(tester.takeException(), isNull);
     },
   );
 }

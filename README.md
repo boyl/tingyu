@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-已经建立可静态分析、可运行自动化测试的原生项目源码，接入真实 B 站接口；Android 调试 APK 已构建成功；尚未完成设备运行及三端验收，不能视作已发布应用。
+已经建立可静态分析、可运行自动化测试的原生项目源码，接入真实 B 站接口；Android ABI 拆分 Release 已构建并在本地 Android 16 模拟器完成导航、账号布局和全屏专项验收；尚未完成全部功能及三端验收，不能视作已发布应用。
 
 已实现的源码包括搜索/BV/AV/短链解析、多 P、独立音频流解析、播放与系统媒体控制适配、队列/喜欢/歌单/历史、SQLite 恢复、安全存储扫码凭据、收藏夹导入、逐行歌词匹配和手动 LRC、单曲/整歌单下载及三主题界面。桌面托盘可控制播放，关闭窗口隐藏，托盘退出会保存状态。
 
@@ -66,9 +66,9 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
-- Android 调试包：`artifacts/tingyu-0.1.0-android-debug.apk`，为开发签名，不是商店发布包。
-- 静态分析零问题，22 项离线测试通过；公开视频真实取流与 CDN 字节探测已通过。
-- 安装包 ZIP 完整性检查通过，大小、SHA-256 和 ABI 记录于 `tool/verification.json`。
+- Android 0.1.1 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
+- 静态分析零问题，22 项离线测试通过；模拟器两种尺寸的导航和收藏夹导入布局专项通过；公开视频取流探测是单独的历史证据。
+- 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
 - 新增工作流仅支持手动触发，尚未运行。工程仓库为私有 `boyl/tingyu`，可执行三平台构建；构建产物不入库。
 - 浏览器地址仍是先前 React 原型。正式 Flutter 工程需运行原生应用或安装 APK 才能体验真实接口。
@@ -86,3 +86,8 @@ python3 tool/run_acceptance.py --device emulator-5554
 日志与带源码指纹的结果保存在 `artifacts/acceptance/`。第二条会运行真实 Android 原生应用，验证连续切换、搜索输入保留、滚动位置和主题切换。它不代表全功能或真机验收完成。未执行项不算通过。
 
 紧凑布局使用横向胶囊导航，go_router 的持久分支保存各 tab 状态；切换无整页转场并收起键盘。Android 使用原生 WindowInsetsController 隐藏系统栏，边缘滑动仍可临时呼出。桌面保留系统窗口行为。
+
+
+本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。然后运行 `sh tool/flutterw.sh run -d emulator-5556`。首次全屏会出现 Android 自带操作提示，确认后可从屏幕边缘临时呼出系统栏。
+
+Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，先选择再导入；导入入口固定在底部。桌面账号窗口使用限制宽高的对话框。专项验收结果见 `docs/ACCEPTANCE-2026-10-16.md`。
