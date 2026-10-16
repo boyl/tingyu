@@ -10,6 +10,7 @@ import '../controllers/library_controller.dart';
 import '../models/music.dart';
 import 'theme.dart';
 part 'library_views.dart';
+part 'settings_views.dart';
 
 Widget action(
   IconData icon,
@@ -272,7 +273,11 @@ class _AppShellState extends ConsumerState<AppShell> {
             else if (widget.page == 'playlist')
               action(Icons.arrow_back, '返回音乐库', () => navigate('library'))
             else if (!desktop && widget.page == 'library')
-              action(Icons.menu, '音乐库更多', () => showLibraryMenu(context, p)),
+              action(
+                Icons.settings_outlined,
+                '打开设置',
+                () => context.push('/settings'),
+              ),
             Expanded(
               child: Text(
                 selecting ? '已选 ${selection.length} 首' : title,
@@ -352,8 +357,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 () => p.search(search.text, page: p.searchPage + 1),
               ),
             ),
-        ] else if (widget.page == 'settings')
-          SettingsPanel(p),
+        ],
         if (widget.page == 'downloads') DownloadsPanel(p),
         if (['library', 'likes', 'playlist'].contains(widget.page)) ...[
           if (widget.page == 'library') ...[
@@ -591,10 +595,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                 .toList(),
           ),
         ),
-        labelButton('更多', () => showLibraryMenu(context, p), icon: Icons.menu),
         labelButton(
           '设置',
-          () => navigate('settings'),
+          () => context.push('/settings'),
           icon: Icons.settings_outlined,
           selected: widget.page == 'settings',
         ),
@@ -1640,136 +1643,11 @@ class DownloadsPanel extends StatelessWidget {
   }
 }
 
-class SettingsPanel extends StatelessWidget {
-  const SettingsPanel(this.p, {super.key});
-  final LibraryController p;
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        '外观',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 16),
-      Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final item in [('a', '暖白'), ('b', '深色'), ('c', '冷白')])
-            labelButton(
-              item.$2,
-              () => p.setTheme(item.$1),
-              selected: p.theme == item.$1,
-            ),
-        ],
-      ),
-      const SizedBox(height: 32),
-      const Text('播放音质'),
-      const SizedBox(height: 12),
-      Wrap(
-        children: [
-          labelButton('高音质', () => p.setStandard(false), selected: !p.standard),
-          labelButton('标准', () => p.setStandard(true), selected: p.standard),
-        ],
-      ),
-      const SizedBox(height: 24),
-      labelButton(
-        '管理下载与存储',
-        () => context.go('/downloads'),
-        icon: Icons.download,
-      ),
-      labelButton(
-        'B 站账号',
-        () => showAccount(context, p),
-        icon: Icons.person_outline,
-      ),
-      const SizedBox(height: 24),
-      labelButton(
-        '关于听屿',
-        () => showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('听屿'),
-            content: const Text(
-              '歌单与下载保存在本机，账号凭据保存在系统安全存储。\n退出账号保留本地资料，重启后保持暂停。',
-            ),
-            actions: [labelButton('关闭', () => Navigator.pop(ctx))],
-          ),
-        ),
-        icon: Icons.info_outline,
-      ),
-    ],
-  );
-}
-
-Future<void> showLibraryMenu(
-  BuildContext context,
-  LibraryController p,
-) => showGeneralDialog<void>(
-  context: context,
-  barrierDismissible: true,
-  barrierLabel: '关闭应用菜单',
-  transitionDuration: MediaQuery.disableAnimationsOf(context)
-      ? Duration.zero
-      : TingyuTokens.transition,
-  pageBuilder: (ctx, _, _) => Align(
-    alignment: Alignment.centerLeft,
-    child: Material(
-      color: context.tokens.surface,
-      child: SafeArea(
-        child: SizedBox(
-          width: (MediaQuery.sizeOf(context).width * .84).clamp(280.0, 360.0),
-          height: double.infinity,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '听屿',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      action(Icons.close, '关闭应用菜单', () => Navigator.pop(ctx)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  labelButton('账号与收藏夹', () async {
-                    Navigator.pop(ctx);
-                    await showAccount(context, p);
-                  }, icon: Icons.account_circle_outlined),
-                  labelButton('收藏夹导入', () async {
-                    Navigator.pop(ctx);
-                    await showAccount(context, p);
-                  }, icon: Icons.playlist_add),
-                  labelButton('外观与设置', () {
-                    Navigator.pop(ctx);
-                    context.go('/settings');
-                  }, icon: Icons.settings_outlined),
-                  labelButton('关于听屿', () {
-                    Navigator.pop(ctx);
-                    showAboutTingyu(context);
-                  }, icon: Icons.info_outline),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  ),
-);
-
 void showAboutTingyu(BuildContext context) => showDialog<void>(
   context: context,
   builder: (ctx) => AlertDialog(
     title: const Text('听屿'),
-    content: const Text('歌单与下载保存在本机，账号凭据保存在系统安全存储。'),
+    content: const Text('听屿 $tingyuVersion\n\n歌单与下载保存在本机，账号凭据保存在系统安全存储。'),
     actions: [labelButton('关闭', () => Navigator.pop(ctx))],
   ),
 );

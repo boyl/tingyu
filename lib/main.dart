@@ -78,13 +78,7 @@ GoRouter createRouter() => GoRouter(
     StatefulShellRoute.indexedStack(
       builder: (_, _, shell) => shell,
       branches: [
-        for (final route in [
-          'library',
-          'search',
-          'downloads',
-          'likes',
-          'settings',
-        ])
+        for (final route in ['library', 'search', 'downloads', 'likes'])
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -106,6 +100,16 @@ GoRouter createRouter() => GoRouter(
               ),
             ],
           ),
+      ],
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (_, _) => const SettingsScreen(),
+      routes: [
+        GoRoute(
+          path: 'downloads',
+          builder: (_, _) => const SettingsStorageScreen(),
+        ),
       ],
     ),
     GoRoute(path: '/player', builder: (_, _) => const PlayerScreen()),

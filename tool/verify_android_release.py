@@ -7,11 +7,13 @@ import re
 import shutil
 import subprocess
 import zipfile
+from source_fingerprint import source_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT.parent / '.toolchains'
 report = json.loads((ROOT / 'artifacts/acceptance/report.json').read_text())
 assert report['checks'] and all(x['status'] == 'PASS' for x in report['checks'].values()), 'Acceptance gates must pass first'
+assert source_fingerprint(ROOT) == report['sourceSha256'], 'Source changed after acceptance; rerun gates before delivery'
 version, number = re.search(r'^version: ([^+]+)\+(\d+)', (ROOT / 'pubspec.yaml').read_text(), re.M).groups()
 build_tools = TOOLS / 'android-sdk/build-tools/36.0.0'
 env = dict(os.environ)

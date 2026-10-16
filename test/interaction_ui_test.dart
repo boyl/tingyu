@@ -70,6 +70,36 @@ void main() {
   }
 
   testWidgets(
+    'settings returns to its source with search input and playback preserved',
+    (tester) async {
+      await fixture.controller.play(firstTrack);
+      await mount(tester);
+      router.go('/search');
+      await settle(tester);
+      await tester.enterText(find.byType(TextField), '保留搜索');
+      await tester.pump(const Duration(milliseconds: 500));
+      await settle(tester);
+      router.push('/settings');
+      await settle(tester);
+      expect(fixture.controller.playing, isTrue);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.byType(SettingsScreen), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '保留搜索',
+      );
+      expect(fixture.controller.playing, isTrue);
+      router.go('/settings');
+      await settle(tester);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.byKey(const ValueKey('打开设置')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'collection detail sorting and batch remove confirm cancellation preserves data',
     (tester) async {
       final p = fixture.controller;
@@ -99,7 +129,7 @@ void main() {
       expect(find.byType(PlaylistSummary), findsOneWidget);
       await tester.binding.handlePopRoute();
       await settle(tester);
-      expect(find.byKey(const ValueKey('音乐库更多')), findsOneWidget);
+      expect(find.byKey(const ValueKey('打开设置')), findsOneWidget);
       await unmount(tester);
     },
   );
@@ -307,8 +337,8 @@ void main() {
     'QR expiry, refresh, scan confirmation, expired session and logout recover visibly',
     (tester) async {
       await mount(tester);
-      await tap(tester, '音乐库更多');
-      await tap(tester, '账号与收藏夹');
+      await tap(tester, '打开设置');
+      await tap(tester, 'settings-account');
       await tap(tester, '生成登录二维码');
       fixture.api.qrCode = 86038;
       await tester.pump(const Duration(seconds: 2));
@@ -323,7 +353,13 @@ void main() {
       fixture.api.qrCode = 0;
       await tester.pump(const Duration(seconds: 2));
       await settle(tester);
-      expect(find.text('测试账号'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AccountPanel),
+          matching: find.text('测试账号'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('暂无可导入的收藏夹。'), findsOneWidget);
       final disabled = tester.widget<Pressable>(
         find.byKey(const ValueKey('请先选择收藏夹')),
@@ -349,23 +385,46 @@ void main() {
     },
   );
   testWidgets(
-    'account entry is collected in library more and secondary pages have no login chrome',
+    'standalone settings consolidates account and preferences without drawer or player chrome',
     (tester) async {
       await mount(tester);
-      expect(find.byKey(const ValueKey('音乐库更多')), findsOneWidget);
+      expect(find.byKey(const ValueKey('打开设置')), findsOneWidget);
       expect(find.byKey(const ValueKey('账号与设置')), findsNothing);
       for (final page in ['/search', '/downloads', '/likes', '/settings']) {
         router.go(page);
         await settle(tester);
-        expect(find.byKey(const ValueKey('音乐库更多')), findsNothing);
+        expect(find.byKey(const ValueKey('打开设置')), findsNothing);
         expect(find.text('YOUR PERSONAL SOUNDTRACK'), findsNothing);
       }
       router.go('/');
       await settle(tester);
-      await tap(tester, '音乐库更多');
-      await tap(tester, '外观与设置');
+      await tap(tester, '打开设置');
       expect(find.byType(SettingsPanel), findsOneWidget);
       expect(find.text('暖白'), findsOneWidget);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(CompactNavigation), findsNothing);
+      expect(find.byType(MiniPlayer), findsNothing);
+      expect(find.text('收藏夹导入'), findsNothing);
+      final disabledImport = tester.widget<Pressable>(
+        find.byKey(const ValueKey('settings-import')),
+      );
+      expect(disabledImport.onPressed, isNull);
+      await tap(tester, 'theme-b');
+      expect(fixture.controller.theme, 'b');
+      await tap(tester, 'theme-c');
+      expect(fixture.controller.theme, 'c');
+      await tap(tester, 'theme-a');
+      await tap(tester, 'settings-quality');
+      await tap(tester, 'quality-true');
+      expect(fixture.controller.standard, isTrue);
+      await tap(tester, 'settings-storage');
+      expect(find.byType(DownloadsPanel), findsOneWidget);
+      await tap(tester, '返回设置');
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      await tap(tester, 'settings-about');
+      await tap(tester, '关闭');
+      await tap(tester, '返回');
+      expect(find.byType(SettingsScreen), findsNothing);
       expect(find.textContaining('账号凭据保存在'), findsNothing);
       await unmount(tester);
     },

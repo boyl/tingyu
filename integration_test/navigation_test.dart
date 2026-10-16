@@ -210,9 +210,9 @@ void main() {
         ),
       );
       controller.profile = {'mid': 1, 'uname': '本地验收账号'};
-      await tester.tap(find.byKey(const ValueKey('音乐库更多')));
+      await tester.tap(find.byKey(const ValueKey('打开设置')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('账号与收藏夹')));
+      await tester.tap(find.byKey(const ValueKey('settings-account')));
       await tester.pumpAndSettle();
       expect(find.text('请先选择收藏夹'), findsOneWidget);
       final accountScroll = find

@@ -1,12 +1,12 @@
 """Run reproducible local gates; never equate unexecuted device checks with PASS."""
 import argparse
 import datetime
-import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+from source_fingerprint import source_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
@@ -31,16 +31,7 @@ if args.device:
         commands.append((name, flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', f'--target=integration_test/{target}', '-d', args.device]))
     if args.live:
         commands.append(('android-live-playback', flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', '--target=integration_test/live_playback_test.dart', '-d', args.device]))
-def source_fingerprint():
-    fingerprint = hashlib.sha256()
-    for folder in ['lib', 'android/app/src', 'test', 'integration_test']:
-        for file in sorted((ROOT / folder).rglob('*')):
-            if file.is_file():
-                fingerprint.update(str(file.relative_to(ROOT)).encode())
-                fingerprint.update(file.read_bytes())
-    return fingerprint.hexdigest()
-
-fingerprint_before = source_fingerprint()
+fingerprint_before = source_fingerprint(ROOT)
 results = {}
 for name, command in commands:
     print(f'Running {name}...', flush=True)
@@ -50,7 +41,7 @@ for name, command in commands:
     if process.returncode:
         print((output / f'{name}.log').read_text()[-6000:])
         break
-fingerprint_after = source_fingerprint()
+fingerprint_after = source_fingerprint(ROOT)
 results['source-stability'] = {'status': 'PASS' if fingerprint_before == fingerprint_after else 'FAIL'}
 report = {'checkedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sourceSha256': fingerprint_after,
           'checks': results, 'notExecutedByThisCommand': ([] if args.device and results.get('android-navigation', {}).get('status') == 'PASS' else ['G02 Android tab navigation']) + ['G03 Release full screen lifecycle', 'G04 native desktop / large-font / screen-reader review', 'G05 real account import and keyword search',

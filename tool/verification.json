@@ -1,11 +1,11 @@
 {
-  "version": "0.1.4+5",
+  "version": "0.1.5+6",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "99665dde667cf2efd09125a583ad86dfe4940f60512eba22837163a60b48fef1",
-  "checkedAt": "2026-10-16T11:35:32.400903+00:00",
+  "sourceSha256": "d494f1f655eb37ceb2bac309abfe40d3be55b84167396962b734d968d305330a",
+  "checkedAt": "2026-10-16T12:23:39.691875+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 46,
+  "offlineTestsPassed": 47,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -36,14 +36,6 @@
     "playerReturn": "PASS - button/system back preserve source offset and WAV playback",
     "loggedInFolderLayoutAndImport": "PASS - 25 folders, test responses only",
     "interactionFlow": "PASS - fixture API with real HTTP transfer/native decode/SQLite reopen",
-    "liveAnonymousPublicBV": {
-      "bvSearch": "PASS",
-      "nativeDecode": "PASS",
-      "download": "PASS",
-      "offlineDecode": "PASS",
-      "playerGain": 1,
-      "simultaneousDownloadPlayback": "PASS - native decode/progress/gain only; audible output NOT VERIFIED"
-    },
     "fullscreenReleaseChecks": {
       "cold-start": "PASS",
       "keyboard-dismiss": "PASS",
@@ -51,7 +43,7 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "f09d7047e050d1b981e4385004f042f9a1970b1150fb0e955901bc4b78caf6f3",
+    "testedReleaseSha256": "7f119c3e9b3cfb79e8971fe43fcb8ebc8640881109211c60121d3f696750d14c",
     "displayCutout": {
       "checks": {
         "portrait": {
@@ -95,12 +87,13 @@
           "explicitCutoutPolicy": "always"
         }
       },
-      "magic5PhysicalDevice": "NOT RUN - MagicOS 7.1 portrait"
+      "magic5PhysicalDevice": "NOT RUN - awaiting user device acceptance"
     },
-    "collectionOperations": "PASS - native detail/sort/multiselect cancel/menu/drawer; system return covered by widgets"
+    "collectionOperations": "PASS - native detail/sort/multiselect cancel/menu/drawer; system return covered by widgets",
+    "settingsPage": "PASS - three themes, quality, storage return, playback retained; account/import regression with fixture responses"
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-MINIMAL.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-SETTINGS.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -139,19 +132,28 @@
   },
   "humanAcceptanceDevice": {
     "device": "tingyu-api36 / emulator-5556",
-    "version": "0.1.4",
-    "versionCode": 2005,
-    "update": "PASS - same-signer Release adb install -r; no uninstall or data clearing; original UID 10219 retained",
-    "launch": "PASS - MainActivity cold start after package-file repair",
-    "userDataReview": "Opaque app-data backup saved locally with 0600 permissions; original directory and UID preserved; account/playlist contents not inspected by automation",
+    "version": "0.1.5",
+    "versionCode": 2006,
+    "update": "PASS - same-signer Release install -r + sync; no restart/uninstall/data clearing",
+    "launch": "PASS - MainActivity and settings page visible",
+    "userDataReview": "Not inspected by automation; same package/signature retained",
     "restartIncident": "After emulator cold restart, package settings and app-data remained but code path did not resolve. Saved private app-data backup and repaired via same-signer install -r + sync."
   },
   "emulatorSilence": {
-    "status": "OPEN - not claimed fixed",
+    "status": "DEFERRED BY USER - awaiting physical device acceptance; not claimed fixed",
     "reportedDevice": "tingyu-api36 / emulator-5556",
     "symptom": "progress advances; pause/play does not restore sound",
     "evidence": "Android track/mixer/focus not muted, no underflow; Mac default built-in stereo output, not muted",
     "mitigation": "project AVD microphone input disabled, audio output retained; cold restart with user data retained",
     "audibleRecheck": "PENDING - needs human listening"
-  }
+  },
+  "historicalPublicBV0_1_4": {
+    "bvSearch": "PASS",
+    "nativeDecode": "PASS",
+    "download": "PASS",
+    "offlineDecode": "PASS",
+    "playerGain": 1,
+    "simultaneousDownloadPlayback": "PASS - native decode/progress/gain only; audible output NOT VERIFIED"
+  },
+  "liveProbeThisRound": "NOT RUN - settings/navigation change; audio/download services unchanged"
 }
