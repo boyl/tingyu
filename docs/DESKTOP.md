@@ -4,16 +4,12 @@
 
 两端共用 Flutter 业务和 UI，macOS 原生后端与 Windows libmpv 后端已配置，系统媒体控制、托盘、窗口隐藏/恢复与退出清理已有代码。单元测试验证平台无关的生命周期；这不替代真实平台运行。
 
-当前 Mac 没有完整 Xcode。已通过 Homebrew 安装 xcodes，运行安装时要求 Apple ID，尚未输入任何账号信息。可由用户在本机终端运行：
-
-```sh
-xcodes install 27.1 --directory /Users/dfq/works/repo/lw/.toolchains --no-superuser
-```
+本机已安装 `/Applications/Xcode.app`（27.1）。`xcodebuild -version` 可读取版本，但 Flutter 构建仍被“尚未同意 Xcode / Apple SDK 许可”拦截。请在本机打开 Xcode，完成首次初始化与许可确认；此步骤需要用户亲自完成。
 
 安装后查找对应 `.app/Contents/Developer`，使用 `DEVELOPER_DIR` 对本项目指定 Xcode，无需改变全局 xcode-select。首次初始化、许可证与可能的管理员提示由用户完成；不要在聊天、Git 或脚本中保存密码/验证码。xcodes 工具可能将凭据保存在本机钥匙串。
 
 ```sh
-export DEVELOPER_DIR="/Users/dfq/works/repo/lw/.toolchains/Xcode-27.1.app/Contents/Developer"
+export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
 sh tool/flutterw.sh doctor -v
 sh tool/flutterw.sh run -d macos
 sh tool/flutterw.sh build macos --release

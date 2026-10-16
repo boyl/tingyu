@@ -33,7 +33,7 @@
 
 ## 执行顺序
 1. `sh tool/flutterw.sh analyze` 与 `sh tool/flutterw.sh test`。
-2. `python3 tool/run_acceptance.py --device <模拟器设备ID>`，保存完整日志。
+2. `python3 tool/run_acceptance.py --device emulator-5558 --live`，保存完整日志。
 3. 模拟器执行 G03–G06，保存截图、系统窗口信息、日志；连接真实 API 的步骤需单列结果，风控不算通过。
 4. 构建 ABI 拆分 Release，校验 G08；执行 `python3 tool/check_android_fullscreen.py --device emulator-5558 --apk build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` 对同一 APK 复测全屏生命周期。
 5. 工程侧门禁通过后，附结果报告提交人工验收；G07 与设备厂商差异留到指定真机执行，明确标为待验证，不冒充已通过。
@@ -43,3 +43,13 @@
 本轮执行结果见 [ACCEPTANCE-2026-10-16.md](ACCEPTANCE-2026-10-16.md)。真实扫码、收藏夹权限与风控不能用响应夹具替代。
 
 自动回归必须使用隔离设备：`TINGYU_EMULATOR_TEST=1 TINGYU_EMULATOR_HEADLESS=1 sh tool/android_emulator.sh`，设备 ID 为 `emulator-5558`。`emulator-5556` 留给人工验收，自动脚本会拒绝在该设备运行，避免测试构建降级卸载或夹具污染账号资料。
+
+## 0.1.3 交互稳定性补充
+- 音乐库显示顺序独立于历史播放顺序；CID 占位曲目解析、重复加入及数据库重开后均不得改变音乐库相对顺序。
+- 播放模式必须有可见中文名称；单曲循环仅影响自然播完，手动上一首/下一首仍切歌。清空队列后停止且不能恢复已清除的曲目。
+- 异步按钮在完成前禁止重复触发；搜索失败重试同一页，忽略旧请求并按稳定 ID 去重。
+- 歌单/歌词弹窗控制器随实际控件销毁；取消歌词偏移不保存；手动歌词不得被迟到的自动匹配覆盖。
+- 下载中暂停/移除应等待传输取消完成；缺失文件不能标为离线可播；删除文件保留歌单和喜欢。
+- 音量检查区分系统媒体音量、播放器增益和音源本身。切歌及离线回放保留播放器增益，暂停时音量控件仍正确更新。
+
+最新专项记录见 [0.1.3 交互验收](ACCEPTANCE-2026-10-16-INTERACTIONS.md)。`--live` 运行匿名公共 BV 的真实 Android 解码/下载/离线回放；不替代真实账号、关键词风控与物理设备验收。脚本同时检查开始和结束源码指纹，代码变化则本轮结果失败。

@@ -10,28 +10,42 @@ import 'services/downloads.dart';
 import 'services/desktop.dart';
 import 'services/playback.dart';
 import 'services/storage.dart';
+import 'services/lyrics.dart';
 import 'ui/app.dart';
 import 'ui/theme.dart';
 
 final libraryProvider = ChangeNotifierProvider<LibraryController>(
   (ref) => throw StateError('Application dependencies are not initialized'),
 );
-Future<void> main() async {
+Future<void> main() => runTingyu();
+
+/// Composition boundary: production uses native services; tests inject fixtures.
+Future<void> runTingyu({
+  BilibiliClient? client,
+  Directory? dataDirectory,
+  LyricsClient? lyricsClient,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    final directory = await getApplicationSupportDirectory();
+    final directory = dataDirectory ?? await getApplicationSupportDirectory();
     await directory.create(recursive: true);
     final db = AppDatabase.open(
       File(path.join(directory.path, 'tingyu.sqlite')),
     );
-    final api = BilibiliClient(SecureCredentials());
+    final api = client ?? BilibiliClient(SecureCredentials());
     final downloads = DownloadManager(
       api,
       db,
       Directory(path.join(directory.path, 'downloads')),
     );
     final playback = await PlaybackHandler.initialize();
-    final controller = LibraryController(api, db, downloads, playback);
+    final controller = LibraryController(
+      api,
+      db,
+      downloads,
+      playback,
+      lyricsClient: lyricsClient,
+    );
     await controller.initialize();
     if (Platform.isMacOS || Platform.isWindows) {
       await DesktopIntegration(controller).initialize();
@@ -58,7 +72,8 @@ Future<void> main() async {
   }
 }
 
-final _router = GoRouter(
+final _router = createRouter();
+GoRouter createRouter() => GoRouter(
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (_, _, shell) => shell,
@@ -98,7 +113,8 @@ final _router = GoRouter(
 );
 
 class TingyuApp extends ConsumerWidget {
-  const TingyuApp({super.key});
+  const TingyuApp({super.key, this.router});
+  final GoRouter? router;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(libraryProvider.select((v) => v.theme));
@@ -106,7 +122,7 @@ class TingyuApp extends ConsumerWidget {
       title: '听屿',
       debugShowCheckedModeBanner: false,
       theme: tingyuTheme(theme),
-      routerConfig: _router,
+      routerConfig: router ?? _router,
     );
   }
 }

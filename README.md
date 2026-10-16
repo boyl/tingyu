@@ -58,16 +58,16 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 普通测试不访问 B 站、不读取真实登录凭据。覆盖 WBI 标准参考向量、分 P、音质选择、Cookie/CDN 隔离、搜索验证挑战、LRC、SQLite 重开、下载缺失/截断/原子完成/删除保留数据，以及 A/B/C 的文字对比度、48px 目标和四种尺寸的基础按钮操作。
 
-真实探测只使用公开视频，检查详情、取流及少量 CDN 音频字节；报告在 `tool/live-probe.json`，不保存签名 URL 或凭据。它**不证明解码、听感、原生后台服务或真实账号流程已验收**。
+历史主机探测报告在 `tool/live-probe.json`。当前可用 `python3 tool/run_acceptance.py --device emulator-5558 --live` 在隔离 Android 模拟器运行匿名公共 BV 搜索、真实音频解码、下载和强制断网回放；不保存签名 URL 或凭据。这仍不证明听感、物理设备后台服务或真实账号流程已验收。
 
-尚需在目标环境验收：实际音频解码、拖动和地址刷新；Android 锁屏/通知栏、来电和拔耳机；macOS 和 Windows 系统媒体键与托盘；三端安全存储；真实扫码登录与收藏夹；完整页面小屏/大字体和屏幕阅读器体验。网络探测结果受检查时的接口状态影响。
+尚需在目标环境验收：地址过期的真实 CDN 恢复、听感；Android 锁屏/通知栏、来电和拔耳机；macOS 和 Windows 系统媒体键与托盘；三端安全存储；真实扫码登录与收藏夹；完整页面小屏/大字体和屏幕阅读器体验。网络探测结果受检查时的接口状态影响。
 
 可参考的上游：[just_audio](https://pub.dev/packages/just_audio)、[just_audio_media_kit](https://pub.dev/packages/just_audio_media_kit)、[audio_service](https://pub.dev/packages/audio_service)、[audio_service_win](https://pub.dev/packages/audio_service_win)、[Drift](https://drift.simonbinder.eu/)、[flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)。
 
 ## 本轮交付
 
-- Android 0.1.2 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
-- 静态分析零问题，22 项离线测试通过；模拟器两种尺寸的导航和收藏夹导入布局专项通过；公开视频取流探测是单独的历史证据。
+- Android 0.1.3 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
+- 本轮交互修复与自动验收记录见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
 - 新增工作流仅支持手动触发，尚未运行。工程仓库为私有 `boyl/tingyu`，可执行三平台构建；构建产物不入库。

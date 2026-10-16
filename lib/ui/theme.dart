@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 @immutable
@@ -58,7 +59,7 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
     sidebar: Color(0xfff3f5f8),
     text: Color(0xff282c35),
     muted: Color(0xff646b78),
-    accent: Color(0xffb93e65),
+    accent: Color(0xffb43b62),
     onAccent: Color(0xffffffff),
     tint: Color(0xfff5e6ec),
     line: Color(0xffe0e3e9),
@@ -177,7 +178,7 @@ class Pressable extends StatefulWidget {
     this.radius = TingyuTokens.radius,
   });
   final Widget child;
-  final VoidCallback? onPressed;
+  final FutureOr<void> Function()? onPressed;
   final String? label;
   final bool selected;
   final EdgeInsets padding;
@@ -189,17 +190,27 @@ class Pressable extends StatefulWidget {
 }
 
 class _PressableState extends State<Pressable> {
-  bool down = false, hover = false, focus = false;
+  bool down = false, hover = false, focus = false, pending = false;
+  Future<void> _invoke() async {
+    if (pending || widget.onPressed == null) return;
+    setState(() => pending = true);
+    try {
+      await widget.onPressed!();
+    } finally {
+      if (mounted) setState(() => pending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Semantics(
       button: true,
-      enabled: widget.onPressed != null,
+      enabled: widget.onPressed != null && !pending,
       selected: widget.selected,
       label: widget.label,
       child: FocusableActionDetector(
-        enabled: widget.onPressed != null,
+        enabled: widget.onPressed != null && !pending,
         onShowFocusHighlight: (v) => setState(() => focus = v),
         onShowHoverHighlight: (v) => setState(() => hover = v),
         mouseCursor: widget.onPressed == null
@@ -208,14 +219,14 @@ class _PressableState extends State<Pressable> {
         actions: {
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
-              widget.onPressed?.call();
+              unawaited(_invoke());
               return null;
             },
           ),
         },
         child: GestureDetector(
-          onTap: widget.onPressed,
-          onTapDown: widget.onPressed == null
+          onTap: widget.onPressed == null || pending ? null : _invoke,
+          onTapDown: widget.onPressed == null || pending
               ? null
               : (_) => setState(() => down = true),
           onTapCancel: () => setState(() => down = false),
@@ -224,9 +235,13 @@ class _PressableState extends State<Pressable> {
             scale: (down && !MediaQuery.disableAnimationsOf(context))
                 ? 0.99
                 : 1.0,
-            duration: TingyuTokens.pressDuration,
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : TingyuTokens.pressDuration,
             child: AnimatedContainer(
-              duration: TingyuTokens.transition,
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : TingyuTokens.transition,
               constraints: BoxConstraints(
                 minWidth: widget.minSize,
                 minHeight: widget.minSize,
@@ -243,7 +258,11 @@ class _PressableState extends State<Pressable> {
                 ),
               ),
               child: Opacity(
-                opacity: widget.onPressed == null ? 0.4 : 1.0,
+                opacity: widget.onPressed == null
+                    ? 0.4
+                    : pending
+                    ? 0.65
+                    : 1.0,
                 child: IconTheme(
                   data: IconThemeData(
                     color: widget.selected ? t.accent : t.text,

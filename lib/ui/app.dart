@@ -13,39 +13,47 @@ import 'theme.dart';
 Widget action(
   IconData icon,
   String label,
-  VoidCallback? call, {
+  FutureOr<void> Function()? call, {
   bool selected = false,
-}) => Tooltip(
-  message: label,
-  child: Pressable(
-    key: ValueKey(label),
-    label: label,
-    onPressed: call,
-    selected: selected,
-    padding: const EdgeInsets.all(10),
-    child: Icon(icon),
+}) => Builder(
+  builder: (context) => Tooltip(
+    message: label,
+    child: Pressable(
+      key: ValueKey(label),
+      label: label,
+      onPressed: call == null ? null : () => report(context, call),
+      selected: selected,
+      padding: const EdgeInsets.all(10),
+      child: Icon(icon),
+    ),
   ),
 );
 Widget labelButton(
   String label,
-  VoidCallback? call, {
+  FutureOr<void> Function()? call, {
   IconData? icon,
   bool selected = false,
-}) => Pressable(
-  key: ValueKey(label),
-  onPressed: call,
-  selected: selected,
-  child: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
-      Flexible(
-        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
-    ],
+}) => Builder(
+  builder: (context) => Pressable(
+    key: ValueKey(label),
+    onPressed: call == null ? null : () => report(context, call),
+    selected: selected,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ],
+    ),
   ),
 );
-Future<void> report(BuildContext context, Future<void> Function() task) async {
+
+Future<void> report(
+  BuildContext context,
+  FutureOr<void> Function() task,
+) async {
   try {
     await task();
   } on Exception catch (e) {
@@ -75,35 +83,45 @@ Future<bool> confirm(BuildContext context, String text) async =>
       ),
     ) ??
     false;
-Future<String?> nameDialog(BuildContext context, {String initial = ''}) async {
-  final edit = TextEditingController(text: initial);
+Future<String?> nameDialog(BuildContext context, {String initial = ''}) =>
+    showDialog<String>(context: context, builder: (_) => _NameDialog(initial));
+
+class _NameDialog extends StatefulWidget {
+  const _NameDialog(this.initial);
+  final String initial;
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  late final edit = TextEditingController(text: widget.initial);
   String? error;
-  final result = await showDialog<String>(
-    context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, set) => AlertDialog(
-        title: Text(initial.isEmpty ? '新建歌单' : '重命名歌单'),
-        content: TextField(
-          controller: edit,
-          autofocus: true,
-          maxLength: 30,
-          decoration: InputDecoration(labelText: '歌单名称', errorText: error),
-        ),
-        actions: [
-          labelButton('取消', () => Navigator.pop(ctx)),
-          labelButton('保存', () {
-            if (edit.text.trim().isEmpty) {
-              set(() => error = '请输入歌单名称');
-              return;
-            }
-            Navigator.pop(ctx, edit.text.trim());
-          }),
-        ],
-      ),
+  @override
+  void dispose() {
+    edit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.initial.isEmpty ? '新建歌单' : '重命名歌单'),
+    content: TextField(
+      controller: edit,
+      autofocus: true,
+      maxLength: 30,
+      decoration: InputDecoration(labelText: '歌单名称', errorText: error),
     ),
+    actions: [
+      labelButton('取消', () => Navigator.pop(context)),
+      labelButton('保存', () {
+        if (edit.text.trim().isEmpty) {
+          setState(() => error = '请输入歌单名称');
+          return;
+        }
+        Navigator.pop(context, edit.text.trim());
+      }),
+    ],
   );
-  edit.dispose();
-  return result;
 }
 
 class Artwork extends ConsumerWidget {
@@ -191,7 +209,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   Timer? debounce;
-  int searchPage = 1;
   @override
   void dispose() {
     debounce?.cancel();
@@ -272,7 +289,6 @@ class _AppShellState extends ConsumerState<AppShell> {
             onChanged: (v) {
               debounce?.cancel();
               debounce = Timer(const Duration(milliseconds: 450), () {
-                searchPage = 1;
                 unawaited(p.search(v));
               });
             },
@@ -281,7 +297,11 @@ class _AppShellState extends ConsumerState<AppShell> {
           const SizedBox(height: 20),
           if (p.searching) const Center(child: CircularProgressIndicator()),
           if (p.searchError.isNotEmpty)
-            errorBox(context, p.searchError, () => p.search(search.text)),
+            errorBox(
+              context,
+              p.searchError,
+              () => p.search(search.text, page: p.searchAttemptPage),
+            ),
           if (search.text.isEmpty)
             EmptyView(
               '从一首歌开始',
@@ -301,7 +321,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             Center(
               child: labelButton(
                 '加载更多',
-                () => p.search(search.text, page: ++searchPage),
+                () => p.search(search.text, page: p.searchPage + 1),
               ),
             ),
         ] else if (widget.page == 'settings')
@@ -424,7 +444,11 @@ class _AppShellState extends ConsumerState<AppShell> {
         actions: {
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
-              unawaited(p.toggle());
+              final focusContext = FocusManager.instance.primaryFocus?.context;
+              if (focusContext?.findAncestorWidgetOfExactType<EditableText>() ==
+                  null) {
+                unawaited(p.toggle());
+              }
               return null;
             },
           ),
@@ -585,6 +609,8 @@ class TrackRow extends ConsumerWidget {
         children: [
           Expanded(
             child: Pressable(
+              key: ValueKey('play-${track.id}'),
+              label: '播放 ${track.title}',
               onPressed: () => p.play(track),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
               child: Row(
@@ -666,26 +692,30 @@ Future<void> showTrackActions(
         style: const TextStyle(fontSize: 17),
       ),
       children: [
-        labelButton('下一首播放', () {
-          p.enqueue(track, next: true);
-          Navigator.pop(ctx);
+        labelButton('下一首播放', () async {
+          await p.enqueue(track, next: true);
+          if (ctx.mounted) Navigator.pop(ctx);
         }, icon: Icons.skip_next),
-        labelButton('加入队列', () {
-          p.enqueue(track);
-          Navigator.pop(ctx);
+        labelButton('加入队列', () async {
+          await p.enqueue(track);
+          if (ctx.mounted) Navigator.pop(ctx);
         }, icon: Icons.queue_music),
-        labelButton(p.likes.contains(track.id) ? '取消喜欢' : '喜欢', () {
-          p.toggleLike(track);
-          Navigator.pop(ctx);
+        labelButton(p.likes.contains(track.id) ? '取消喜欢' : '喜欢', () async {
+          await p.toggleLike(track);
+          if (ctx.mounted) Navigator.pop(ctx);
         }, icon: Icons.favorite_border),
+        labelButton('下载', () async {
+          await p.download(track);
+          if (ctx.mounted) Navigator.pop(ctx);
+        }, icon: Icons.download_outlined),
         labelButton('加入歌单', () async {
           Navigator.pop(ctx);
           await showAddPlaylist(context, p, track);
         }, icon: Icons.playlist_add),
         if (list != null)
-          labelButton('移出歌单', () {
-            p.editPlaylist(list, remove: track.id);
-            Navigator.pop(ctx);
+          labelButton('移出歌单', () async {
+            await p.editPlaylist(list, remove: track.id);
+            if (ctx.mounted) Navigator.pop(ctx);
           }, icon: Icons.remove_circle_outline),
         labelButton(
           '在 B 站打开',
@@ -803,6 +833,11 @@ class MiniPlayer extends StatelessWidget {
                 onChanged: (v) => p.playback.player.setVolume(v),
               ),
             ),
+          action(
+            modeIcon(p.mode),
+            '播放模式：${modeLabel(p.mode)}',
+            () => showModes(context, p),
+          ),
           action(Icons.queue_music, '播放队列', () => showQueue(context)),
         ],
       ),
@@ -810,31 +845,61 @@ class MiniPlayer extends StatelessWidget {
   }
 }
 
-Widget transport(BuildContext context, LibraryController p) => Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    action(
-      Icons.shuffle,
-      '随机播放',
-      () => p.setMode(p.mode == 'shuffle' ? 'order' : 'shuffle'),
-      selected: p.mode == 'shuffle',
-    ),
-    action(Icons.skip_previous, '上一首', () => p.next(-1)),
-    Pressable(
-      label: p.playing ? '暂停' : '播放',
-      onPressed: p.opening ? null : () => p.toggle(),
-      color: context.tokens.accent,
-      child: Icon(
-        p.playing ? Icons.pause : Icons.play_arrow,
-        color: context.tokens.onAccent,
+String modeLabel(String mode) => switch (mode) {
+  'shuffle' => '随机播放',
+  'repeat' => '单曲循环',
+  _ => '列表循环',
+};
+IconData modeIcon(String mode) => switch (mode) {
+  'shuffle' => Icons.shuffle,
+  'repeat' => Icons.repeat_one,
+  _ => Icons.repeat,
+};
+Future<void> showModes(BuildContext context, LibraryController p) =>
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('播放模式'),
+        children: [
+          for (final mode in ['order', 'shuffle', 'repeat'])
+            labelButton(
+              modeLabel(mode),
+              () async {
+                await p.setMode(mode);
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              icon: modeIcon(mode),
+              selected: p.mode == mode,
+            ),
+        ],
       ),
+    );
+Widget transport(BuildContext context, LibraryController p) => Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    labelButton(
+      '${modeLabel(p.mode)} · 切换模式',
+      () => showModes(context, p),
+      icon: modeIcon(p.mode),
     ),
-    action(Icons.skip_next, '下一首', () => p.next()),
-    action(
-      p.mode == 'repeat' ? Icons.repeat_one : Icons.repeat,
-      '单曲循环',
-      () => p.setMode(p.mode == 'repeat' ? 'order' : 'repeat'),
-      selected: p.mode == 'repeat',
+    Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        action(Icons.skip_previous, '上一首', p.opening ? null : () => p.next(-1)),
+        const SizedBox(width: 24),
+        Pressable(
+          label: p.playing ? '暂停' : '播放',
+          key: const ValueKey('toggle-playback'),
+          onPressed: p.opening ? null : () => p.toggle(),
+          color: context.tokens.accent,
+          child: Icon(
+            p.playing ? Icons.pause : Icons.play_arrow,
+            color: context.tokens.onAccent,
+          ),
+        ),
+        const SizedBox(width: 24),
+        action(Icons.skip_next, '下一首', p.opening ? null : () => p.next()),
+      ],
     ),
   ],
 );
@@ -957,33 +1022,53 @@ class PlayerScreen extends ConsumerWidget {
           ),
       ],
     );
-    final lyrics = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(height: desktop ? 280 : 150, child: LyricPanel(p)),
-        SeekBar(p),
-        const SizedBox(height: 12),
-        transport(context, p),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            labelButton('下载', () => p.download(track), icon: Icons.download),
-            labelButton(
-              '歌词',
-              () => showLyrics(context, p),
-              icon: Icons.lyrics_outlined,
-            ),
-            action(Icons.queue_music, '播放队列', () => showQueue(context)),
-          ],
-        ),
-      ],
-    );
+    final lyrics = SizedBox(height: desktop ? 280 : 150, child: LyricPanel(p));
     return Scaffold(
       appBar: PlayerHeader(
         onBack: goBack,
-        status: p.opening ? '正在解析…' : '正在播放 · ${p.quality}',
+        status: p.opening
+            ? '正在解析…'
+            : '${p.playing ? '正在播放' : '已暂停'} · ${p.quality}',
         onMore: () => showTrackActions(context, p, track, null),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SeekBar(p),
+                  transport(context, p),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      labelButton(
+                        '下载',
+                        () => p.download(track),
+                        icon: Icons.download,
+                      ),
+                      labelButton(
+                        '歌词',
+                        () => showLyrics(context, p),
+                        icon: Icons.lyrics_outlined,
+                      ),
+                      action(
+                        Icons.queue_music,
+                        '播放队列',
+                        () => showQueue(context),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: SafeArea(
         top: false,
@@ -1278,6 +1363,9 @@ class DownloadsPanel extends StatelessWidget {
                 ),
                 if (d.status == DownloadStatus.completed)
                   action(Icons.play_arrow, '播放已下载歌曲', () => p.play(d.track))
+                else if (d.status == DownloadStatus.downloading ||
+                    d.status == DownloadStatus.waiting)
+                  action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
                 else if ([
                   DownloadStatus.failed,
                   DownloadStatus.paused,
@@ -1292,7 +1380,7 @@ class DownloadsPanel extends StatelessWidget {
                     if (d.status != DownloadStatus.completed ||
                         await confirm(context, '删除音频和离线资料？歌单与喜欢记录会保留。')) {
                       if (context.mounted) {
-                        await report(context, () => p.downloads.remove(d));
+                        await report(context, () => p.removeDownload(d));
                       }
                     }
                   },
@@ -1702,93 +1790,108 @@ class FolderChoice extends StatelessWidget {
 }
 
 Future<void> showLyrics(BuildContext context, LibraryController p) async {
-  final edit = TextEditingController(text: p.current?.title ?? '');
-  final lrc = TextEditingController(text: p.lyricText);
+  final track = p.current;
+  if (track == null) return;
+  await showDialog<void>(
+    context: context,
+    builder: (_) => _LyricsDialog(p, track),
+  );
+}
+
+class _LyricsDialog extends StatefulWidget {
+  const _LyricsDialog(this.controller, this.track);
+  final LibraryController controller;
+  final Track track;
+  @override
+  State<_LyricsDialog> createState() => _LyricsDialogState();
+}
+
+class _LyricsDialogState extends State<_LyricsDialog> {
+  LibraryController get p => widget.controller;
+  Track get track => widget.track;
+  late final edit = TextEditingController(text: track.title);
+  late final lrc = TextEditingController(text: p.lyricText);
+  late int offset = p.lyricOffset;
   List<Map<String, dynamic>> candidates = [];
   String? error;
   bool busy = false;
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, set) => AlertDialog(
-        title: const Text('匹配歌词'),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: edit,
-                  decoration: const InputDecoration(labelText: '歌名 / 歌手'),
-                ),
-                labelButton(
-                  '搜索歌词',
-                  busy
-                      ? null
-                      : () async {
-                          set(() => busy = true);
-                          try {
-                            final found = await p.lyricsClient.search(
-                              edit.text,
-                            );
-                            if (ctx.mounted) {
-                              set(() {
-                                candidates = found;
-                                error = found.isEmpty
-                                    ? '未找到歌词，可粘贴 LRC 文本'
-                                    : null;
-                              });
-                            }
-                          } on AppFailure catch (e) {
-                            if (ctx.mounted) set(() => error = e.message);
-                          } finally {
-                            if (ctx.mounted) set(() => busy = false);
-                          }
-                        },
-                ),
-                if (error != null) Text(error!),
-                for (final c in candidates.take(10))
-                  labelButton(
-                    '${c['trackName']} · ${c['artistName']}',
-                    () async {
-                      await p.chooseLyrics(c, p.current!);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                  ),
-                TextField(
-                  controller: lrc,
-                  minLines: 3,
-                  maxLines: 5,
-                  decoration: const InputDecoration(
-                    labelText: '或粘贴 LRC / 纯文本歌词',
-                  ),
-                ),
-                Text('时间偏移 ${(p.lyricOffset / 1000).toStringAsFixed(1)} 秒'),
-                Slider(
-                  value: p.lyricOffset.toDouble(),
-                  min: -5000,
-                  max: 5000,
-                  divisions: 20,
-                  onChanged: (v) => set(() => p.lyricOffset = v.round()),
-                ),
-              ],
+  @override
+  void dispose() {
+    edit.dispose();
+    lrc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('匹配歌词'),
+    content: SizedBox(
+      width: 420,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: edit,
+              decoration: const InputDecoration(labelText: '歌名 / 歌手'),
             ),
-          ),
+            labelButton(
+              '搜索歌词',
+              busy
+                  ? null
+                  : () async {
+                      setState(() => busy = true);
+                      try {
+                        final found = await p.lyricsClient.search(edit.text);
+                        if (mounted) {
+                          setState(() {
+                            candidates = found;
+                            error = found.isEmpty ? '未找到歌词，可粘贴 LRC 文本' : null;
+                          });
+                        }
+                      } on AppFailure catch (e) {
+                        if (mounted) setState(() => error = e.message);
+                      } finally {
+                        if (mounted) setState(() => busy = false);
+                      }
+                    },
+            ),
+            if (error != null) Text(error!),
+            for (final c in candidates.take(10))
+              labelButton('${c['trackName']} · ${c['artistName']}', () async {
+                if (p.current?.id != track.id) {
+                  throw const AppFailure('歌曲已切换，请重新打开歌词窗口');
+                }
+                await p.chooseLyrics(c, track);
+                if (context.mounted) Navigator.pop(context);
+              }),
+            TextField(
+              controller: lrc,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(labelText: '或粘贴 LRC / 纯文本歌词'),
+            ),
+            Text('时间偏移 ${(offset / 1000).toStringAsFixed(1)} 秒'),
+            Slider(
+              value: offset.toDouble(),
+              min: -5000,
+              max: 5000,
+              divisions: 20,
+              onChanged: (v) => setState(() => offset = v.round()),
+            ),
+          ],
         ),
-        actions: [
-          labelButton('取消', () => Navigator.pop(ctx)),
-          labelButton('保存歌词', () async {
-            await p.setLyrics(lrc.text);
-            await p.save();
-            if (ctx.mounted) Navigator.pop(ctx);
-          }),
-        ],
       ),
     ),
+    actions: [
+      labelButton('取消', () => Navigator.pop(context)),
+      labelButton('保存歌词', () async {
+        await p.setLyrics(lrc.text, track: track, offset: offset);
+        await p.save();
+        if (context.mounted) Navigator.pop(context);
+      }),
+    ],
   );
-  edit.dispose();
-  lrc.dispose();
 }
 
 /// Persistent, fixed-width destinations avoid layout movement while switching.

@@ -27,6 +27,7 @@ class DownloadManager extends ChangeNotifier {
   Future<void>? _pumpFuture;
   CancelToken? _cancel;
   DownloadTask? _active;
+  Completer<void>? _activeDone;
   Timer? _saveTimer;
   Future<void> initialize() async {
     await directory.create(recursive: true);
@@ -59,6 +60,41 @@ class DownloadManager extends ChangeNotifier {
     return null;
   }
 
+  Future<String?> availablePath(Track track) async {
+    final task = tasks
+        .where(
+          (t) => t.track.id == track.id && t.status == DownloadStatus.completed,
+        )
+        .firstOrNull;
+    if (task == null) return null;
+    final file = File(task.filePath ?? '');
+    if (await file.exists() && await file.length() == task.received) {
+      return file.path;
+    }
+    task.status = DownloadStatus.failed;
+    task.filePath = null;
+    task.error = '下载文件已丢失或不完整，请重新下载';
+    await _save();
+    notifyListeners();
+    return null;
+  }
+
+  Future<void> pause(DownloadTask task) async {
+    if (task.status != DownloadStatus.downloading &&
+        task.status != DownloadStatus.waiting) {
+      return;
+    }
+    task.status = DownloadStatus.paused;
+    task.error = '下载已暂停，可继续下载';
+    if (_active == task) {
+      final done = _activeDone?.future;
+      _cancel?.cancel();
+      await done;
+    }
+    await _save();
+    notifyListeners();
+  }
+
   Future<void> enqueue(Track track) async {
     if (tasks.any((t) => t.track.id == track.id)) return;
     tasks.add(DownloadTask(track));
@@ -82,8 +118,12 @@ class DownloadManager extends ChangeNotifier {
   }
 
   Future<void> remove(DownloadTask t) async {
-    if (_active == t) _cancel?.cancel();
     tasks.remove(t);
+    if (_active == t) {
+      final done = _activeDone?.future;
+      _cancel?.cancel();
+      await done;
+    }
     final stem = path.join(directory.path, _stem(t.track));
     for (final ext in ['.m4a', '.part', '.cover', '.lyrics']) {
       final f = File('$stem$ext');
@@ -121,6 +161,7 @@ class DownloadManager extends ChangeNotifier {
             .firstOrNull;
         if (pending == null) break;
         _active = pending;
+        final done = _activeDone = Completer<void>();
         _cancel = CancelToken();
         pending.status = DownloadStatus.downloading;
         pending.error = null;
@@ -129,7 +170,7 @@ class DownloadManager extends ChangeNotifier {
           path.join(directory.path, '${_stem(pending.track)}.part'),
         );
         try {
-          final stream = await api.resolve(pending.track);
+          final stream = await api.resolve(pending.track, cancelToken: _cancel);
           if (_cancel!.isCancelled) continue;
           // Restart incomplete resources rather than append bytes from expired URLs.
           final response = await _http.download(
@@ -163,12 +204,14 @@ class DownloadManager extends ChangeNotifier {
           pending.received = bytes;
           pending.total = bytes;
           pending.status = DownloadStatus.completed;
+          notifyListeners();
           // Cover failure is visible but does not invalidate an intact audio file.
           if (pending.track.cover.isNotEmpty) {
             try {
               await _http.download(
                 pending.track.cover,
                 path.join(directory.path, '${_stem(pending.track)}.cover'),
+                cancelToken: _cancel,
                 options: Options(
                   headers: {
                     'User-Agent': BilibiliClient.userAgent,
@@ -176,8 +219,8 @@ class DownloadManager extends ChangeNotifier {
                   },
                 ),
               );
-            } on DioException {
-              pending.error = '音频已下载，封面获取失败';
+            } on DioException catch (e) {
+              if (!CancelToken.isCancel(e)) pending.error = '音频已下载，封面获取失败';
             }
           }
           await db.saveTrack(pending.track);
@@ -197,9 +240,13 @@ class DownloadManager extends ChangeNotifier {
           pending.status = DownloadStatus.failed;
           pending.error = '无法写入下载目录，请检查可用空间';
         } finally {
-          if (await temp.exists()) await temp.delete();
-          await _save();
-          if (!_closed) notifyListeners();
+          try {
+            if (await temp.exists()) await temp.delete();
+            await _save();
+            if (!_closed) notifyListeners();
+          } finally {
+            if (!done.isCompleted) done.complete();
+          }
         }
       }
     } finally {

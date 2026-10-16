@@ -1,25 +1,37 @@
 {
-  "version": "0.1.2+3",
+  "version": "0.1.3+4",
+  "sourceSha256": "4e0fdbdd5d2c593ff6b1165f4c14c554e2a3b8a8bec8f3fb7bd225483116fb78",
   "signing": "development/debug key",
-  "validation": "ZIP integrity and exact ABI passed; arm64 installed and fullscreen lifecycle checked on Android 16 emulator; full product acceptance pending",
+  "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
+  "sameSignerAs0_1_2": true,
+  "validation": "ZIP, exact ABI, version and signatures PASS; ARM64 runtime evidence recorded in tool/verification.json; physical Android and native desktops pending",
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.2-android-arm64-v8a-release.apk",
+      "path": "artifacts/tingyu-0.1.3-android-arm64-v8a-release.apk",
       "bytes": 22294947,
-      "sha256": "d567d0f455a33a612cb12a148dcbc67accc2a15fb624af8b2aa1bf4e1cb916fe"
+      "sha256": "ae08cfdb3362b772054a8cd8a00949ad1be3c2bd55676e008a9b1fafb6eaeba3",
+      "zipIntegrity": "PASS",
+      "exactAbi": "PASS",
+      "versionCode": "2004"
     },
     {
       "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.2-android-armeabi-v7a-release.apk",
-      "bytes": 19835115,
-      "sha256": "746157278e02fce91de9320eb8c33767a62f62867f71c3c5f119c298e2d319b2"
+      "path": "artifacts/tingyu-0.1.3-android-armeabi-v7a-release.apk",
+      "bytes": 19884271,
+      "sha256": "81030ad6d3af08b3b2765d9b281f13a06412469321d6bc0d743cb241f781cf06",
+      "zipIntegrity": "PASS",
+      "exactAbi": "PASS",
+      "versionCode": "1004"
     },
     {
       "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.2-android-x86_64-release.apk",
+      "path": "artifacts/tingyu-0.1.3-android-x86_64-release.apk",
       "bytes": 23746679,
-      "sha256": "3de8b8431b9db6e0465e41c2eb2619ae62276865b1e89d9a5b97495827bc2ae7"
+      "sha256": "ca6883c8b592ff270481fb4cf881f42110670e5f3ddc93de270229fa4d9c0155",
+      "zipIntegrity": "PASS",
+      "exactAbi": "PASS",
+      "versionCode": "4004"
     }
   ]
 }

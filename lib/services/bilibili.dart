@@ -131,11 +131,13 @@ class BilibiliClient {
   Future<Map<String, dynamic>> _get(
     String path, {
     Map<String, dynamic>? params,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await http.get(
         path.startsWith('https://') ? path : 'https://api.bilibili.com$path',
         queryParameters: params,
+        cancelToken: cancelToken,
         options: Options(headers: headers),
       );
       final json = Map<String, dynamic>.from(response.data as Map);
@@ -152,6 +154,7 @@ class BilibiliClient {
       }
       return Map<String, dynamic>.from(json['data'] as Map? ?? {});
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) rethrow;
       throw AppFailure(
         e.response?.statusCode == 412
             ? 'B 站限制了当前请求，请稍后重试或登录'
@@ -265,9 +268,14 @@ class BilibiliClient {
         .toList();
   }
 
-  Future<AudioStream> resolve(Track track, {bool standard = false}) async {
+  Future<AudioStream> resolve(
+    Track track, {
+    bool standard = false,
+    CancelToken? cancelToken,
+  }) async {
     final d = await _get(
       '/x/player/playurl',
+      cancelToken: cancelToken,
       params: {
         'bvid': track.bvid,
         'cid': track.cid,
