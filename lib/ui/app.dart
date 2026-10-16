@@ -390,14 +390,18 @@ class _AppShellState extends ConsumerState<AppShell> {
                   itemBuilder: (ctx, i) {
                     final track = p.library[p.history[i]]!;
                     return Pressable(
-                      onPressed: () => p.play(track),
-                      padding: EdgeInsets.zero,
+                      onPressed: () => p.playFromCollection(
+                        track,
+                        p.collectionIds('library', p.library.keys),
+                      ),
+                      color: t.surface,
+                      padding: const EdgeInsets.all(8),
                       child: SizedBox(
-                        width: desktop ? 160 : 140,
+                        width: desktop ? 144 : 124,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Artwork(track, size: desktop ? 160 : 140),
+                            Artwork(track, size: desktop ? 144 : 124),
                             const SizedBox(height: 10),
                             Text(
                               track.title,
@@ -432,7 +436,14 @@ class _AppShellState extends ConsumerState<AppShell> {
             }),
           ),
           const SizedBox(height: 12),
-          ..._libraryRows(p, list),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: t.surface,
+              borderRadius: BorderRadius.circular(TingyuTokens.radius),
+            ),
+            child: Column(children: _libraryRows(p, list).toList()),
+          ),
         ],
       ],
     );
@@ -544,7 +555,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                         : selection.add(id);
                   }),
                 )
-              : TrackRow(p.library[id]!, playlist: list),
+              : TrackRow(p.library[id]!, playlist: list, sourceIds: ids),
         )
         .toList();
   }
@@ -839,6 +850,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
         key: ValueKey('download-${track.id}'),
         label: '$label ${track.title}',
         selected: completed,
+        selectionFill: false,
         onPressed: preparing ? null : () => report(context, activate),
         child: transferring
             ? downloadProgress(context, preparing ? null : task?.progress)
@@ -856,9 +868,10 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
 }
 
 class TrackRow extends ConsumerWidget {
-  const TrackRow(this.track, {super.key, this.playlist});
+  const TrackRow(this.track, {super.key, this.playlist, this.sourceIds});
   final Track track;
   final Playlist? playlist;
+  final List<String>? sourceIds;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(libraryProvider),
@@ -868,7 +881,6 @@ class TrackRow extends ConsumerWidget {
       decoration: BoxDecoration(
         color: p.current?.id == track.id ? context.tokens.tint : null,
         borderRadius: BorderRadius.circular(TingyuTokens.radius),
-        border: Border(bottom: BorderSide(color: context.tokens.line)),
       ),
       child: Row(
         children: [
@@ -876,7 +888,9 @@ class TrackRow extends ConsumerWidget {
             child: Pressable(
               key: ValueKey('play-${track.id}'),
               label: '播放 ${track.title}',
-              onPressed: () => p.play(track),
+              onPressed: () => sourceIds == null
+                  ? p.play(track)
+                  : p.playFromCollection(track, sourceIds!),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
               child: Row(
                 children: [
@@ -1029,79 +1043,119 @@ class MiniPlayer extends StatelessWidget {
     final t = p.current;
     if (t == null) return const SizedBox.shrink();
     final desktop = MediaQuery.sizeOf(context).width >= 960;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: context.tokens.surface,
-        border: Border(top: BorderSide(color: context.tokens.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Pressable(
-              key: const ValueKey('展开播放器'),
-              label: '展开播放器',
-              onPressed: () => context.push('/player'),
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  Artwork(t),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          p.opening
-                              ? '正在解析…'
-                              : p.quality.isEmpty
-                              ? '点击继续播放'
-                              : t.artist,
-                          maxLines: 1,
-                          style: TextStyle(
-                            color: context.tokens.muted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    final tokens = context.tokens;
+    final overlayContext = context;
+    final dockTokens = tokens.copyWith(
+      text: tokens.onPlayer,
+      muted: tokens.playerMuted,
+      accent: tokens.playerButton,
+      onAccent: tokens.onPlayerButton,
+      tint: tokens.playerTrack,
+      line: tokens.playerTrack,
+    );
+    return Theme(
+      data: Theme.of(context).copyWith(extensions: [dockTokens]),
+      child: Builder(
+        builder: (context) => Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: tokens.playerSurface,
+            borderRadius: BorderRadius.circular(TingyuTokens.playerRadius),
+            border: Border.all(color: tokens.playerBorder),
+            boxShadow: [
+              BoxShadow(
+                color: tokens.playerShadow,
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-          if (desktop)
-            Expanded(
-              flex: 2,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [transport(context, p), SeekBar(p)],
+          child: Row(
+            children: [
+              Expanded(
+                child: Pressable(
+                  key: const ValueKey('展开播放器'),
+                  label: '展开播放器',
+                  onPressed: () => context.push('/player'),
+                  padding: EdgeInsets.zero,
+                  child: Row(
+                    children: [
+                      Artwork(t),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: tokens.onPlayer,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              p.opening
+                                  ? '正在解析…'
+                                  : p.quality.isEmpty
+                                  ? '点击继续播放'
+                                  : t.artist,
+                              maxLines: 1,
+                              style: TextStyle(
+                                color: context.tokens.muted,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            )
-          else
-            action(
-              p.playing ? Icons.pause : Icons.play_arrow,
-              '播放或暂停',
-              p.opening ? null : () => p.toggle(),
-            ),
-          if (desktop)
-            SizedBox(
-              width: 120,
-              child: Slider(
-                value: p.playback.player.volume,
-                onChanged: (v) => p.playback.player.setVolume(v),
-              ),
-            ),
-          if (!desktop)
-            action(Icons.queue_music, '播放队列', () => showQueue(context)),
-        ],
+              if (desktop)
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      transport(context, p, overlayContext: overlayContext),
+                      SeekBar(p),
+                    ],
+                  ),
+                )
+              else
+                Pressable(
+                  key: const ValueKey('播放或暂停'),
+                  label: '播放或暂停',
+                  onPressed: p.opening ? null : () => p.toggle(),
+                  color: tokens.playerButton,
+                  radius: 48,
+                  child: Icon(
+                    p.playing ? Icons.pause : Icons.play_arrow,
+                    color: tokens.onPlayerButton,
+                  ),
+                ),
+              if (desktop)
+                SizedBox(
+                  width: 120,
+                  child: Slider(
+                    value: p.playback.player.volume,
+                    onChanged: (v) => p.playback.player.setVolume(v),
+                  ),
+                ),
+              if (!desktop)
+                action(
+                  Icons.queue_music,
+                  '播放队列',
+                  () => showQueue(overlayContext),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1136,7 +1190,11 @@ class ModeButton extends StatelessWidget {
   );
 }
 
-Widget transport(BuildContext context, LibraryController p) => Row(
+Widget transport(
+  BuildContext context,
+  LibraryController p, {
+  BuildContext? overlayContext,
+}) => Row(
   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
   children: [
     ModeButton(p),
@@ -1153,7 +1211,11 @@ Widget transport(BuildContext context, LibraryController p) => Row(
       ),
     ),
     action(Icons.skip_next, '下一首', p.opening ? null : () => p.next()),
-    action(Icons.queue_music, '播放队列', () => showQueue(context)),
+    action(
+      Icons.queue_music,
+      '播放队列',
+      () => showQueue(overlayContext ?? context),
+    ),
   ],
 );
 
@@ -1612,7 +1674,11 @@ class DownloadsPanel extends StatelessWidget {
                   ),
                 ),
                 if (d.status == DownloadStatus.completed)
-                  action(Icons.play_arrow, '播放已下载歌曲', () => p.play(d.track))
+                  action(
+                    Icons.play_arrow,
+                    '播放已下载歌曲',
+                    () => p.playDownloaded(d.track),
+                  )
                 else if (d.status == DownloadStatus.downloading ||
                     d.status == DownloadStatus.waiting)
                   action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
@@ -2122,6 +2188,7 @@ class CompactNavigation extends StatelessWidget {
                         key: ValueKey('tab-${item.$1}'),
                         label: item.$3,
                         selected: selected == item.$1,
+                        selectionFill: false,
                         onPressed: () {
                           FocusManager.instance.primaryFocus?.unfocus();
                           onSelect(item.$1);
@@ -2137,7 +2204,13 @@ class CompactNavigation extends StatelessWidget {
                           children: [
                             Icon(item.$2, size: 20),
                             const SizedBox(width: 4),
-                            Text(item.$3, style: const TextStyle(fontSize: 12)),
+                            Text(
+                              item.$3,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: selected == item.$1 ? t.accent : t.muted,
+                              ),
+                            ),
                           ],
                         ),
                       ),

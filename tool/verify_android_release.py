@@ -42,6 +42,6 @@ manifest = {'version': f'{version}+{number}', 'sourceSha256': report['sourceSha2
             'signing': 'development/debug key', 'signerCertificateSha256': expected_cert,
             'sameSignerAs0_1_3': True, 'validation': 'ZIP, exact ABI, package, version and signatures PASS',
             'apks': items, 'runtimeEvidence': 'artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json',
-            'limitations': ['Magic5 / MagicOS 7.1 physical device pending', 'emulator audible output pending human listening', 'native desktops pending']}
+            'limitations': ['physical Android lockscreen/Bluetooth/calls/background scenarios pending', 'emulator audible issue deferred by user', 'native desktops pending']}
 (ROOT / 'tool/release-apks.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 print(json.dumps(manifest, ensure_ascii=False, indent=2))

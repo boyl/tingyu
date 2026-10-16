@@ -70,6 +70,36 @@ void main() {
   }
 
   testWidgets(
+    'clicking a row queues its entire 51-track library and respects the likes scope',
+    (tester) async {
+      final p = fixture.controller;
+      for (var i = 0; i < 49; i++) {
+        await p.remember(
+          Track(
+            bvid: 'BVlibrary$i',
+            cid: 100 + i,
+            title: '歌曲$i',
+            artist: 'UP',
+            cover: '',
+            duration: 30,
+          ),
+        );
+      }
+      await p.enqueue(firstTrack);
+      await p.enqueue(secondTrack);
+      await mount(tester);
+      await tap(tester, 'play-${firstTrack.id}');
+      expect(p.queue.length, 51);
+      await p.toggleLike(secondTrack);
+      router.go('/likes');
+      await settle(tester);
+      await tap(tester, 'play-${secondTrack.id}');
+      expect(p.queue, [secondTrack.id]);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'settings returns to its source with search input and playback preserved',
     (tester) async {
       await fixture.controller.play(firstTrack);

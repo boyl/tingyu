@@ -63,6 +63,15 @@ void main() {
       TingyuTokens.dark,
       TingyuTokens.pink,
     ]) {
+      expect(contrast(t.onPlayer, t.playerSurface), greaterThanOrEqualTo(4.5));
+      expect(
+        contrast(t.playerMuted, t.playerSurface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(t.onPlayerButton, t.playerButton),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(contrast(t.text, t.background), greaterThanOrEqualTo(4.5));
       expect(contrast(t.muted, t.background), greaterThanOrEqualTo(4.5));
       expect(contrast(t.onAccent, t.accent), greaterThanOrEqualTo(4.5));

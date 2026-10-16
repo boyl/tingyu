@@ -39,7 +39,7 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
       }),
     );
     _subscriptions.add(
-      player.processingStateStream.listen((s) {
+      player.processingStateStream.distinct().listen((s) {
         if (s == ProcessingState.completed) onCompleted?.call();
       }),
     );

@@ -13,6 +13,14 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
     required this.onAccent,
     required this.tint,
     required this.line,
+    required this.playerSurface,
+    required this.playerBorder,
+    required this.onPlayer,
+    required this.playerMuted,
+    required this.playerButton,
+    required this.onPlayerButton,
+    required this.playerTrack,
+    required this.playerShadow,
     required this.danger,
   });
   final Color background,
@@ -24,46 +32,79 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       onAccent,
       tint,
       line,
+      playerSurface,
+      playerBorder,
+      onPlayer,
+      playerMuted,
+      playerButton,
+      onPlayerButton,
+      playerTrack,
+      playerShadow,
       danger;
   static const space = 8.0,
       radius = 12.0,
+      playerRadius = 20.0,
       pressDuration = Duration(milliseconds: 100),
       transition = Duration(milliseconds: 180);
   static const light = TingyuTokens(
-    background: Color(0xfff7f6f2),
-    surface: Color(0xfffdfcf9),
+    background: Color(0xffeeeae4),
+    surface: Color(0xfffcfaf7),
     sidebar: Color(0xfff0efeb),
-    text: Color(0xff24272b),
+    text: Color(0xff272c30),
     muted: Color(0xff62676c),
-    accent: Color(0xff4c678e),
+    accent: Color(0xff4a687d),
     onAccent: Color(0xffffffff),
-    tint: Color(0xffe4e9ef),
+    tint: Color(0xffe5ebed),
     line: Color(0xffdedfdb),
     danger: Color(0xffb53b42),
+    playerSurface: Color(0xff484640),
+    playerBorder: Color(0xff57544c),
+    onPlayer: Color(0xfffaf5e9),
+    playerMuted: Color(0xffc8c1b3),
+    playerButton: Color(0xfff5edda),
+    onPlayerButton: Color(0xff484640),
+    playerTrack: Color(0xff787267),
+    playerShadow: Color(0x12000000),
   );
   static const dark = TingyuTokens(
-    background: Color(0xff17191c),
-    surface: Color(0xff202327),
+    background: Color(0xff14181d),
+    surface: Color(0xff20262e),
     sidebar: Color(0xff1c1f23),
     text: Color(0xffeef0f2),
     muted: Color(0xffacb2bc),
-    accent: Color(0xff9ab8e6),
+    accent: Color(0xffb1c8e8),
     onAccent: Color(0xff152238),
-    tint: Color(0xff2c3a4e),
+    tint: Color(0xff2b3743),
     line: Color(0xff383d45),
     danger: Color(0xffff9ba1),
+    playerSurface: Color(0xff344251),
+    playerBorder: Color(0xff495a6b),
+    onPlayer: Color(0xfff5f7fa),
+    playerMuted: Color(0xffbcc8d4),
+    playerButton: Color(0xffb1c8e8),
+    onPlayerButton: Color(0xff182638),
+    playerTrack: Color(0xff596b7e),
+    playerShadow: Color(0x2d000000),
   );
   static const pink = TingyuTokens(
-    background: Color(0xfffafbfd),
+    background: Color(0xffedf0f5),
     surface: Color(0xffffffff),
     sidebar: Color(0xfff3f5f8),
     text: Color(0xff282c35),
     muted: Color(0xff646b78),
-    accent: Color(0xffb43b62),
+    accent: Color(0xffa94368),
     onAccent: Color(0xffffffff),
-    tint: Color(0xfff5e6ec),
+    tint: Color(0xfff6eaf0),
     line: Color(0xffe0e3e9),
     danger: Color(0xffb13b40),
+    playerSurface: Color(0xfff0dfe8),
+    playerBorder: Color(0xffe2ccd8),
+    onPlayer: Color(0xff4d3041),
+    playerMuted: Color(0xff765b6c),
+    playerButton: Color(0xffa94368),
+    onPlayerButton: Color(0xffffffff),
+    playerTrack: Color(0xffd7bdcb),
+    playerShadow: Color(0x1c000000),
   );
   @override
   TingyuTokens copyWith({
@@ -76,6 +117,14 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
     Color? onAccent,
     Color? tint,
     Color? line,
+    Color? playerSurface,
+    Color? playerBorder,
+    Color? onPlayer,
+    Color? playerMuted,
+    Color? playerButton,
+    Color? onPlayerButton,
+    Color? playerTrack,
+    Color? playerShadow,
     Color? danger,
   }) => TingyuTokens(
     background: background ?? this.background,
@@ -87,6 +136,14 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
     onAccent: onAccent ?? this.onAccent,
     tint: tint ?? this.tint,
     line: line ?? this.line,
+    playerSurface: playerSurface ?? this.playerSurface,
+    playerBorder: playerBorder ?? this.playerBorder,
+    onPlayer: onPlayer ?? this.onPlayer,
+    playerMuted: playerMuted ?? this.playerMuted,
+    playerButton: playerButton ?? this.playerButton,
+    onPlayerButton: onPlayerButton ?? this.onPlayerButton,
+    playerTrack: playerTrack ?? this.playerTrack,
+    playerShadow: playerShadow ?? this.playerShadow,
     danger: danger ?? this.danger,
   );
   @override
@@ -102,6 +159,14 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       onAccent: Color.lerp(onAccent, other.onAccent, t)!,
       tint: Color.lerp(tint, other.tint, t)!,
       line: Color.lerp(line, other.line, t)!,
+      playerSurface: Color.lerp(playerSurface, other.playerSurface, t)!,
+      playerBorder: Color.lerp(playerBorder, other.playerBorder, t)!,
+      onPlayer: Color.lerp(onPlayer, other.onPlayer, t)!,
+      playerMuted: Color.lerp(playerMuted, other.playerMuted, t)!,
+      playerButton: Color.lerp(playerButton, other.playerButton, t)!,
+      onPlayerButton: Color.lerp(onPlayerButton, other.onPlayerButton, t)!,
+      playerTrack: Color.lerp(playerTrack, other.playerTrack, t)!,
+      playerShadow: Color.lerp(playerShadow, other.playerShadow, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
     );
   }
@@ -172,6 +237,7 @@ class Pressable extends StatefulWidget {
     required this.onPressed,
     this.label,
     this.selected = false,
+    this.selectionFill = true,
     this.padding = const EdgeInsets.all(12),
     this.color,
     this.minSize = 48,
@@ -180,7 +246,7 @@ class Pressable extends StatefulWidget {
   final Widget child;
   final FutureOr<void> Function()? onPressed;
   final String? label;
-  final bool selected;
+  final bool selected, selectionFill;
   final EdgeInsets padding;
   final Color? color;
   final double minSize;
@@ -248,7 +314,7 @@ class _PressableState extends State<Pressable> {
               ),
               padding: widget.padding,
               decoration: BoxDecoration(
-                color: widget.selected
+                color: widget.selected && widget.selectionFill
                     ? t.tint
                     : widget.color ?? (hover ? t.tint : null),
                 borderRadius: BorderRadius.circular(widget.radius),

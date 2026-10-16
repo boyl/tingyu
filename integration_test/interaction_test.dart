@@ -257,6 +257,65 @@ void main() {
         expect(p.playlists.single.trackIds, [firstTrack.id]);
         expect(p.likes, contains(firstTrack.id));
         await binding.takeScreenshot('audit-native-download-removed');
+        api.offline = false;
+        reject = false;
+        for (var i = 0; i < 49; i++) {
+          await p.remember(
+            Track(
+              bvid: 'BVnative$i',
+              cid: 1000 + i,
+              title: '回归曲目$i',
+              artist: '本地夹具',
+              cover: '',
+              duration: 30,
+            ),
+          );
+        }
+        // Publish seeded fixture data before interacting with the cached library branch.
+        await p.setMode('shuffle');
+        await tester.pumpAndSettle();
+        await tap('tab-library');
+        await tap('play-${firstTrack.id}');
+        expect(p.queue.length, 51);
+        await tap('展开播放器');
+        await p.setMode('shuffle');
+        await tester.pumpAndSettle();
+        final seen = {p.current!.id};
+        for (var i = 0; i < 50; i++) {
+          await tap('下一首');
+          await waitFor(() => !p.opening && p.playing);
+          expect(seen.add(p.current!.id), isTrue, reason: '51 首首轮不可重复');
+        }
+        expect(seen.length, 51);
+        final last = p.current!.id;
+        await tap('上一首');
+        expect(p.current!.id, isNot(last));
+        await tap('下一首');
+        expect(p.current!.id, last);
+        await binding.takeScreenshot('shuffle-51-track-player');
+        await tap('播放队列');
+        expect(find.text('播放队列 · 51 首'), findsOneWidget);
+        await binding.takeScreenshot('shuffle-51-track-queue');
+        await tap('关闭队列');
+        await tap('返回');
+        await tap('tab-library');
+        final scroll = find.byType(Scrollable).first;
+        await tester.scrollUntilVisible(
+          find.text('最近播放'),
+          -400,
+          scrollable: scroll,
+        );
+        for (final theme in ['a', 'b', 'c']) {
+          await p.setTheme(theme);
+          await tester.pumpAndSettle();
+          await binding.takeScreenshot('depth-library-$theme');
+          await tap('tab-search');
+          await binding.takeScreenshot('depth-search-$theme');
+          await tap('tab-downloads');
+          await binding.takeScreenshot('depth-downloads-$theme');
+          await tap('tab-library');
+        }
+        await p.setTheme('a');
       } finally {
         await p.playback.pause();
         await p.downloads.prepareForExit();

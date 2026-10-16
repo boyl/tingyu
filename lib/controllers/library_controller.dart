@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/music.dart';
+import '../models/play_order.dart';
 import '../services/bilibili.dart';
 import '../services/downloads.dart';
 import '../services/lyrics.dart';
@@ -68,6 +69,23 @@ class LibraryController extends ChangeNotifier {
   final List<Playlist> playlists = [];
   final Map<String, String> collectionSort = {};
   final List<String> queue = [], likes = [], history = [];
+  final PlayOrder _playOrder = PlayOrder();
+  final List<String> _nextPriority = [];
+  Future<void>? _advancing;
+  Future<void>? _sourceWork;
+  Future<void> _withPlayer(Future<void> Function() work) async {
+    final previous = _sourceWork;
+    final done = Completer<void>();
+    _sourceWork = done.future;
+    try {
+      if (previous != null) await previous;
+      await work();
+    } finally {
+      done.complete();
+      if (identical(_sourceWork, done.future)) _sourceWork = null;
+    }
+  }
+
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _saveTimer;
   String theme = 'a',
@@ -135,6 +153,14 @@ class LibraryController extends ChangeNotifier {
         ),
       );
       current = library[s['current']];
+      _playOrder.restore(
+        Map<String, dynamic>.from(s['playOrder'] ?? {}),
+        queue,
+        current?.id,
+      );
+      _nextPriority.addAll(
+        List<String>.from(s['nextPriority'] ?? []).where(queue.contains),
+      );
       position = Duration(milliseconds: s['position'] ?? 0);
     }
     await downloads.initialize();
@@ -150,6 +176,8 @@ class LibraryController extends ChangeNotifier {
     'standard': standard,
     'lyricOffset': lyricOffset,
     'queue': queue,
+    'playOrder': _playOrder.toJson(),
+    'nextPriority': _nextPriority,
     'likes': likes,
     'history': history,
     'playlists': playlists.map((l) => l.toJson()).toList(),
@@ -170,6 +198,7 @@ class LibraryController extends ChangeNotifier {
     if (!['order', 'shuffle', 'repeat'].contains(value)) {
       throw const AppFailure('不支持的播放模式');
     }
+    if (value != mode) _playOrder.reset(queue, current?.id);
     mode = value;
     notifyListeners();
     await save();
@@ -239,6 +268,14 @@ class LibraryController extends ChangeNotifier {
       _resolved.remove(t.id);
       rethrow;
     }
+    _playOrder.alias(t.id, real.id);
+    final priority = _nextPriority
+        .map((id) => id == t.id ? real.id : id)
+        .toSet()
+        .toList();
+    _nextPriority
+      ..clear()
+      ..addAll(priority);
     // Read the latest state after I/O, preserving concurrent additions and position.
     final ordered = <String, Track>{
       for (final entry in library.entries)
@@ -279,7 +316,11 @@ class LibraryController extends ChangeNotifier {
     return _resolved[t.id] ?? t;
   }
 
-  Future<void> play(Track input, {Duration at = Duration.zero}) async {
+  Future<void> play(
+    Track input, {
+    Duration at = Duration.zero,
+    bool advancing = false,
+  }) async {
     final epoch = ++_playEpoch;
     opening = true;
     error = '';
@@ -293,9 +334,12 @@ class LibraryController extends ChangeNotifier {
           ? await api.resolve(t, standard: standard)
           : null;
       if (epoch != _playEpoch) return;
-      await playback.pause();
-      if (epoch != _playEpoch || _disposed) return;
-      await playback.open(t, file: file, source: source, position: at);
+      await _withPlayer(() async {
+        if (epoch != _playEpoch || _disposed) return;
+        await playback.pause();
+        if (epoch != _playEpoch || _disposed) return;
+        await playback.open(t, file: file, source: source, position: at);
+      });
       if (epoch != _playEpoch) return;
       current = t;
       position = at;
@@ -303,6 +347,12 @@ class LibraryController extends ChangeNotifier {
       await remember(t);
       if (_disposed || epoch != _playEpoch) return;
       if (!queue.contains(t.id)) queue.add(t.id);
+      _nextPriority.remove(t.id);
+      if (!advancing) {
+        _playOrder.reset(queue, t.id);
+      } else if (mode == 'shuffle') {
+        _playOrder.arrive(t.id);
+      }
       history.remove(t.id);
       history.insert(0, t.id);
       if (history.length > 50) history.removeLast();
@@ -351,7 +401,11 @@ class LibraryController extends ChangeNotifier {
     try {
       final src = await api.resolve(t, standard: standard);
       if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
-      await playback.open(t, source: src, position: at);
+      await _withPlayer(() async {
+        if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
+        await playback.open(t, source: src, position: at);
+      });
+      if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
       unawaited(_startPlayback());
     } on Exception {
       if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
@@ -393,7 +447,7 @@ class LibraryController extends ChangeNotifier {
       await save();
     } else if (playback.player.processingState == ProcessingState.idle ||
         playback.player.processingState == ProcessingState.completed) {
-      await play(current!, at: position);
+      await play(current!, at: position, advancing: true);
     } else {
       try {
         unawaited(_startPlayback());
@@ -404,26 +458,74 @@ class LibraryController extends ChangeNotifier {
     }
   }
 
-  Future<void> next([int delta = 1, bool automatic = false]) async {
-    if (queue.isEmpty) return;
-    var index = queue.indexOf(current?.id ?? '');
-    if (mode == 'shuffle' && queue.length > 1) {
-      final others = queue.where((id) => id != current?.id).toList();
-      await play(library[others[Random().nextInt(others.length)]]!);
-      return;
+  Future<void> next([int delta = 1, bool automatic = false]) {
+    if (_disposed) return Future.value();
+    // UI, notification and completion can arrive together; only one transition runs.
+    if (_advancing != null) return _advancing!;
+    final task = _advance(delta, automatic);
+    _advancing = task;
+    return task.whenComplete(() {
+      if (identical(_advancing, task)) _advancing = null;
+    });
+  }
+
+  Future<void> _advance(int delta, bool automatic) async {
+    final ids = queue.where(library.containsKey).toSet().toList();
+    if (ids.isEmpty || (automatic && opening)) return;
+    String id;
+    if (automatic &&
+        mode == 'repeat' &&
+        current != null &&
+        ids.contains(current!.id)) {
+      id = current!.id;
+    } else if (delta > 0 && _nextPriority.isNotEmpty) {
+      id = _nextPriority.removeAt(0);
+      if (!ids.contains(id)) return _advance(delta, automatic);
+      if (mode == 'shuffle') {
+        _playOrder.prioritize(id);
+        id = _playOrder.next(ids, current?.id)!;
+      }
+    } else if (mode == 'shuffle') {
+      id = _playOrder.next(ids, current?.id, previous: delta < 0)!;
+    } else {
+      final index = ids.indexOf(current?.id ?? '');
+      id =
+          ids[index < 0
+              ? (delta < 0 ? ids.length - 1 : 0)
+              : (index + delta) % ids.length];
     }
-    if (!automatic || mode != 'repeat' || current == null) {
-      index = (index + delta) % queue.length;
-    }
-    await play(library[queue[index < 0 ? 0 : index]]!);
+    await play(library[id]!, advancing: true);
+    if (_disposed) return;
+    final expected = _resolved[id]?.id ?? id;
+    if (current?.id != expected) _playOrder.failed(expected, current?.id);
+    await save();
+  }
+
+  Future<void> playFromCollection(Track track, List<String> source) async {
+    library.putIfAbsent(track.id, () => track);
+    final ids = source.where(library.containsKey).toSet().toList();
+    if (!ids.contains(track.id)) ids.add(track.id);
+    queue
+      ..clear()
+      ..addAll(ids);
+    _nextPriority.clear();
+    _playOrder.reset(queue, track.id);
+    notifyListeners();
+    await play(track);
   }
 
   Future<void> enqueue(Track input, {bool next = false}) async {
     final t = await remember(input);
     if (next && current?.id == t.id) return;
+    if (!next && queue.contains(t.id)) return;
     queue.remove(t.id);
     final index = queue.indexOf(current?.id ?? '');
     queue.insert(next ? max(0, index + 1) : queue.length, t.id);
+    _playOrder.sync(queue);
+    if (next) {
+      _nextPriority.remove(t.id);
+      _nextPriority.insert(0, t.id);
+    }
     notifyListeners();
     await save();
   }
@@ -523,14 +625,9 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> playCollection(List<String> ids) async {
-    final valid = ids.where(library.containsKey).toList();
+    final valid = ids.where(library.containsKey).toSet().toList();
     if (valid.isEmpty) return;
-    queue
-      ..clear()
-      ..addAll(valid);
-    notifyListeners();
-    await save();
-    await play(library[valid.first]!);
+    await playFromCollection(library[valid.first]!, valid);
   }
 
   Future<void> removeFromPlaylist(Playlist list, Set<String> ids) async {
@@ -558,6 +655,8 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> removeQueue(String id) async {
     queue.remove(id);
+    _nextPriority.remove(id);
+    _playOrder.sync(queue);
     if (current?.id == id) await _clearPlayback();
     notifyListeners();
     await save();
@@ -566,21 +665,36 @@ class LibraryController extends ChangeNotifier {
   Future<void> _clearPlayback() async {
     ++_playEpoch;
     opening = false;
-    await playback.pause();
-    await playback.player.stop();
     current = null;
     quality = '';
     parts = [];
     lyricText = '';
     lyricError = '';
     position = Duration.zero;
+    await _withPlayer(() async {
+      await playback.pause();
+      await playback.player.stop();
+    });
   }
 
   Future<void> clearQueue() async {
-    await _clearPlayback();
     queue.clear();
+    _nextPriority.clear();
+    _playOrder.reset(queue, null);
+    await _clearPlayback();
     notifyListeners();
     await save();
+  }
+
+  Future<void> playDownloaded(Track track) async {
+    final tracks = downloads.tasks
+        .where((task) => task.status == DownloadStatus.completed)
+        .map((task) => task.track)
+        .toList();
+    for (final item in tracks) {
+      await remember(item);
+    }
+    await playFromCollection(track, tracks.map((item) => item.id).toList());
   }
 
   Future<void> download(Track t) async {

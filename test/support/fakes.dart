@@ -202,6 +202,7 @@ class FakePlayback extends BaseAudioHandler implements PlaybackHandler {
   @override
   void Function()? onNext, onPrevious, onCompleted;
   final List<String> opened = [];
+  Future<void> Function(Track)? openAnswer;
   @override
   Future<void> open(
     Track track, {
@@ -209,6 +210,8 @@ class FakePlayback extends BaseAudioHandler implements PlaybackHandler {
     AudioStream? source,
     Duration position = Duration.zero,
   }) async {
+    final answer = openAnswer;
+    if (answer != null) await answer(track);
     opened.add(track.id);
     player.state = ProcessingState.ready;
     await player.seek(position);

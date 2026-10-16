@@ -1,11 +1,11 @@
 {
-  "version": "0.1.5+6",
+  "version": "0.1.6+7",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "d494f1f655eb37ceb2bac309abfe40d3be55b84167396962b734d968d305330a",
-  "checkedAt": "2026-10-16T12:23:39.691875+00:00",
+  "sourceSha256": "a83598f473d92ab7381723035cfae106fe9bd9d1e2519ad0688d83940796ca88",
+  "checkedAt": "2026-10-16T15:35:36.452974+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 47,
+  "offlineTestsPassed": 65,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -43,21 +43,21 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "7f119c3e9b3cfb79e8971fe43fcb8ebc8640881109211c60121d3f696750d14c",
+    "testedReleaseSha256": "781a15bc3eb7a3f23d2dbfed80cefef97cdca00f79b9adf7825aeb7063bcbd1b",
     "displayCutout": {
       "checks": {
         "portrait": {
           "status": "PASS",
           "pixels": [
             [
-              247,
-              246,
-              242
+              238,
+              234,
+              228
             ],
             [
-              247,
-              246,
-              242
+              238,
+              234,
+              228
             ]
           ],
           "imageSize": [
@@ -70,14 +70,14 @@
           "status": "PASS",
           "pixels": [
             [
-              247,
-              246,
-              242
+              238,
+              234,
+              228
             ],
             [
-              253,
               252,
-              249
+              250,
+              247
             ]
           ],
           "imageSize": [
@@ -87,13 +87,22 @@
           "explicitCutoutPolicy": "always"
         }
       },
-      "magic5PhysicalDevice": "NOT RUN - awaiting user device acceptance"
+      "magic5PhysicalDevice": "PASS - user reported physical-device top edge; not automated"
     },
     "collectionOperations": "PASS - native detail/sort/multiselect cancel/menu/drawer; system return covered by widgets",
-    "settingsPage": "PASS - three themes, quality, storage return, playback retained; account/import regression with fixture responses"
+    "settingsPage": "PASS - three themes, quality, storage return, playback retained; account/import regression with fixture responses",
+    "shuffle51": "PASS - click actual library row -> 51 queue members -> 50 unique native next transitions -> previous/next retrace -> queue count",
+    "liveAnonymousPublicBV": {
+      "bvSearch": "PASS",
+      "nativeDecode": "PASS",
+      "download": "PASS",
+      "simultaneousDownloadPlayback": "PASS - state/decode/gain, not human listening",
+      "offlineDecode": "PASS",
+      "playerGain": 1
+    }
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-SETTINGS.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-PLAYBACK.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -155,5 +164,36 @@
     "playerGain": 1,
     "simultaneousDownloadPlayback": "PASS - native decode/progress/gain only; audible output NOT VERIFIED"
   },
-  "liveProbeThisRound": "NOT RUN - settings/navigation change; audio/download services unchanged"
+  "liveProbeThisRound": "PASS - isolated native public BV; no real credentials",
+  "userReportedPhysicalAcceptance": {
+    "reportedOn": "2026-10-16",
+    "source": "User physical-device feedback in conversation",
+    "playback": "PASS - user reported",
+    "download": "PASS - user reported",
+    "topEdge": "PASS - no black strip, content reaches top; user reported",
+    "scope": "Playback, download and top edge only; not complete device acceptance"
+  },
+  "humanDeviceUpdateThisRound": "NOT RUN - human emulator is not running; physical acceptance APK provided",
+  "visualHierarchy": {
+    "status": "PASS - rendered native screenshots reviewed",
+    "themes": [
+      "a",
+      "b",
+      "c"
+    ],
+    "components": [
+      "background and content surfaces",
+      "recent cards and continuous collection rows",
+      "floating mini player",
+      "navigation without selection capsule",
+      "completed download without fill"
+    ],
+    "evidence": [
+      "artifacts/acceptance/screenshots/depth-library-a.png",
+      "artifacts/acceptance/screenshots/depth-library-b.png",
+      "artifacts/acceptance/screenshots/depth-library-c.png",
+      "artifacts/acceptance/screenshots/depth-search-a.png",
+      "artifacts/acceptance/screenshots/depth-downloads-c.png"
+    ]
+  }
 }
