@@ -1,0 +1,20 @@
+{
+  "flutter": "3.47.7",
+  "dart": "3.13.5",
+  "staticAnalysis": "passed",
+  "offlineTests": 22,
+  "liveProbe": "tool/live-probe.json",
+  "androidBuild": "debug APK built successfully",
+  "apk": "artifacts/tingyu-0.1.0-android-debug.apk",
+  "apkBytes": 174794224,
+  "sha256": "de06d3db7933b4943c9d5c65b91bb5fb8397b10f5de2d1b83ff0032de634001e",
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "macosBuild": "blocked: Xcode 27.1 installed, first-launch license not accepted",
+  "windowsBuild": "requires Windows host",
+  "nativeRuntimeValidation": "not performed",
+  "apkEvidenceNote": "Historical pre-navigation-change APK; not acceptance evidence for current source"
+}

@@ -1,0 +1,10 @@
+{
+  "videoDetails": true,
+  "audioResolved": true,
+  "cdnReadable": true,
+  "firstChunkBytes": 4096,
+  "quality": "135 kbps",
+  "checkedAt": "2026-10-16T11:01:59.244954",
+  "search": "blocked",
+  "searchError": "AppFailure"
+}

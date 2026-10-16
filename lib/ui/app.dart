@@ -1,0 +1,1689 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../main.dart';
+import '../controllers/library_controller.dart';
+import '../models/music.dart';
+import 'theme.dart';
+
+Widget action(
+  IconData icon,
+  String label,
+  VoidCallback? call, {
+  bool selected = false,
+}) => Tooltip(
+  message: label,
+  child: Pressable(
+    key: ValueKey(label),
+    label: label,
+    onPressed: call,
+    selected: selected,
+    padding: const EdgeInsets.all(10),
+    child: Icon(icon),
+  ),
+);
+Widget labelButton(
+  String label,
+  VoidCallback? call, {
+  IconData? icon,
+  bool selected = false,
+}) => Pressable(
+  key: ValueKey(label),
+  onPressed: call,
+  selected: selected,
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
+      Flexible(
+        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    ],
+  ),
+);
+Future<void> report(BuildContext context, Future<void> Function() task) async {
+  try {
+    await task();
+  } on Exception catch (e) {
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('操作未完成'),
+          content: Text(e is AppFailure ? e.message : '请检查网络或存储空间后重试'),
+          actions: [labelButton('知道了', () => Navigator.pop(ctx))],
+        ),
+      );
+    }
+  }
+}
+
+Future<bool> confirm(BuildContext context, String text) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认操作'),
+        content: Text(text),
+        actions: [
+          labelButton('取消', () => Navigator.pop(ctx, false)),
+          labelButton('确认', () => Navigator.pop(ctx, true)),
+        ],
+      ),
+    ) ??
+    false;
+Future<String?> nameDialog(BuildContext context, {String initial = ''}) async {
+  final edit = TextEditingController(text: initial);
+  String? error;
+  final result = await showDialog<String>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, set) => AlertDialog(
+        title: Text(initial.isEmpty ? '新建歌单' : '重命名歌单'),
+        content: TextField(
+          controller: edit,
+          autofocus: true,
+          maxLength: 30,
+          decoration: InputDecoration(labelText: '歌单名称', errorText: error),
+        ),
+        actions: [
+          labelButton('取消', () => Navigator.pop(ctx)),
+          labelButton('保存', () {
+            if (edit.text.trim().isEmpty) {
+              set(() => error = '请输入歌单名称');
+              return;
+            }
+            Navigator.pop(ctx, edit.text.trim());
+          }),
+        ],
+      ),
+    ),
+  );
+  edit.dispose();
+  return result;
+}
+
+class Artwork extends ConsumerWidget {
+  const Artwork(this.track, {super.key, this.size = 48});
+  final Track track;
+  final double size;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.read(libraryProvider), file = p.downloads.coverFile(track);
+    Widget fallback() => ColoredBox(
+      color: context.tokens.tint,
+      child: Center(
+        child: Icon(
+          Icons.graphic_eq,
+          size: size / 3,
+          color: context.tokens.accent,
+        ),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(TingyuTokens.radius),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: file.existsSync()
+            ? Image.file(
+                file,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => fallback(),
+              )
+            : track.cover.isEmpty
+            ? fallback()
+            : Image.network(
+                track.cover,
+                fit: BoxFit.cover,
+                headers: const {'Referer': 'https://www.bilibili.com/'},
+                errorBuilder: (_, _, _) => fallback(),
+              ),
+      ),
+    );
+  }
+}
+
+class EmptyView extends StatelessWidget {
+  const EmptyView(this.title, this.description, {super.key, this.child});
+  final String title, description;
+  final Widget? child;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.album_outlined, size: 42, color: context.tokens.accent),
+          const SizedBox(height: 20),
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.tokens.muted, height: 1.8),
+          ),
+          if (child != null) ...[const SizedBox(height: 16), child!],
+        ],
+      ),
+    ),
+  );
+}
+
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key, required this.page, this.playlistId});
+  final String page;
+  final String? playlistId;
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  late final search = TextEditingController(
+    text: ref.read(libraryProvider).query,
+  );
+  Timer? debounce;
+  int searchPage = 1;
+  @override
+  void dispose() {
+    debounce?.cancel();
+    search.dispose();
+    super.dispose();
+  }
+
+  void navigate(String page) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    context.go(page == 'library' ? '/' : '/$page');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = ref.watch(libraryProvider), t = context.tokens;
+    final desktop = MediaQuery.sizeOf(context).width >= 960;
+    final list = p.playlists
+        .where((l) => l.id == widget.playlistId)
+        .firstOrNull;
+    final title = switch (widget.page) {
+      'search' => '搜索',
+      'downloads' => '下载',
+      'likes' => '我喜欢的',
+      'settings' => '设置',
+      'playlist' => list?.name ?? '歌单不存在',
+      _ => '音乐库',
+    };
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'YOUR PERSONAL SOUNDTRACK',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      color: t.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.page == 'library'
+                        ? '把喜欢的声音，留在身边。'
+                        : widget.page == 'downloads'
+                        ? '喜欢的声音，不必等待网络。'
+                        : '属于你的聆听方式。',
+                    style: TextStyle(fontSize: 12, color: t.muted),
+                  ),
+                ],
+              ),
+            ),
+            if (widget.page == 'library')
+              action(Icons.search, '搜索歌曲', () => navigate('search')),
+            action(
+              Icons.account_circle_outlined,
+              '账号与设置',
+              () => showAccount(context, p),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        if (p.error.isNotEmpty) errorBox(context, p.error, p.clearError),
+        if (widget.page == 'search') ...[
+          TextField(
+            controller: search,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: '歌曲、UP 主、BV / AV 号或链接',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) {
+              debounce?.cancel();
+              debounce = Timer(const Duration(milliseconds: 450), () {
+                searchPage = 1;
+                unawaited(p.search(v));
+              });
+            },
+            onSubmitted: (v) => p.search(v),
+          ),
+          const SizedBox(height: 20),
+          if (p.searching) const Center(child: CircularProgressIndicator()),
+          if (p.searchError.isNotEmpty)
+            errorBox(context, p.searchError, () => p.search(search.text)),
+          if (search.text.isEmpty)
+            EmptyView(
+              '从一首歌开始',
+              '搜索 B 站视频，或粘贴视频链接。\n音乐内容来自 B 站，登录后可导入收藏夹。',
+              child: labelButton(
+                '打开 B 站',
+                () => launchUrl(Uri.parse('https://www.bilibili.com/')),
+              ),
+            ),
+          if (!p.searching &&
+              search.text.isNotEmpty &&
+              p.results.isEmpty &&
+              p.searchError.isEmpty)
+            const EmptyView('没有找到相关内容', '换个关键词，或直接粘贴 BV 号。'),
+          for (final track in p.results) TrackRow(track),
+          if (p.results.isNotEmpty && !p.searching)
+            Center(
+              child: labelButton(
+                '加载更多',
+                () => p.search(search.text, page: ++searchPage),
+              ),
+            ),
+        ] else if (widget.page == 'settings')
+          SettingsPanel(p),
+        if (widget.page == 'downloads') DownloadsPanel(p),
+        if (['library', 'likes', 'playlist'].contains(widget.page)) ...[
+          if (widget.page == 'library') ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                labelButton('新建歌单', () async {
+                  final name = await nameDialog(context);
+                  if (name != null && context.mounted) {
+                    await report(context, () => p.addPlaylist(name));
+                  }
+                }, icon: Icons.add),
+                ...p.playlists.map(
+                  (l) => labelButton(
+                    l.name,
+                    () => context.go('/playlist/${l.id}'),
+                    icon: Icons.queue_music,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (p.history.isNotEmpty) ...[
+              const Text(
+                '最近播放',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: desktop ? 220 : 200,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: p.history.take(8).length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 20),
+                  itemBuilder: (ctx, i) {
+                    final track = p.library[p.history[i]]!;
+                    return Pressable(
+                      onPressed: () => p.play(track),
+                      padding: EdgeInsets.zero,
+                      child: SizedBox(
+                        width: desktop ? 160 : 140,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Artwork(track, size: desktop ? 160 : 140),
+                            const SizedBox(height: 10),
+                            Text(
+                              track.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              track.artist,
+                              style: TextStyle(fontSize: 11, color: t.muted),
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ],
+          if (list != null)
+            Wrap(
+              spacing: 8,
+              children: [
+                labelButton('播放全部', () async {
+                  p.queue.clear();
+                  for (final id in list.trackIds) {
+                    if (p.library.containsKey(id)) p.queue.add(id);
+                  }
+                  await p.save();
+                  if (p.queue.isNotEmpty) {
+                    await p.play(p.library[p.queue.first]!);
+                  }
+                }, icon: Icons.play_arrow),
+                labelButton('下载全部', () async {
+                  for (final id in list.trackIds) {
+                    final track = p.library[id];
+                    if (track != null) await p.download(track);
+                  }
+                }, icon: Icons.download),
+                labelButton('重命名', () async {
+                  final name = await nameDialog(context, initial: list.name);
+                  if (name != null && context.mounted) {
+                    await report(
+                      context,
+                      () => p.editPlaylist(list, name: name),
+                    );
+                  }
+                }),
+                labelButton('删除歌单', () async {
+                  if (await confirm(context, '删除歌单？已下载音频和喜欢记录会保留。')) {
+                    await p.editPlaylist(list, delete: true);
+                    if (context.mounted) navigate('library');
+                  }
+                }),
+              ],
+            ),
+          const SizedBox(height: 12),
+          ..._libraryRows(p, list),
+        ],
+      ],
+    );
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+      },
+      child: Actions(
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              unawaited(p.toggle());
+              return null;
+            },
+          ),
+        },
+        child: Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (desktop) SizedBox(width: 224, child: sidebar(p)),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          key: PageStorageKey(
+                            'page-${widget.page}-${widget.playlistId}',
+                          ),
+                          padding: EdgeInsets.all(desktop ? 36 : 20),
+                          child: content,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                MiniPlayer(p),
+              ],
+            ),
+          ),
+          bottomNavigationBar: desktop
+              ? null
+              : CompactNavigation(selected: widget.page, onSelect: navigate),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _libraryRows(LibraryController p, Playlist? list) {
+    final ids = widget.page == 'likes'
+        ? p.likes
+        : list?.trackIds ?? p.library.keys.toList();
+    if (ids.isEmpty) {
+      return [
+        EmptyView(
+          '这里还很安静',
+          '去搜索喜欢的声音，加入你的音乐收藏。',
+          child: labelButton('去搜索', () => navigate('search')),
+        ),
+      ];
+    }
+    return ids
+        .where(p.library.containsKey)
+        .map((id) => TrackRow(p.library[id]!, playlist: list))
+        .toList();
+  }
+
+  Widget sidebar(LibraryController p) => Container(
+    color: context.tokens.sidebar,
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+          child: Row(
+            children: [
+              Icon(Icons.graphic_eq),
+              SizedBox(width: 12),
+              Text(
+                '听屿',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        for (final item in [
+          ('search', Icons.search, '搜索'),
+          ('library', Icons.library_music_outlined, '音乐库'),
+          ('downloads', Icons.download_outlined, '下载'),
+          ('likes', Icons.favorite_border, '我喜欢的'),
+        ])
+          labelButton(
+            item.$3,
+            () => navigate(item.$1),
+            icon: item.$2,
+            selected: widget.page == item.$1,
+          ),
+        const Divider(height: 32),
+        Expanded(
+          child: ListView(
+            children: p.playlists
+                .map(
+                  (l) => labelButton(
+                    l.name,
+                    () => context.go('/playlist/${l.id}'),
+                    icon: Icons.queue_music,
+                    selected: widget.playlistId == l.id,
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        labelButton(
+          '连接 B 站账号',
+          () => showAccount(context, p),
+          icon: Icons.person_outline,
+        ),
+        labelButton(
+          '设置',
+          () => navigate('settings'),
+          icon: Icons.settings_outlined,
+          selected: widget.page == 'settings',
+        ),
+      ],
+    ),
+  );
+}
+
+Widget errorBox(BuildContext context, String message, VoidCallback retry) =>
+    Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.tokens.tint,
+        borderRadius: BorderRadius.circular(TingyuTokens.radius),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: context.tokens.danger, fontSize: 12),
+            ),
+          ),
+          action(Icons.refresh, '重试或关闭提示', retry),
+        ],
+      ),
+    );
+
+class TrackRow extends ConsumerWidget {
+  const TrackRow(this.track, {super.key, this.playlist});
+  final Track track;
+  final Playlist? playlist;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(libraryProvider),
+        desktop = MediaQuery.sizeOf(context).width >= 960,
+        liked = p.likes.contains(track.id),
+        download = p.downloads.tasks
+            .where((d) => d.track.id == track.id)
+            .firstOrNull;
+    return Container(
+      decoration: BoxDecoration(
+        color: p.current?.id == track.id ? context.tokens.tint : null,
+        border: Border(bottom: BorderSide(color: context.tokens.line)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Pressable(
+              onPressed: () => p.play(track),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              child: Row(
+                children: [
+                  Artwork(track),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          track.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          track.artist,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.tokens.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (desktop) ...[
+            Text(
+              clock(Duration(seconds: track.duration)),
+              style: TextStyle(fontSize: 11, color: context.tokens.muted),
+            ),
+            const SizedBox(width: 12),
+            action(
+              liked ? Icons.favorite : Icons.favorite_border,
+              '喜欢 ${track.title}',
+              () => p.toggleLike(track),
+              selected: liked,
+            ),
+          ],
+          action(
+            download?.status == DownloadStatus.completed
+                ? Icons.download_done
+                : Icons.download_outlined,
+            '下载 ${track.title}',
+            download == null
+                ? () => p.download(track)
+                : () => context.go('/downloads'),
+            selected: download?.status == DownloadStatus.completed,
+          ),
+          action(
+            Icons.more_horiz,
+            '更多 ${track.title}',
+            () => showTrackActions(context, p, track, playlist),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> showTrackActions(
+  BuildContext context,
+  LibraryController p,
+  Track track,
+  Playlist? list,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: Text(
+        track.title,
+        maxLines: 2,
+        style: const TextStyle(fontSize: 17),
+      ),
+      children: [
+        labelButton('下一首播放', () {
+          p.enqueue(track, next: true);
+          Navigator.pop(ctx);
+        }, icon: Icons.skip_next),
+        labelButton('加入队列', () {
+          p.enqueue(track);
+          Navigator.pop(ctx);
+        }, icon: Icons.queue_music),
+        labelButton(p.likes.contains(track.id) ? '取消喜欢' : '喜欢', () {
+          p.toggleLike(track);
+          Navigator.pop(ctx);
+        }, icon: Icons.favorite_border),
+        labelButton('加入歌单', () async {
+          Navigator.pop(ctx);
+          await showAddPlaylist(context, p, track);
+        }, icon: Icons.playlist_add),
+        if (list != null)
+          labelButton('移出歌单', () {
+            p.editPlaylist(list, remove: track.id);
+            Navigator.pop(ctx);
+          }, icon: Icons.remove_circle_outline),
+        labelButton(
+          '在 B 站打开',
+          () => launchUrl(
+            Uri.parse('https://www.bilibili.com/video/${track.bvid}'),
+          ),
+          icon: Icons.open_in_new,
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> showAddPlaylist(
+  BuildContext context,
+  LibraryController p,
+  Track track,
+) async => showDialog<void>(
+  context: context,
+  builder: (ctx) => SimpleDialog(
+    title: const Text('添加至歌单'),
+    children: [
+      ...p.playlists.map(
+        (l) => labelButton(l.name, () async {
+          await p.addToPlaylist(l, track);
+          if (ctx.mounted) Navigator.pop(ctx);
+        }),
+      ),
+      labelButton('新建歌单', () async {
+        Navigator.pop(ctx);
+        final name = await nameDialog(context);
+        if (name != null && context.mounted) {
+          await report(context, () => p.addPlaylist(name, track: track));
+        }
+      }, icon: Icons.add),
+    ],
+  ),
+);
+
+class MiniPlayer extends StatelessWidget {
+  const MiniPlayer(this.p, {super.key});
+  final LibraryController p;
+  @override
+  Widget build(BuildContext context) {
+    final t = p.current;
+    if (t == null) return const SizedBox.shrink();
+    final desktop = MediaQuery.sizeOf(context).width >= 960;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: context.tokens.surface,
+        border: Border(top: BorderSide(color: context.tokens.line)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Pressable(
+              onPressed: () => context.push('/player'),
+              padding: EdgeInsets.zero,
+              child: Row(
+                children: [
+                  Artwork(t),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          p.opening
+                              ? '正在解析…'
+                              : p.quality.isEmpty
+                              ? '点击继续播放'
+                              : '${t.artist} · ${p.quality}',
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: context.tokens.muted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (desktop)
+            Expanded(
+              flex: 2,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [transport(context, p), SeekBar(p)],
+              ),
+            )
+          else
+            action(
+              p.playing ? Icons.pause : Icons.play_arrow,
+              '播放或暂停',
+              p.opening ? null : () => p.toggle(),
+            ),
+          if (desktop)
+            SizedBox(
+              width: 120,
+              child: Slider(
+                value: p.playback.player.volume,
+                onChanged: (v) => p.playback.player.setVolume(v),
+              ),
+            ),
+          action(Icons.queue_music, '播放队列', () => showQueue(context)),
+        ],
+      ),
+    );
+  }
+}
+
+Widget transport(BuildContext context, LibraryController p) => Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    action(
+      Icons.shuffle,
+      '随机播放',
+      () => p.setMode(p.mode == 'shuffle' ? 'order' : 'shuffle'),
+      selected: p.mode == 'shuffle',
+    ),
+    action(Icons.skip_previous, '上一首', () => p.next(-1)),
+    Pressable(
+      label: p.playing ? '暂停' : '播放',
+      onPressed: p.opening ? null : () => p.toggle(),
+      color: context.tokens.accent,
+      child: Icon(
+        p.playing ? Icons.pause : Icons.play_arrow,
+        color: context.tokens.onAccent,
+      ),
+    ),
+    action(Icons.skip_next, '下一首', () => p.next()),
+    action(
+      p.mode == 'repeat' ? Icons.repeat_one : Icons.repeat,
+      '单曲循环',
+      () => p.setMode(p.mode == 'repeat' ? 'order' : 'repeat'),
+      selected: p.mode == 'repeat',
+    ),
+  ],
+);
+
+class SeekBar extends StatelessWidget {
+  const SeekBar(this.p, {super.key});
+  final LibraryController p;
+  @override
+  Widget build(BuildContext context) {
+    final duration =
+            p.playback.player.duration ??
+            Duration(seconds: p.current?.duration ?? 0),
+        max = duration.inMilliseconds.toDouble();
+    return Row(
+      children: [
+        Text(
+          clock(p.position),
+          style: TextStyle(fontSize: 10, color: context.tokens.muted),
+        ),
+        Expanded(
+          child: Slider(
+            value: p.position.inMilliseconds.toDouble().clamp(
+              0,
+              max > 0 ? max : 1,
+            ),
+            max: max > 0 ? max : 1,
+            onChanged: max > 0
+                ? (v) => p.playback.seek(Duration(milliseconds: v.round()))
+                : null,
+          ),
+        ),
+        Text(
+          clock(duration),
+          style: TextStyle(fontSize: 10, color: context.tokens.muted),
+        ),
+      ],
+    );
+  }
+}
+
+class PlayerScreen extends ConsumerWidget {
+  const PlayerScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(libraryProvider), track = p.current;
+    if (track == null) {
+      return Scaffold(
+        body: EmptyView(
+          '还没有正在播放的曲目',
+          '搜索一首歌开始聆听',
+          child: labelButton('返回音乐库', () => context.go('/')),
+        ),
+      );
+    }
+    final width = MediaQuery.sizeOf(context).width, desktop = width >= 960;
+    final art = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Artwork(
+            track,
+            size: desktop ? 360 : (width - 64).clamp(180, 340),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    track.title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    track.artist,
+                    style: TextStyle(color: context.tokens.muted),
+                  ),
+                ],
+              ),
+            ),
+            action(
+              p.likes.contains(track.id)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              '喜欢当前歌曲',
+              () => p.toggleLike(track),
+              selected: p.likes.contains(track.id),
+            ),
+          ],
+        ),
+        if (p.parts.length > 1)
+          DropdownButton<String>(
+            isExpanded: true,
+            value: p.parts.any((t) => t.id == track.id) ? track.id : null,
+            hint: const Text('选择分 P'),
+            items: p.parts
+                .map(
+                  (t) => DropdownMenuItem(
+                    value: t.id,
+                    child: Text(
+                      'P${t.part} · ${t.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (id) {
+              final part = p.parts.firstWhere((t) => t.id == id);
+              p.play(part);
+            },
+          ),
+      ],
+    );
+    final lyrics = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: desktop ? 280 : 150, child: LyricPanel(p)),
+        SeekBar(p),
+        const SizedBox(height: 12),
+        transport(context, p),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            labelButton('下载', () => p.download(track), icon: Icons.download),
+            labelButton(
+              '歌词',
+              () => showLyrics(context, p),
+              icon: Icons.lyrics_outlined,
+            ),
+            action(Icons.queue_music, '播放队列', () => showQueue(context)),
+          ],
+        ),
+      ],
+    );
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  action(
+                    Icons.keyboard_arrow_down,
+                    '收起播放器',
+                    () => context.canPop() ? context.pop() : context.go('/'),
+                  ),
+                  const Spacer(),
+                  Text(
+                    p.opening ? '正在解析…' : '正在播放 · ${p.quality}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const Spacer(),
+                  action(
+                    Icons.more_horiz,
+                    '歌曲操作',
+                    () => showTrackActions(context, p, track, null),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (p.error.isNotEmpty)
+                errorBox(context, p.error, () => p.play(track, at: p.position)),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: desktop
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(child: art),
+                            const SizedBox(width: 80),
+                            Expanded(child: lyrics),
+                          ],
+                        )
+                      : Column(
+                          children: [art, const SizedBox(height: 16), lyrics],
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class LyricPanel extends StatefulWidget {
+  const LyricPanel(this.p, {super.key});
+  final LibraryController p;
+  @override
+  State<LyricPanel> createState() => _LyricPanelState();
+}
+
+class _LyricPanelState extends State<LyricPanel> {
+  final scroll = ScrollController();
+  int last = -1;
+  @override
+  void dispose() {
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.p, lines = p.lines;
+    if (lines.isEmpty) {
+      return Center(
+        child: Text(
+          p.lyricText.isEmpty ? '暂无歌词，点击下方“歌词”匹配或粘贴' : p.lyricText,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.tokens.muted, height: 2),
+        ),
+      );
+    }
+    var index = lines.lastIndexWhere(
+      (l) => l.time.inMilliseconds <= p.position.inMilliseconds + p.lyricOffset,
+    );
+    if (index < 0) index = 0;
+    if (index != last) {
+      last = index;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scroll.hasClients) {
+          final target = (index * 64.0)
+              .clamp(0.0, scroll.position.maxScrollExtent)
+              .toDouble();
+          if (MediaQuery.disableAnimationsOf(context)) {
+            scroll.jumpTo(target);
+          } else {
+            unawaited(
+              scroll.animateTo(
+                target,
+                duration: TingyuTokens.transition,
+                curve: Curves.easeOut,
+              ),
+            );
+          }
+        }
+      });
+    }
+    return ListView.builder(
+      controller: scroll,
+      itemCount: lines.length,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemBuilder: (ctx, i) => SizedBox(
+        height: 64,
+        child: Center(
+          child: Text(
+            lines[i].text,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: i == index ? context.tokens.accent : context.tokens.muted,
+              fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> showQueue(BuildContext context) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.tokens.surface,
+    builder: (ctx) => Consumer(
+      builder: (ctx, ref, _) {
+        final p = ref.watch(libraryProvider);
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(ctx).height * .7,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text('播放队列 · ${p.queue.length} 首')),
+                      labelButton('清空', () async {
+                        if (await confirm(ctx, '清空队列并停止播放？')) {
+                          await p.clearQueue();
+                        }
+                      }),
+                      action(Icons.close, '关闭队列', () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: p.queue.isEmpty
+                      ? const EmptyView('队列是空的', '从搜索结果添加下一首声音。')
+                      : ListView.builder(
+                          itemCount: p.queue.length,
+                          itemBuilder: (ctx, i) {
+                            final track = p.library[p.queue[i]]!;
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: Pressable(
+                                    onPressed: () => p.play(track),
+                                    child: Text(
+                                      track.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                action(
+                                  Icons.arrow_upward,
+                                  '上移第 ${i + 1} 首',
+                                  i == 0 ? null : () => p.moveQueue(i, -1),
+                                ),
+                                action(
+                                  Icons.arrow_downward,
+                                  '下移第 ${i + 1} 首',
+                                  i == p.queue.length - 1
+                                      ? null
+                                      : () => p.moveQueue(i, 1),
+                                ),
+                                action(
+                                  Icons.close,
+                                  '移除第 ${i + 1} 首',
+                                  () => p.removeQueue(track.id),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class DownloadsPanel extends StatelessWidget {
+  const DownloadsPanel(this.p, {super.key});
+  final LibraryController p;
+  @override
+  Widget build(BuildContext context) {
+    if (p.downloads.tasks.isEmpty) {
+      return const EmptyView('还没有下载', '歌曲菜单或歌单页面可添加下载。');
+    }
+    final completed = p.downloads.tasks
+            .where((d) => d.status == DownloadStatus.completed)
+            .length,
+        bytes = p.downloads.tasks
+            .where((d) => d.status == DownloadStatus.completed)
+            .fold<int>(0, (v, d) => v + d.received);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$completed 首已下载 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
+        ),
+        const SizedBox(height: 20),
+        for (final d in p.downloads.tasks)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Artwork(d.track),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d.track.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        d.error ??
+                            switch (d.status) {
+                              DownloadStatus.waiting => '等待下载',
+                              DownloadStatus.downloading =>
+                                '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
+                              DownloadStatus.completed => '已下载 · 可离线播放',
+                              DownloadStatus.failed => '下载失败',
+                              DownloadStatus.paused => '下载已中断，点击重试',
+                            },
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.tokens.muted,
+                        ),
+                      ),
+                      if (d.status == DownloadStatus.downloading)
+                        LinearProgressIndicator(value: d.progress),
+                    ],
+                  ),
+                ),
+                if (d.status == DownloadStatus.completed)
+                  action(Icons.play_arrow, '播放已下载歌曲', () => p.play(d.track))
+                else if ([
+                  DownloadStatus.failed,
+                  DownloadStatus.paused,
+                ].contains(d.status))
+                  action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
+                action(
+                  d.status == DownloadStatus.completed
+                      ? Icons.delete_outline
+                      : Icons.close,
+                  '移除下载',
+                  () async {
+                    if (d.status != DownloadStatus.completed ||
+                        await confirm(context, '删除音频和离线资料？歌单与喜欢记录会保留。')) {
+                      if (context.mounted) {
+                        await report(context, () => p.downloads.remove(d));
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class SettingsPanel extends StatelessWidget {
+  const SettingsPanel(this.p, {super.key});
+  final LibraryController p;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        '外观',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 16),
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (final item in [
+            ('a', 'A · 暖白与石墨黑'),
+            ('b', 'B · 深色沉浸'),
+            ('c', 'C · 冷白与克制粉色'),
+          ])
+            labelButton(
+              item.$2,
+              () => p.setTheme(item.$1),
+              selected: p.theme == item.$1,
+            ),
+        ],
+      ),
+      const SizedBox(height: 32),
+      const Text('播放音质'),
+      const SizedBox(height: 12),
+      Wrap(
+        children: [
+          labelButton(
+            '自动 · 优先高音质',
+            () => p.setStandard(false),
+            selected: !p.standard,
+          ),
+          labelButton(
+            '标准 · 节省流量',
+            () => p.setStandard(true),
+            selected: p.standard,
+          ),
+        ],
+      ),
+      const SizedBox(height: 24),
+      labelButton(
+        '管理下载与存储',
+        () => context.go('/downloads'),
+        icon: Icons.download,
+      ),
+      labelButton(
+        'B 站账号',
+        () => showAccount(context, p),
+        icon: Icons.person_outline,
+      ),
+      const SizedBox(height: 24),
+      Text(
+        '听屿 0.1\n本地歌单、队列和下载保存在设备上；账号凭据保存在系统安全存储。\n退出账号保留本地资料，重启后不会自动播放。',
+        style: TextStyle(fontSize: 12, color: context.tokens.muted, height: 2),
+      ),
+    ],
+  );
+}
+
+Future<void> showAccount(BuildContext context, LibraryController p) async =>
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: AccountPanel(p),
+        ),
+      ),
+    );
+
+class AccountPanel extends StatefulWidget {
+  const AccountPanel(this.p, {super.key});
+  final LibraryController p;
+  @override
+  State<AccountPanel> createState() => _AccountPanelState();
+}
+
+class _AccountPanelState extends State<AccountPanel> {
+  String? qr, key;
+  String message = '扫码后可以导入你的 B 站收藏夹';
+  bool busy = false;
+  Timer? timer;
+  List<Map<String, dynamic>> folders = [];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.p.api.hasSession) unawaited(loadProfile());
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> loadProfile() async {
+    setState(() => busy = true);
+    await widget.p.refreshProfile();
+    if (!mounted) return;
+    if (widget.p.profile == null) {
+      setState(() {
+        busy = false;
+        message = widget.p.error;
+      });
+      return;
+    }
+    try {
+      final found = await widget.p.api.folders(widget.p.profile!['mid']);
+      if (mounted) {
+        setState(() {
+          folders = found;
+          busy = false;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          message = e is AppFailure ? e.message : '收藏夹加载失败，请重试';
+        });
+      }
+    }
+  }
+
+  Future<void> generate() async {
+    timer?.cancel();
+    setState(() => busy = true);
+    try {
+      final result = await widget.p.api.createQr();
+      if (!mounted) return;
+      setState(() {
+        qr = result.url;
+        key = result.key;
+        message = '请使用哔哩哔哩 App 扫码确认';
+        busy = false;
+      });
+      timer = Timer.periodic(const Duration(seconds: 2), (_) async {
+        if (busy || !mounted) return;
+        busy = true;
+        try {
+          final code = await widget.p.api.pollQr(key!);
+          if (!mounted) return;
+          if (code == 0) {
+            timer?.cancel();
+            setState(() => qr = null);
+            await loadProfile();
+          } else if (code == 86038) {
+            timer?.cancel();
+            setState(() => message = '二维码已过期，请刷新');
+          } else if (code == 86090) {
+            setState(() => message = '已扫码，请在 B 站 App 确认');
+          }
+        } on Exception catch (e) {
+          timer?.cancel();
+          if (mounted) {
+            setState(
+              () => message = e is AppFailure ? e.message : '登录请求失败，请刷新重试',
+            );
+          }
+        } finally {
+          busy = false;
+        }
+      });
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          message = e is AppFailure ? e.message : '无法生成二维码，请重试';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.p;
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '连接你的收藏',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                action(Icons.close, '关闭账号窗口', () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (p.profile != null) ...[
+              Text('${p.profile!['uname']}'),
+              const SizedBox(height: 16),
+              if (message != '扫码后可以导入你的 B 站收藏夹') Text(message),
+              for (final f in folders)
+                labelButton(
+                  '导入 ${f['title']}（${f['media_count']}）',
+                  busy
+                      ? null
+                      : () async {
+                          setState(() => busy = true);
+                          try {
+                            await p.importFolder(f);
+                            if (!mounted) return;
+                            Navigator.pop(this.context);
+                          } on Exception catch (e) {
+                            if (mounted) {
+                              setState(() {
+                                busy = false;
+                                message = e is AppFailure
+                                    ? e.message
+                                    : '导入失败，请重试';
+                              });
+                            }
+                          }
+                        },
+                ),
+              labelButton('退出账号', () async {
+                await p.logout();
+                if (!mounted) return;
+                Navigator.pop(this.context);
+              }, icon: Icons.logout),
+            ] else ...[
+              if (qr != null)
+                ColoredBox(
+                  color: Colors.white,
+                  child: QrImageView(data: qr!, size: 210),
+                ),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.tokens.muted, height: 1.8),
+              ),
+              const SizedBox(height: 16),
+              if (busy)
+                const CircularProgressIndicator()
+              else
+                labelButton(
+                  qr == null ? '生成登录二维码' : '刷新二维码',
+                  generate,
+                  icon: Icons.qr_code,
+                ),
+            ],
+            labelButton('外观与设置', () {
+              Navigator.pop(context);
+              context.go('/settings');
+            }, icon: Icons.settings_outlined),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> showLyrics(BuildContext context, LibraryController p) async {
+  final edit = TextEditingController(text: p.current?.title ?? '');
+  final lrc = TextEditingController(text: p.lyricText);
+  List<Map<String, dynamic>> candidates = [];
+  String? error;
+  bool busy = false;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, set) => AlertDialog(
+        title: const Text('匹配歌词'),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: edit,
+                  decoration: const InputDecoration(labelText: '歌名 / 歌手'),
+                ),
+                labelButton(
+                  '搜索歌词',
+                  busy
+                      ? null
+                      : () async {
+                          set(() => busy = true);
+                          try {
+                            final found = await p.lyricsClient.search(
+                              edit.text,
+                            );
+                            if (ctx.mounted) {
+                              set(() {
+                                candidates = found;
+                                error = found.isEmpty
+                                    ? '未找到歌词，可粘贴 LRC 文本'
+                                    : null;
+                              });
+                            }
+                          } on AppFailure catch (e) {
+                            if (ctx.mounted) set(() => error = e.message);
+                          } finally {
+                            if (ctx.mounted) set(() => busy = false);
+                          }
+                        },
+                ),
+                if (error != null) Text(error!),
+                for (final c in candidates.take(10))
+                  labelButton(
+                    '${c['trackName']} · ${c['artistName']}',
+                    () async {
+                      await p.chooseLyrics(c, p.current!);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                  ),
+                TextField(
+                  controller: lrc,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: '或粘贴 LRC / 纯文本歌词',
+                  ),
+                ),
+                Text('时间偏移 ${(p.lyricOffset / 1000).toStringAsFixed(1)} 秒'),
+                Slider(
+                  value: p.lyricOffset.toDouble(),
+                  min: -5000,
+                  max: 5000,
+                  divisions: 20,
+                  onChanged: (v) => set(() => p.lyricOffset = v.round()),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          labelButton('取消', () => Navigator.pop(ctx)),
+          labelButton('保存歌词', () async {
+            await p.setLyrics(lrc.text);
+            await p.save();
+            if (ctx.mounted) Navigator.pop(ctx);
+          }),
+        ],
+      ),
+    ),
+  );
+  edit.dispose();
+  lrc.dispose();
+}
+
+/// Persistent, fixed-width destinations avoid layout movement while switching.
+class CompactNavigation extends StatelessWidget {
+  const CompactNavigation({
+    super.key,
+    required this.selected,
+    required this.onSelect,
+  });
+  final String selected;
+  final ValueChanged<String> onSelect;
+  static const destinations = [
+    ('library', Icons.library_music_outlined, '音乐库'),
+    ('search', Icons.search, '搜索'),
+    ('downloads', Icons.download_outlined, '下载'),
+    ('likes', Icons.favorite_border, '喜欢'),
+  ];
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.surface,
+        border: Border(top: BorderSide(color: t.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              for (final item in destinations)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Semantics(
+                      selected: selected == item.$1,
+                      child: Pressable(
+                        key: ValueKey('tab-${item.$1}'),
+                        label: item.$3,
+                        selected: selected == item.$1,
+                        onPressed: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          onSelect(item.$1);
+                        },
+                        radius: 28,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(item.$2, size: 20),
+                            const SizedBox(width: 4),
+                            Text(item.$3, style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

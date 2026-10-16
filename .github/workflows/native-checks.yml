@@ -1,0 +1,51 @@
+name: Native checks
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        if: runner.os == 'Linux'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build macos --release
+        if: runner.os == 'macOS'
+      - run: python3 tool/package_desktop.py macos
+        if: runner.os == 'macOS'
+      - run: flutter build windows --release
+        if: runner.os == 'Windows'
+      - run: python tool/package_desktop.py windows-x64
+        if: runner.os == 'Windows'
+      - run: flutter build apk --release --split-per-abi
+        if: runner.os == 'Linux'
+      - uses: actions/upload-artifact@v4
+        if: runner.os != 'Linux'
+        with:
+          name: tingyu-${{ runner.os }}-release
+          path: |
+            artifacts/*-release.zip
+            artifacts/*-release.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: tingyu-Android-release
+          path: build/app/outputs/flutter-apk/*-release.apk
+          if-no-files-found: error
