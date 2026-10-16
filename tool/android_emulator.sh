@@ -38,6 +38,14 @@ skin.dynamic = yes
 CONFIG
   mv "$tingyu_config.hd" "$tingyu_config"
 fi
+# A music player needs output, not microphone capture. Keeping input disabled
+# avoids the emulator's documented macOS/Bluetooth recording-route interference.
+# https://developer.android.com/studio/run/emulator-troubleshooting
+# Project-owned AVD only; retain user data and keep audio output enabled.
+tingyu_config="$ANDROID_AVD_HOME/$tingyu_avd.avd/config.ini"
+awk '!/^hw\.audio(Input|Output)[[:space:]]*=/' "$tingyu_config" > "$tingyu_config.audio"
+printf '\nhw.audioInput = no\nhw.audioOutput = yes\n' >> "$tingyu_config.audio"
+mv "$tingyu_config.audio" "$tingyu_config"
 if [ "${TINGYU_EMULATOR_HEADLESS:-0}" = 1 ]; then
   exec "$ANDROID_HOME/emulator/emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -no-audio -gpu swiftshader -no-window
 fi

@@ -11,6 +11,49 @@ void main() {
   tearDown(() async {
     await fixture.close();
   });
+  test(
+    'collection sort persists independently and batch removal retains library likes and files',
+    () async {
+      final p = fixture.controller;
+      await p.remember(firstTrack);
+      await p.remember(secondTrack);
+      await p.addPlaylist('测试', track: firstTrack);
+      await p.addToPlaylist(p.playlists.single, secondTrack);
+      final list = p.playlists.single;
+      await p.editPlaylist(list, description: '夜晚听的歌');
+      expect(Playlist.fromJson(list.toJson()).description, isEmpty);
+      expect(
+        Playlist.fromJson(p.playlists.single.toJson()).description,
+        '夜晚听的歌',
+      );
+      await p.setCollectionSort(list.id, 'recent');
+      expect(p.collectionIds(list.id, list.trackIds), [
+        secondTrack.id,
+        firstTrack.id,
+      ]);
+      await p.play(firstTrack);
+      expect(p.collectionIds(list.id, list.trackIds), [
+        secondTrack.id,
+        firstTrack.id,
+      ]);
+      expect(p.collectionIds('library', p.library.keys), [
+        firstTrack.id,
+        secondTrack.id,
+      ]);
+      expect(
+        (await p.db.readState('library'))!['collectionSort'][list.id],
+        'recent',
+      );
+      await p.toggleLike(firstTrack);
+      await p.removeFromPlaylist(list, {firstTrack.id, secondTrack.id});
+      expect(p.playlists.single.trackIds, isEmpty);
+      expect(p.playlists.single.description, '夜晚听的歌');
+      expect(p.library.length, 2);
+      expect(p.likes, contains(firstTrack.id));
+      expect(p.current!.id, firstTrack.id);
+      expect(p.playing, isTrue);
+    },
+  );
   test('manual next advances even when single-repeat is selected', () async {
     final p = fixture.controller;
     await p.enqueue(firstTrack);

@@ -66,6 +66,7 @@ class LibraryController extends ChangeNotifier {
   final Map<String, Track> library = {};
   final Map<String, Track> _resolved = {};
   final List<Playlist> playlists = [];
+  final Map<String, String> collectionSort = {};
   final List<String> queue = [], likes = [], history = [];
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _saveTimer;
@@ -75,7 +76,8 @@ class LibraryController extends ChangeNotifier {
       error = '',
       searchError = '',
       query = '',
-      lyricText = '';
+      lyricText = '',
+      lyricError = '';
   bool standard = false,
       searching = false,
       opening = false,
@@ -113,6 +115,9 @@ class LibraryController extends ChangeNotifier {
       library
         ..clear()
         ..addAll(ordered);
+      collectionSort.addAll(
+        Map<String, String>.from(s['collectionSort'] ?? {}),
+      );
       standard = s['standard'] ?? false;
       lyricOffset = s['lyricOffset'] ?? 0;
       queue.addAll(
@@ -139,6 +144,7 @@ class LibraryController extends ChangeNotifier {
   void _downloadsChanged() => notifyListeners();
   Future<void> save() => db.writeState('library', {
     'libraryOrder': library.keys.toList(),
+    'collectionSort': collectionSort,
     'theme': theme,
     'mode': mode,
     'standard': standard,
@@ -258,6 +264,7 @@ class LibraryController extends ChangeNotifier {
         l.id,
         l.name,
         l.trackIds.map((id) => id == t.id ? real.id : id).toSet().toList(),
+        description: l.description,
       );
     }
     if (current?.id == t.id) current = real;
@@ -454,6 +461,7 @@ class LibraryController extends ChangeNotifier {
       latest.id,
       latest.name,
       {...latest.trackIds, stored.id}.toList(),
+      description: latest.description,
     );
     notifyListeners();
     await save();
@@ -462,6 +470,7 @@ class LibraryController extends ChangeNotifier {
   Future<void> editPlaylist(
     Playlist l, {
     String? name,
+    String? description,
     String? remove,
     bool delete = false,
   }) async {
@@ -475,12 +484,65 @@ class LibraryController extends ChangeNotifier {
       if (trimmed.isEmpty || trimmed.length > 30) {
         throw const AppFailure('歌单名称需要 1–30 个字');
       }
+      if ((description ?? latest.description).trim().length > 160) {
+        throw const AppFailure('歌单简介不能超过 160 个字');
+      }
       playlists[i] = Playlist(
         l.id,
         trimmed,
         latest.trackIds.where((id) => id != remove).toList(),
+        description: (description ?? latest.description).trim(),
       );
     }
+    notifyListeners();
+    await save();
+  }
+
+  List<String> collectionIds(String key, Iterable<String> source) {
+    final ids = source.where(library.containsKey).toList();
+    final sort = collectionSort[key] ?? 'default';
+    if (sort == 'recent') return ids.reversed.toList();
+    if (sort == 'title' || sort == 'artist') {
+      final original = {for (var i = 0; i < ids.length; i++) ids[i]: i};
+      ids.sort((a, b) {
+        final ta = library[a]!, tb = library[b]!;
+        final order = (sort == 'title' ? ta.title : ta.artist).compareTo(
+          sort == 'title' ? tb.title : tb.artist,
+        );
+        return order == 0 ? original[a]!.compareTo(original[b]!) : order;
+      });
+    }
+    return ids;
+  }
+
+  Future<void> setCollectionSort(String key, String value) async {
+    if (!['default', 'recent', 'title', 'artist'].contains(value)) return;
+    collectionSort[key] = value;
+    notifyListeners();
+    await save();
+  }
+
+  Future<void> playCollection(List<String> ids) async {
+    final valid = ids.where(library.containsKey).toList();
+    if (valid.isEmpty) return;
+    queue
+      ..clear()
+      ..addAll(valid);
+    notifyListeners();
+    await save();
+    await play(library[valid.first]!);
+  }
+
+  Future<void> removeFromPlaylist(Playlist list, Set<String> ids) async {
+    final i = playlists.indexWhere((p) => p.id == list.id);
+    if (i < 0) throw const AppFailure('歌单已删除，请返回音乐库');
+    final latest = playlists[i];
+    playlists[i] = Playlist(
+      latest.id,
+      latest.name,
+      latest.trackIds.where((id) => !ids.contains(id)).toList(),
+      description: latest.description,
+    );
     notifyListeners();
     await save();
   }
@@ -510,6 +572,7 @@ class LibraryController extends ChangeNotifier {
     quality = '';
     parts = [];
     lyricText = '';
+    lyricError = '';
     position = Duration.zero;
   }
 
@@ -522,7 +585,16 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> download(Track t) async {
     try {
-      await downloads.enqueue(await canonical(t));
+      final track = await canonical(t);
+      final existing = downloads.tasks
+          .where((task) => task.track.id == track.id)
+          .firstOrNull;
+      if (existing?.status == DownloadStatus.failed ||
+          existing?.status == DownloadStatus.paused) {
+        await downloads.retry(existing!);
+      } else {
+        await downloads.enqueue(track);
+      }
       notifyListeners();
     } on Exception catch (e) {
       error = e is AppFailure ? e.message : '无法添加下载任务，请重试';
@@ -534,6 +606,7 @@ class LibraryController extends ChangeNotifier {
     if (_disposed || current?.id != t.id) return;
     final epoch = ++_lyricEpoch;
     lyricText = '';
+    lyricError = '';
     notifyListeners();
     try {
       final cached = await downloads.lyrics(t);
@@ -550,7 +623,7 @@ class LibraryController extends ChangeNotifier {
       }
     } on Exception {
       if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
-        lyricText = '歌词暂时不可用，可点击“歌词”重新匹配或粘贴 LRC';
+        lyricError = '歌词服务暂不可用，可通过歌词图标重新匹配或粘贴 LRC';
         notifyListeners();
       }
     }
@@ -571,6 +644,7 @@ class LibraryController extends ChangeNotifier {
     await downloads.saveLyrics(t, text);
     if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
       lyricText = text;
+      lyricError = '';
       notifyListeners();
     }
   }
@@ -584,6 +658,7 @@ class LibraryController extends ChangeNotifier {
     await downloads.saveLyrics(target, text);
     if (_disposed || current?.id != target.id) return;
     lyricText = text;
+    lyricError = '';
     if (offset != null) lyricOffset = offset;
     await save();
     notifyListeners();

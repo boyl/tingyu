@@ -66,8 +66,8 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
-- Android 0.1.3 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
-- 本轮交互修复与自动验收记录见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
+- Android 0.1.4 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
+- 本轮三横菜单、曲库/歌单图标、详情排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
 - 新增工作流仅支持手动触发，尚未运行。工程仓库为私有 `boyl/tingyu`，可执行三平台构建；构建产物不入库。

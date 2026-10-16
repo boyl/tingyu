@@ -46,7 +46,6 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         expect(p.position, greaterThan(start));
         stages['nativeDecode'] = 'PASS';
-        await p.toggle();
         await p.download(track);
         await waitFor(
           () =>
@@ -60,6 +59,20 @@ void main() {
           reason: p.downloads.tasks.single.error,
         );
         stages['download'] = 'PASS';
+        var advanced = Duration.zero;
+        var previous = p.position;
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(seconds: 1));
+          expect(p.playing, isTrue, reason: '下载不得暂停播放');
+          expect(p.error, isEmpty);
+          expect(p.playback.player.volume, 1);
+          final next = p.position;
+          if (next > previous) advanced += next - previous;
+          previous = next;
+        }
+        expect(advanced.inMilliseconds, greaterThan(3500));
+        stages['simultaneousDownloadPlayback'] =
+            'PASS - native decode/progress; audible output requires listening';
         api.http.interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) => handler.reject(

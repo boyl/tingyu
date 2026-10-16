@@ -17,11 +17,8 @@ void main() {
     (tester) async {
       await app.main();
       await tester.pumpAndSettle();
-      expect(find.text('把喜欢的声音，留在身边。'), findsOneWidget);
-      expect(
-        tester.getTopLeft(find.text('YOUR PERSONAL SOUNDTRACK')).dy,
-        lessThan(80),
-      );
+      expect(find.text('音乐库'), findsWidgets);
+      expect(tester.getTopLeft(find.text('音乐库').first).dy, lessThan(80));
 
       final controller = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
@@ -162,7 +159,7 @@ void main() {
         (_, track) => track.bvid.startsWith('acceptance-'),
       );
       await controller.save();
-      expect(find.text('把喜欢的声音，留在身边。'), findsOneWidget);
+      expect(find.text('音乐库'), findsWidgets);
       controller.clearError();
       scrollState.position.jumpTo(0);
       await binding.convertFlutterSurfaceToImage();
@@ -213,7 +210,9 @@ void main() {
         ),
       );
       controller.profile = {'mid': 1, 'uname': '本地验收账号'};
-      await tester.tap(find.byKey(const ValueKey('账号与设置')));
+      await tester.tap(find.byKey(const ValueKey('音乐库更多')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('账号与收藏夹')));
       await tester.pumpAndSettle();
       expect(find.text('请先选择收藏夹'), findsOneWidget);
       final accountScroll = find

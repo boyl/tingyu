@@ -24,13 +24,13 @@ if args.device:
 output = ROOT / 'artifacts' / 'acceptance'
 output.mkdir(parents=True, exist_ok=True)
 flutter = ['flutter'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']
-commands = [('analyze', flutter + ['analyze']), ('offline-tests', flutter + ['test', '--reporter', 'expanded']),
+commands = [('cached-dependencies', flutter + ['pub', 'get', '--offline']), ('analyze', flutter + ['analyze', '--no-pub']), ('offline-tests', flutter + ['test', '--no-pub', '--reporter', 'expanded']),
             ('desktop-packaging-tests', [sys.executable, 'tool/test_package_desktop.py'])]
 if args.device:
     for name, target in [('android-navigation', 'navigation_test.dart'), ('android-interactions', 'interaction_test.dart')]:
-        commands.append((name, flutter + ['drive', '--driver=test_driver/integration_driver.dart', f'--target=integration_test/{target}', '-d', args.device]))
+        commands.append((name, flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', f'--target=integration_test/{target}', '-d', args.device]))
     if args.live:
-        commands.append(('android-live-playback', flutter + ['drive', '--driver=test_driver/integration_driver.dart', '--target=integration_test/live_playback_test.dart', '-d', args.device]))
+        commands.append(('android-live-playback', flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', '--target=integration_test/live_playback_test.dart', '-d', args.device]))
 def source_fingerprint():
     fingerprint = hashlib.sha256()
     for folder in ['lib', 'android/app/src', 'test', 'integration_test']:

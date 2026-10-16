@@ -9,6 +9,7 @@ import '../main.dart';
 import '../controllers/library_controller.dart';
 import '../models/music.dart';
 import 'theme.dart';
+part 'library_views.dart';
 
 Widget action(
   IconData icon,
@@ -208,6 +209,24 @@ class _AppShellState extends ConsumerState<AppShell> {
     search = TextEditingController(text: ref.read(libraryProvider).query);
   }
 
+  bool selecting = false;
+  final Set<String> selection = {};
+  String get collectionKey => widget.playlistId ?? widget.page;
+  @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.page != widget.page ||
+        oldWidget.playlistId != widget.playlistId) {
+      selecting = false;
+      selection.clear();
+    }
+  }
+
+  List<String> visibleIds(LibraryController p, Playlist? list) =>
+      p.collectionIds(
+        collectionKey,
+        widget.page == 'likes' ? p.likes : list?.trackIds ?? p.library.keys,
+      );
   Timer? debounce;
   @override
   void dispose() {
@@ -241,39 +260,48 @@ class _AppShellState extends ConsumerState<AppShell> {
       children: [
         Row(
           children: [
+            if (selecting)
+              action(
+                Icons.close,
+                '退出多选',
+                () => setState(() {
+                  selecting = false;
+                  selection.clear();
+                }),
+              )
+            else if (widget.page == 'playlist')
+              action(Icons.arrow_back, '返回音乐库', () => navigate('library'))
+            else if (!desktop && widget.page == 'library')
+              action(Icons.menu, '音乐库更多', () => showLibraryMenu(context, p)),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'YOUR PERSONAL SOUNDTRACK',
-                    style: TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      color: t.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(title, style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 10),
-                  Text(
-                    widget.page == 'library'
-                        ? '把喜欢的声音，留在身边。'
-                        : widget.page == 'downloads'
-                        ? '喜欢的声音，不必等待网络。'
-                        : '属于你的聆听方式。',
-                    style: TextStyle(fontSize: 12, color: t.muted),
-                  ),
-                ],
+              child: Text(
+                selecting ? '已选 ${selection.length} 首' : title,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            if (widget.page == 'library')
-              action(Icons.search, '搜索歌曲', () => navigate('search')),
-            action(
-              Icons.account_circle_outlined,
-              '账号与设置',
-              () => showAccount(context, p),
-            ),
+            if (selecting)
+              labelButton(
+                '全选',
+                () => setState(() {
+                  final ids = visibleIds(p, list);
+                  if (selection.containsAll(ids)) {
+                    selection.clear();
+                  } else {
+                    selection.addAll(ids);
+                  }
+                }),
+              )
+            else if (widget.page == 'library')
+              action(Icons.playlist_add, '新建歌单', () async {
+                final name = await nameDialog(context);
+                if (name != null && context.mounted) await p.addPlaylist(name);
+              })
+            else if (list != null)
+              action(
+                Icons.more_horiz,
+                '歌单更多',
+                () => showPlaylistActions(context, p, list),
+              ),
           ],
         ),
         const SizedBox(height: 24),
@@ -333,17 +361,11 @@ class _AppShellState extends ConsumerState<AppShell> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                labelButton('新建歌单', () async {
-                  final name = await nameDialog(context);
-                  if (name != null && context.mounted) {
-                    await report(context, () => p.addPlaylist(name));
-                  }
-                }, icon: Icons.add),
                 ...p.playlists.map(
                   (l) => labelButton(
                     l.name,
                     () => context.go('/playlist/${l.id}'),
-                    icon: Icons.queue_music,
+                    icon: Icons.library_music_outlined,
                   ),
                 ),
               ],
@@ -394,114 +416,132 @@ class _AppShellState extends ConsumerState<AppShell> {
               const SizedBox(height: 24),
             ],
           ],
-          if (list != null)
-            Wrap(
-              spacing: 8,
-              children: [
-                labelButton('播放全部', () async {
-                  p.queue.clear();
-                  for (final id in list.trackIds) {
-                    if (p.library.containsKey(id)) p.queue.add(id);
-                  }
-                  await p.save();
-                  if (p.queue.isNotEmpty) {
-                    await p.play(p.library[p.queue.first]!);
-                  }
-                }, icon: Icons.play_arrow),
-                labelButton('下载全部', () async {
-                  for (final id in list.trackIds) {
-                    final track = p.library[id];
-                    if (track != null) await p.download(track);
-                  }
-                }, icon: Icons.download),
-                labelButton('重命名', () async {
-                  final name = await nameDialog(context, initial: list.name);
-                  if (name != null && context.mounted) {
-                    await report(
-                      context,
-                      () => p.editPlaylist(list, name: name),
-                    );
-                  }
-                }),
-                labelButton('删除歌单', () async {
-                  if (await confirm(context, '删除歌单？已下载音频和喜欢记录会保留。')) {
-                    await p.editPlaylist(list, delete: true);
-                    if (context.mounted) navigate('library');
-                  }
-                }),
-              ],
-            ),
+          if (list != null) PlaylistSummary(list),
+          CollectionToolbar(
+            ids: visibleIds(p, list),
+            list: list,
+            collectionKey: collectionKey,
+            selecting: selecting,
+            onSelect: () => setState(() {
+              selecting = true;
+              selection.clear();
+            }),
+          ),
           const SizedBox(height: 12),
           ..._libraryRows(p, list),
         ],
       ],
     );
-    return Shortcuts(
-      shortcuts: const {
-        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+    return PopScope(
+      canPop: !selecting && widget.page != 'playlist',
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (selecting) {
+          setState(() {
+            selecting = false;
+            selection.clear();
+          });
+        } else if (widget.page == 'playlist') {
+          navigate('library');
+        }
       },
-      child: Actions(
-        actions: {
-          ActivateIntent: CallbackAction<ActivateIntent>(
-            onInvoke: (_) {
-              final focusContext = FocusManager.instance.primaryFocus?.context;
-              if (focusContext?.findAncestorWidgetOfExactType<EditableText>() ==
-                  null) {
-                unawaited(p.toggle());
-              }
-              return null;
-            },
-          ),
+      child: Shortcuts(
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
         },
-        child: Scaffold(
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (desktop) SizedBox(width: 224, child: sidebar(p)),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          key: PageStorageKey(
-                            'page-${widget.page}-${widget.playlistId}',
-                          ),
-                          padding: EdgeInsets.all(desktop ? 36 : 20),
-                          child: content,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                MiniPlayer(p),
-              ],
+        child: Actions(
+          actions: {
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) {
+                final focusContext =
+                    FocusManager.instance.primaryFocus?.context;
+                if (focusContext
+                        ?.findAncestorWidgetOfExactType<EditableText>() ==
+                    null) {
+                  unawaited(p.toggle());
+                }
+                return null;
+              },
             ),
+          },
+          child: Scaffold(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (desktop) SizedBox(width: 224, child: sidebar(p)),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            key: PageStorageKey(
+                              'page-${widget.page}-${widget.playlistId}',
+                            ),
+                            padding: EdgeInsets.all(desktop ? 36 : 20),
+                            child: content,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (selecting)
+                    SelectionBar(
+                      ids: selection.where(p.library.containsKey).toList(),
+                      list: list,
+                      onDone: () => setState(() {
+                        selecting = false;
+                        selection.clear();
+                      }),
+                    )
+                  else
+                    MiniPlayer(p),
+                ],
+              ),
+            ),
+            bottomNavigationBar: desktop
+                ? null
+                : CompactNavigation(
+                    selected: widget.page == 'playlist'
+                        ? 'library'
+                        : widget.page,
+                    onSelect: navigate,
+                  ),
           ),
-          bottomNavigationBar: desktop
-              ? null
-              : CompactNavigation(selected: widget.page, onSelect: navigate),
         ),
       ),
     );
   }
 
   List<Widget> _libraryRows(LibraryController p, Playlist? list) {
-    final ids = widget.page == 'likes'
-        ? p.likes
-        : list?.trackIds ?? p.library.keys.toList();
+    final ids = visibleIds(p, list);
     if (ids.isEmpty) {
       return [
         EmptyView(
-          '这里还很安静',
+          list == null ? '这里还很安静' : '歌单还没有歌曲',
           '去搜索喜欢的声音，加入你的音乐收藏。',
-          child: labelButton('去搜索', () => navigate('search')),
+          child: labelButton(
+            list == null ? '去搜索' : '添加歌曲',
+            () => navigate('search'),
+          ),
         ),
       ];
     }
     return ids
         .where(p.library.containsKey)
-        .map((id) => TrackRow(p.library[id]!, playlist: list))
+        .map(
+          (id) => selecting
+              ? SelectionTrackRow(
+                  p.library[id]!,
+                  selected: selection.contains(id),
+                  onPressed: () => setState(() {
+                    selection.contains(id)
+                        ? selection.remove(id)
+                        : selection.add(id);
+                  }),
+                )
+              : TrackRow(p.library[id]!, playlist: list),
+        )
         .toList();
   }
 
@@ -551,11 +591,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 .toList(),
           ),
         ),
-        labelButton(
-          '连接 B 站账号',
-          () => showAccount(context, p),
-          icon: Icons.person_outline,
-        ),
+        labelButton('更多', () => showLibraryMenu(context, p), icon: Icons.menu),
         labelButton(
           '设置',
           () => navigate('settings'),
@@ -588,6 +624,234 @@ Widget errorBox(BuildContext context, String message, VoidCallback retry) =>
       ),
     );
 
+Future<void> showPlaylistActions(
+  BuildContext context,
+  LibraryController p,
+  Playlist list,
+) => showContentActions(
+  context,
+  (ctx) => SimpleDialog(
+    title: Text(list.name),
+    children: [
+      labelButton('编辑名称与简介', () async {
+        Navigator.pop(ctx);
+        await showDialog<void>(
+          context: context,
+          builder: (_) => PlaylistEditDialog(list),
+        );
+      }, icon: Icons.edit_outlined),
+      labelButton('添加歌曲', () {
+        Navigator.pop(ctx);
+        context.go('/search');
+      }, icon: Icons.playlist_add),
+      labelButton('下载全部', () async {
+        Navigator.pop(ctx);
+        for (final id in list.trackIds) {
+          final track = p.library[id];
+          if (track != null) await p.download(track);
+        }
+      }, icon: Icons.download_outlined),
+      labelButton('删除歌单', () async {
+        Navigator.pop(ctx);
+        if (await confirm(context, '删除歌单？已下载音频和喜欢记录会保留。')) {
+          await p.editPlaylist(list, delete: true);
+          if (context.mounted) context.go('/');
+        }
+      }, icon: Icons.delete_outline),
+    ],
+  ),
+);
+
+Widget downloadProgress(BuildContext context, double? progress) => SizedBox(
+  width: 24,
+  height: 24,
+  child: Stack(
+    alignment: Alignment.center,
+    children: [
+      SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          value: progress,
+          color: context.tokens.accent,
+        ),
+      ),
+      Icon(Icons.arrow_downward, size: 14, color: context.tokens.accent),
+    ],
+  ),
+);
+
+class PlaylistDownloadAction extends ConsumerWidget {
+  const PlaylistDownloadAction(this.list, {super.key});
+  final Playlist list;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(libraryProvider);
+    final tracks = list.trackIds
+        .map((id) => p.library[id])
+        .whereType<Track>()
+        .toList();
+    final tasks = tracks.map((track) => trackDownload(p, track)).toList();
+    final completed = tasks
+        .where((task) => task?.status == DownloadStatus.completed)
+        .length;
+    final active = tasks.any(
+      (task) =>
+          task?.status == DownloadStatus.downloading ||
+          task?.status == DownloadStatus.waiting,
+    );
+    final progress = tracks.isEmpty
+        ? 0.0
+        : tasks.fold<double>(
+                0,
+                (value, task) =>
+                    value +
+                    (task?.status == DownloadStatus.completed
+                        ? 1
+                        : task?.progress ?? 0),
+              ) /
+              tracks.length;
+    final failed = tasks.any((task) => task?.status == DownloadStatus.failed);
+    final allDone = tracks.isNotEmpty && completed == tracks.length;
+    final label = allDone
+        ? '已全部下载，点击查看'
+        : active
+        ? '正在下载歌单 $completed/${tracks.length}，点击查看'
+        : failed
+        ? '部分下载失败，点击重试'
+        : '下载全部';
+    return Tooltip(
+      message: label,
+      child: Pressable(
+        key: const ValueKey('下载全部'),
+        label: label,
+        selected: allDone,
+        onPressed: tracks.isEmpty
+            ? null
+            : () => report(context, () async {
+                if (allDone || active) {
+                  context.go('/downloads');
+                  return;
+                }
+                for (final track in tracks) {
+                  final task = trackDownload(p, track);
+                  if (task == null) {
+                    await p.download(track);
+                  } else if (task.status == DownloadStatus.failed ||
+                      task.status == DownloadStatus.paused) {
+                    await p.downloads.retry(task);
+                  }
+                }
+              }),
+        child: active
+            ? downloadProgress(context, progress)
+            : Icon(
+                allDone
+                    ? Icons.download_done
+                    : failed
+                    ? Icons.error_outline
+                    : Icons.download_outlined,
+                color: failed
+                    ? context.tokens.danger
+                    : allDone
+                    ? context.tokens.accent
+                    : context.tokens.text,
+              ),
+      ),
+    );
+  }
+}
+
+DownloadTask? trackDownload(LibraryController p, Track track) => p
+    .downloads
+    .tasks
+    .where(
+      (task) =>
+          task.track.id == track.id ||
+          (track.cid == 0 &&
+              task.track.bvid == track.bvid &&
+              task.track.part == 1),
+    )
+    .firstOrNull;
+
+/// One icon communicates transfer state across search, library and player.
+class TrackDownloadAction extends ConsumerStatefulWidget {
+  const TrackDownloadAction(this.track, {super.key});
+  final Track track;
+  @override
+  ConsumerState<TrackDownloadAction> createState() =>
+      _TrackDownloadActionState();
+}
+
+class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
+  bool preparing = false;
+  @override
+  Widget build(BuildContext context) {
+    final p = ref.watch(libraryProvider), track = widget.track;
+    final task = trackDownload(p, track);
+    final completed = task?.status == DownloadStatus.completed;
+    final transferring =
+        preparing || task?.status == DownloadStatus.downloading;
+    final label = preparing
+        ? '准备下载'
+        : switch (task?.status) {
+            DownloadStatus.waiting => '等待下载，点击查看',
+            DownloadStatus.downloading =>
+              '下载中${task!.total > 0 ? ' ${(task.progress! * 100).round()}%' : ''}，点击查看',
+            DownloadStatus.completed => '已下载，点击查看',
+            DownloadStatus.paused => '下载已暂停，点击继续',
+            DownloadStatus.failed => '下载失败，点击重试',
+            null => '下载',
+          };
+    Future<void> activate() async {
+      if (completed ||
+          task?.status == DownloadStatus.downloading ||
+          task?.status == DownloadStatus.waiting) {
+        context.go('/downloads');
+        return;
+      }
+      setState(() => preparing = true);
+      try {
+        if (task != null) {
+          await p.downloads.retry(task);
+        } else {
+          await p.download(track);
+        }
+      } finally {
+        if (mounted) setState(() => preparing = false);
+      }
+    }
+
+    final icon = switch (task?.status) {
+      DownloadStatus.completed => Icons.download_done,
+      DownloadStatus.paused => Icons.pause_circle_outline,
+      DownloadStatus.failed => Icons.error_outline,
+      DownloadStatus.waiting => Icons.schedule,
+      _ => Icons.download_outlined,
+    };
+    return Tooltip(
+      message: label,
+      child: Pressable(
+        key: ValueKey('download-${track.id}'),
+        label: '$label ${track.title}',
+        selected: completed,
+        onPressed: preparing ? null : () => report(context, activate),
+        child: transferring
+            ? downloadProgress(context, preparing ? null : task?.progress)
+            : Icon(
+                icon,
+                color: task?.status == DownloadStatus.failed
+                    ? context.tokens.danger
+                    : completed
+                    ? context.tokens.accent
+                    : context.tokens.text,
+              ),
+      ),
+    );
+  }
+}
+
 class TrackRow extends ConsumerWidget {
   const TrackRow(this.track, {super.key, this.playlist});
   final Track track;
@@ -596,13 +860,11 @@ class TrackRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(libraryProvider),
         desktop = MediaQuery.sizeOf(context).width >= 960,
-        liked = p.likes.contains(track.id),
-        download = p.downloads.tasks
-            .where((d) => d.track.id == track.id)
-            .firstOrNull;
+        liked = p.likes.contains(track.id);
     return Container(
       decoration: BoxDecoration(
         color: p.current?.id == track.id ? context.tokens.tint : null,
+        borderRadius: BorderRadius.circular(TingyuTokens.radius),
         border: Border(bottom: BorderSide(color: context.tokens.line)),
       ),
       child: Row(
@@ -643,6 +905,15 @@ class TrackRow extends ConsumerWidget {
               ),
             ),
           ),
+          if (!desktop && liked)
+            Semantics(
+              label: '已喜欢',
+              child: Icon(
+                Icons.favorite,
+                size: 16,
+                color: context.tokens.accent,
+              ),
+            ),
           if (desktop) ...[
             Text(
               clock(Duration(seconds: track.duration)),
@@ -656,15 +927,9 @@ class TrackRow extends ConsumerWidget {
               selected: liked,
             ),
           ],
-          action(
-            download?.status == DownloadStatus.completed
-                ? Icons.download_done
-                : Icons.download_outlined,
-            '下载 ${track.title}',
-            download == null
-                ? () => p.download(track)
-                : () => context.go('/downloads'),
-            selected: download?.status == DownloadStatus.completed,
+          TrackDownloadAction(
+            track,
+            key: ValueKey('download-action-${track.id}'),
           ),
           action(
             Icons.more_horiz,
@@ -683,9 +948,9 @@ Future<void> showTrackActions(
   Track track,
   Playlist? list,
 ) async {
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => SimpleDialog(
+  await showContentActions(
+    context,
+    (ctx) => SimpleDialog(
       title: Text(
         track.title,
         maxLines: 2,
@@ -695,7 +960,7 @@ Future<void> showTrackActions(
         labelButton('下一首播放', () async {
           await p.enqueue(track, next: true);
           if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.skip_next),
+        }, icon: Icons.playlist_play),
         labelButton('加入队列', () async {
           await p.enqueue(track);
           if (ctx.mounted) Navigator.pop(ctx);
@@ -704,18 +969,16 @@ Future<void> showTrackActions(
           await p.toggleLike(track);
           if (ctx.mounted) Navigator.pop(ctx);
         }, icon: Icons.favorite_border),
-        labelButton('下载', () async {
-          await p.download(track);
-          if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.download_outlined),
         labelButton('加入歌单', () async {
           Navigator.pop(ctx);
           await showAddPlaylist(context, p, track);
         }, icon: Icons.playlist_add),
         if (list != null)
           labelButton('移出歌单', () async {
-            await p.editPlaylist(list, remove: track.id);
-            if (ctx.mounted) Navigator.pop(ctx);
+            Navigator.pop(ctx);
+            if (await confirm(context, '从歌单移除这首歌？已下载文件会保留。')) {
+              await p.editPlaylist(list, remove: track.id);
+            }
           }, icon: Icons.remove_circle_outline),
         labelButton(
           '在 B 站打开',
@@ -797,7 +1060,7 @@ class MiniPlayer extends StatelessWidget {
                               ? '正在解析…'
                               : p.quality.isEmpty
                               ? '点击继续播放'
-                              : '${t.artist} · ${p.quality}',
+                              : t.artist,
                           maxLines: 1,
                           style: TextStyle(
                             color: context.tokens.muted,
@@ -833,12 +1096,8 @@ class MiniPlayer extends StatelessWidget {
                 onChanged: (v) => p.playback.player.setVolume(v),
               ),
             ),
-          action(
-            modeIcon(p.mode),
-            '播放模式：${modeLabel(p.mode)}',
-            () => showModes(context, p),
-          ),
-          action(Icons.queue_music, '播放队列', () => showQueue(context)),
+          if (!desktop)
+            action(Icons.queue_music, '播放队列', () => showQueue(context)),
         ],
       ),
     );
@@ -855,52 +1114,43 @@ IconData modeIcon(String mode) => switch (mode) {
   'repeat' => Icons.repeat_one,
   _ => Icons.repeat,
 };
-Future<void> showModes(BuildContext context, LibraryController p) =>
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('播放模式'),
-        children: [
-          for (final mode in ['order', 'shuffle', 'repeat'])
-            labelButton(
-              modeLabel(mode),
-              () async {
-                await p.setMode(mode);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              icon: modeIcon(mode),
-              selected: p.mode == mode,
-            ),
-        ],
-      ),
-    );
-Widget transport(BuildContext context, LibraryController p) => Column(
-  mainAxisSize: MainAxisSize.min,
+
+class ModeButton extends StatelessWidget {
+  const ModeButton(this.p, {super.key});
+  final LibraryController p;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: '${modeLabel(p.mode)}，点击切换',
+    child: Pressable(
+      key: const ValueKey('cycle-mode'),
+      label: '播放模式：${modeLabel(p.mode)}，点击切换',
+      onPressed: () => report(context, () {
+        const modes = ['order', 'repeat', 'shuffle'];
+        return p.setMode(modes[(modes.indexOf(p.mode) + 1) % modes.length]);
+      }),
+      child: Icon(modeIcon(p.mode), color: context.tokens.accent),
+    ),
+  );
+}
+
+Widget transport(BuildContext context, LibraryController p) => Row(
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
   children: [
-    labelButton(
-      '${modeLabel(p.mode)} · 切换模式',
-      () => showModes(context, p),
-      icon: modeIcon(p.mode),
+    ModeButton(p),
+    action(Icons.skip_previous, '上一首', p.opening ? null : () => p.next(-1)),
+    Pressable(
+      label: p.playing ? '暂停' : '播放',
+      key: const ValueKey('toggle-playback'),
+      onPressed: p.opening ? null : () => p.toggle(),
+      minSize: 56,
+      color: context.tokens.accent,
+      child: Icon(
+        p.playing ? Icons.pause : Icons.play_arrow,
+        color: context.tokens.onAccent,
+      ),
     ),
-    Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        action(Icons.skip_previous, '上一首', p.opening ? null : () => p.next(-1)),
-        const SizedBox(width: 24),
-        Pressable(
-          label: p.playing ? '暂停' : '播放',
-          key: const ValueKey('toggle-playback'),
-          onPressed: p.opening ? null : () => p.toggle(),
-          color: context.tokens.accent,
-          child: Icon(
-            p.playing ? Icons.pause : Icons.play_arrow,
-            color: context.tokens.onAccent,
-          ),
-        ),
-        const SizedBox(width: 24),
-        action(Icons.skip_next, '下一首', p.opening ? null : () => p.next()),
-      ],
-    ),
+    action(Icons.skip_next, '下一首', p.opening ? null : () => p.next()),
+    action(Icons.queue_music, '播放队列', () => showQueue(context)),
   ],
 );
 
@@ -948,7 +1198,7 @@ class PlayerScreen extends ConsumerWidget {
     void goBack() => context.canPop() ? context.pop() : context.go('/');
     if (track == null) {
       return Scaffold(
-        appBar: PlayerHeader(onBack: goBack, status: '正在播放'),
+        appBar: PlayerHeader(onBack: goBack, status: ''),
         body: EmptyView(
           '还没有正在播放的曲目',
           '搜索一首歌开始聆听',
@@ -1026,9 +1276,7 @@ class PlayerScreen extends ConsumerWidget {
     return Scaffold(
       appBar: PlayerHeader(
         onBack: goBack,
-        status: p.opening
-            ? '正在解析…'
-            : '${p.playing ? '正在播放' : '已暂停'} · ${p.quality}',
+        status: p.opening ? '正在加载…' : '',
         onMore: () => showTrackActions(context, p, track, null),
       ),
       bottomNavigationBar: SafeArea(
@@ -1047,20 +1295,14 @@ class PlayerScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      labelButton(
-                        '下载',
-                        () => p.download(track),
-                        icon: Icons.download,
-                      ),
-                      labelButton(
-                        '歌词',
-                        () => showLyrics(context, p),
-                        icon: Icons.lyrics_outlined,
+                      TrackDownloadAction(
+                        track,
+                        key: ValueKey('download-action-${track.id}'),
                       ),
                       action(
-                        Icons.queue_music,
-                        '播放队列',
-                        () => showQueue(context),
+                        Icons.lyrics_outlined,
+                        '歌词',
+                        () => showLyrics(context, p),
                       ),
                     ],
                   ),
@@ -1126,7 +1368,7 @@ class PlayerHeader extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            labelButton('返回', onBack, icon: Icons.arrow_back),
+            action(Icons.arrow_back, '返回', onBack),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -1170,10 +1412,15 @@ class _LyricPanelState extends State<LyricPanel> {
     final p = widget.p, lines = p.lines;
     if (lines.isEmpty) {
       return Center(
-        child: Text(
-          p.lyricText.isEmpty ? '暂无歌词，点击下方“歌词”匹配或粘贴' : p.lyricText,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.tokens.muted, height: 2),
+        child: Tooltip(
+          message: p.lyricError,
+          child: Text(
+            p.lyricText.isEmpty
+                ? (p.lyricError.isEmpty ? '暂无歌词' : '歌词暂不可用')
+                : p.lyricText,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.tokens.muted, height: 2),
+          ),
         ),
       );
     }
@@ -1309,7 +1556,7 @@ class DownloadsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (p.downloads.tasks.isEmpty) {
-      return const EmptyView('还没有下载', '歌曲菜单或歌单页面可添加下载。');
+      return const EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
     }
     final completed = p.downloads.tasks
             .where((d) => d.status == DownloadStatus.completed)
@@ -1409,11 +1656,7 @@ class SettingsPanel extends StatelessWidget {
         spacing: 12,
         runSpacing: 12,
         children: [
-          for (final item in [
-            ('a', 'A · 暖白与石墨黑'),
-            ('b', 'B · 深色沉浸'),
-            ('c', 'C · 冷白与克制粉色'),
-          ])
+          for (final item in [('a', '暖白'), ('b', '深色'), ('c', '冷白')])
             labelButton(
               item.$2,
               () => p.setTheme(item.$1),
@@ -1426,16 +1669,8 @@ class SettingsPanel extends StatelessWidget {
       const SizedBox(height: 12),
       Wrap(
         children: [
-          labelButton(
-            '自动 · 优先高音质',
-            () => p.setStandard(false),
-            selected: !p.standard,
-          ),
-          labelButton(
-            '标准 · 节省流量',
-            () => p.setStandard(true),
-            selected: p.standard,
-          ),
+          labelButton('高音质', () => p.setStandard(false), selected: !p.standard),
+          labelButton('标准', () => p.setStandard(true), selected: p.standard),
         ],
       ),
       const SizedBox(height: 24),
@@ -1450,13 +1685,94 @@ class SettingsPanel extends StatelessWidget {
         icon: Icons.person_outline,
       ),
       const SizedBox(height: 24),
-      Text(
-        '听屿 0.1\n本地歌单、队列和下载保存在设备上；账号凭据保存在系统安全存储。\n退出账号保留本地资料，重启后不会自动播放。',
-        style: TextStyle(fontSize: 12, color: context.tokens.muted, height: 2),
+      labelButton(
+        '关于听屿',
+        () => showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('听屿'),
+            content: const Text(
+              '歌单与下载保存在本机，账号凭据保存在系统安全存储。\n退出账号保留本地资料，重启后保持暂停。',
+            ),
+            actions: [labelButton('关闭', () => Navigator.pop(ctx))],
+          ),
+        ),
+        icon: Icons.info_outline,
       ),
     ],
   );
 }
+
+Future<void> showLibraryMenu(
+  BuildContext context,
+  LibraryController p,
+) => showGeneralDialog<void>(
+  context: context,
+  barrierDismissible: true,
+  barrierLabel: '关闭应用菜单',
+  transitionDuration: MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : TingyuTokens.transition,
+  pageBuilder: (ctx, _, _) => Align(
+    alignment: Alignment.centerLeft,
+    child: Material(
+      color: context.tokens.surface,
+      child: SafeArea(
+        child: SizedBox(
+          width: (MediaQuery.sizeOf(context).width * .84).clamp(280.0, 360.0),
+          height: double.infinity,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '听屿',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      action(Icons.close, '关闭应用菜单', () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  labelButton('账号与收藏夹', () async {
+                    Navigator.pop(ctx);
+                    await showAccount(context, p);
+                  }, icon: Icons.account_circle_outlined),
+                  labelButton('收藏夹导入', () async {
+                    Navigator.pop(ctx);
+                    await showAccount(context, p);
+                  }, icon: Icons.playlist_add),
+                  labelButton('外观与设置', () {
+                    Navigator.pop(ctx);
+                    context.go('/settings');
+                  }, icon: Icons.settings_outlined),
+                  labelButton('关于听屿', () {
+                    Navigator.pop(ctx);
+                    showAboutTingyu(context);
+                  }, icon: Icons.info_outline),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+
+void showAboutTingyu(BuildContext context) => showDialog<void>(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    title: const Text('听屿'),
+    content: const Text('歌单与下载保存在本机，账号凭据保存在系统安全存储。'),
+    actions: [labelButton('关闭', () => Navigator.pop(ctx))],
+  ),
+);
 
 Future<void> showAccount(BuildContext context, LibraryController p) async {
   final size = MediaQuery.sizeOf(context);
@@ -1737,11 +2053,6 @@ class _AccountPanelState extends State<AccountPanel> {
                     Navigator.pop(context);
                     router.go('/playlist/$id');
                   }, icon: Icons.queue_music),
-          labelButton('外观与设置', () {
-            final router = GoRouter.of(context);
-            Navigator.pop(context);
-            router.go('/settings');
-          }, icon: Icons.settings_outlined),
         ],
       ),
     );

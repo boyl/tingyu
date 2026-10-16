@@ -70,6 +70,41 @@ void main() {
   }
 
   testWidgets(
+    'collection detail sorting and batch remove confirm cancellation preserves data',
+    (tester) async {
+      final p = fixture.controller;
+      await p.addPlaylist('夜航', track: firstTrack);
+      await p.addToPlaylist(p.playlists.single, secondTrack);
+      await mount(tester);
+      await tap(tester, '夜航');
+      expect(find.byKey(const ValueKey('返回音乐库')), findsOneWidget);
+      expect(find.byType(PlaylistSummary), findsOneWidget);
+      await tap(tester, '歌曲排序');
+      await tap(tester, 'sort-recent');
+      expect(p.collectionSort[p.playlists.single.id], 'recent');
+      await tap(tester, '批量选择');
+      await tap(tester, 'select-${firstTrack.id}');
+      expect(find.text('已选 1 首'), findsOneWidget);
+      await tap(tester, '批量移出歌单');
+      await tap(tester, '取消');
+      expect(p.playlists.single.trackIds.length, 2);
+      await tap(tester, '批量移出歌单');
+      await tap(tester, '确认');
+      expect(p.playlists.single.trackIds, [secondTrack.id]);
+      expect(find.byKey(const ValueKey('批量选择')), findsOneWidget);
+      await tap(tester, '批量选择');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.byKey(const ValueKey('退出多选')), findsNothing);
+      expect(find.byType(PlaylistSummary), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.byKey(const ValueKey('音乐库更多')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'playlist create, blank validation, add, rename, remove and delete confirmation',
     (tester) async {
       await mount(tester);
@@ -84,16 +119,28 @@ void main() {
       await tap(tester, '晨间');
       expect(fixture.controller.playlists.single.trackIds, [firstTrack.id]);
       await tap(tester, '晨间');
-      await tap(tester, '重命名');
-      await tester.enterText(find.byType(TextField), '新的歌单');
+      await tap(tester, '歌单更多');
+      await tap(tester, '编辑名称与简介');
+      await tester.enterText(
+        find.byKey(const ValueKey('playlist-name')),
+        '新的歌单',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('playlist-description')),
+        '夜晚听的歌',
+      );
       await tap(tester, '保存');
       expect(fixture.controller.playlists.single.name, '新的歌单');
+      expect(fixture.controller.playlists.single.description, '夜晚听的歌');
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '移出歌单');
+      await tap(tester, '确认');
       expect(fixture.controller.playlists.single.trackIds, isEmpty);
+      await tap(tester, '歌单更多');
       await tap(tester, '删除歌单');
       await tap(tester, '取消');
       expect(fixture.controller.playlists.length, 1);
+      await tap(tester, '歌单更多');
       await tap(tester, '删除歌单');
       await tap(tester, '确认');
       expect(fixture.controller.playlists, isEmpty);
@@ -143,13 +190,13 @@ void main() {
       await mount(tester);
       await tap(tester, 'play-${firstTrack.id}');
       await tap(tester, '展开播放器');
-      await tap(tester, '列表循环 · 切换模式');
-      await tap(tester, '单曲循环');
+      await tap(tester, 'cycle-mode');
+      expect(find.byType(SimpleDialog), findsNothing);
       expect(fixture.controller.mode, 'repeat');
       await tap(tester, '下一首');
       expect(fixture.controller.current!.id, secondTrack.id);
-      await tap(tester, '单曲循环 · 切换模式');
-      await tap(tester, '随机播放');
+      await tap(tester, 'cycle-mode');
+      expect(fixture.controller.mode, 'shuffle');
       await tap(tester, '下一首');
       expect(fixture.controller.current!.id, firstTrack.id);
       await tap(tester, '歌词');
@@ -260,7 +307,8 @@ void main() {
     'QR expiry, refresh, scan confirmation, expired session and logout recover visibly',
     (tester) async {
       await mount(tester);
-      await tap(tester, '账号与设置');
+      await tap(tester, '音乐库更多');
+      await tap(tester, '账号与收藏夹');
       await tap(tester, '生成登录二维码');
       fixture.api.qrCode = 86038;
       await tester.pump(const Duration(seconds: 2));
@@ -301,6 +349,100 @@ void main() {
     },
   );
   testWidgets(
+    'account entry is collected in library more and secondary pages have no login chrome',
+    (tester) async {
+      await mount(tester);
+      expect(find.byKey(const ValueKey('音乐库更多')), findsOneWidget);
+      expect(find.byKey(const ValueKey('账号与设置')), findsNothing);
+      for (final page in ['/search', '/downloads', '/likes', '/settings']) {
+        router.go(page);
+        await settle(tester);
+        expect(find.byKey(const ValueKey('音乐库更多')), findsNothing);
+        expect(find.text('YOUR PERSONAL SOUNDTRACK'), findsNothing);
+      }
+      router.go('/');
+      await settle(tester);
+      await tap(tester, '音乐库更多');
+      await tap(tester, '外观与设置');
+      expect(find.byType(SettingsPanel), findsOneWidget);
+      expect(find.text('暖白'), findsOneWidget);
+      expect(find.textContaining('账号凭据保存在'), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'download icons expose waiting progress completion pause and failure without visible text',
+    (tester) async {
+      await fixture.controller.play(firstTrack);
+      await mount(tester);
+      await tap(tester, '展开播放器');
+      final task = DownloadTask(firstTrack);
+      fixture.downloads.tasks.add(task);
+      for (final status in DownloadStatus.values) {
+        task.status = status;
+        task.received = 25;
+        task.total = 100;
+        fixture.controller.clearError();
+        await tester.pump();
+        final button = find.byKey(ValueKey('download-${firstTrack.id}'));
+        expect(button.hitTestable(), findsOneWidget);
+        expect(
+          find.descendant(of: button, matching: find.byType(Text)),
+          findsNothing,
+        );
+        final control = tester.widget<Pressable>(button);
+        if (status == DownloadStatus.downloading) {
+          expect(control.label, contains('25%'));
+          expect(
+            find.descendant(
+              of: button,
+              matching: find.byType(CircularProgressIndicator),
+            ),
+            findsOneWidget,
+          );
+        }
+        if (status == DownloadStatus.completed) {
+          expect(control.selected, isTrue);
+          expect(control.label, contains('已下载'));
+        }
+        if (status == DownloadStatus.failed) {
+          expect(control.label, contains('点击重试'));
+        }
+        if (status == DownloadStatus.paused) {
+          expect(control.label, contains('点击继续'));
+        }
+      }
+      task.status = DownloadStatus.completed;
+      fixture.controller.clearError();
+      await tester.pump();
+      await tap(tester, 'download-${firstTrack.id}');
+      expect(find.byType(DownloadsPanel), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  test(
+    'download icon resolves placeholder IDs to the canonical first-part download',
+    () async {
+      fixture.downloads.tasks.add(
+        DownloadTask(firstTrack, status: DownloadStatus.completed),
+      );
+      const placeholder = Track(
+        bvid: 'BV1xx411c7mD',
+        cid: 0,
+        title: '占位',
+        artist: '',
+        cover: '',
+        duration: 30,
+      );
+      expect(
+        trackDownload(fixture.controller, placeholder)?.status,
+        DownloadStatus.completed,
+      );
+    },
+  );
+  testWidgets(
     'all themes render full shared pages at four target sizes without exceptions',
     (tester) async {
       final p = fixture.controller;
@@ -333,7 +475,12 @@ void main() {
                 find.byKey(const ValueKey('返回')).hitTestable(),
                 findsOneWidget,
               );
-              expect(find.text('列表循环 · 切换模式').hitTestable(), findsOneWidget);
+              expect(
+                find.byKey(const ValueKey('cycle-mode')).hitTestable(),
+                findsOneWidget,
+              );
+              expect(find.text('返回'), findsNothing);
+              expect(find.text('下载'), findsNothing);
             }
           }
         }

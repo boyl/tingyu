@@ -43,12 +43,21 @@ class AudioStream {
 }
 
 class Playlist {
-  const Playlist(this.id, this.name, this.trackIds);
-  final String id, name;
+  const Playlist(this.id, this.name, this.trackIds, {this.description = ''});
+  final String id, name, description;
   final List<String> trackIds;
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'tracks': trackIds};
-  factory Playlist.fromJson(Map<String, dynamic> j) =>
-      Playlist(j['id'], j['name'], List<String>.from(j['tracks']));
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'tracks': trackIds,
+    'description': description,
+  };
+  factory Playlist.fromJson(Map<String, dynamic> j) => Playlist(
+    j['id'],
+    j['name'],
+    List<String>.from(j['tracks']),
+    description: j['description'] ?? '',
+  );
 }
 
 enum DownloadStatus { waiting, downloading, completed, failed, paused }

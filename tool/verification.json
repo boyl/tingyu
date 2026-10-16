@@ -1,11 +1,11 @@
 {
-  "version": "0.1.3+4",
+  "version": "0.1.4+5",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "4e0fdbdd5d2c593ff6b1165f4c14c554e2a3b8a8bec8f3fb7bd225483116fb78",
-  "checkedAt": "2026-10-16T07:25:12.105889+00:00",
+  "sourceSha256": "99665dde667cf2efd09125a583ad86dfe4940f60512eba22837163a60b48fef1",
+  "checkedAt": "2026-10-16T11:35:32.400903+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 41,
+  "offlineTestsPassed": 46,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -41,7 +41,8 @@
       "nativeDecode": "PASS",
       "download": "PASS",
       "offlineDecode": "PASS",
-      "playerGain": 1
+      "playerGain": 1,
+      "simultaneousDownloadPlayback": "PASS - native decode/progress/gain only; audible output NOT VERIFIED"
     },
     "fullscreenReleaseChecks": {
       "cold-start": "PASS",
@@ -50,10 +51,56 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "ae08cfdb3362b772054a8cd8a00949ad1be3c2bd55676e008a9b1fafb6eaeba3"
+    "testedReleaseSha256": "f09d7047e050d1b981e4385004f042f9a1970b1150fb0e955901bc4b78caf6f3",
+    "displayCutout": {
+      "checks": {
+        "portrait": {
+          "status": "PASS",
+          "pixels": [
+            [
+              247,
+              246,
+              242
+            ],
+            [
+              247,
+              246,
+              242
+            ]
+          ],
+          "imageSize": [
+            720,
+            1600
+          ],
+          "explicitCutoutPolicy": "always"
+        },
+        "landscape": {
+          "status": "PASS",
+          "pixels": [
+            [
+              247,
+              246,
+              242
+            ],
+            [
+              253,
+              252,
+              249
+            ]
+          ],
+          "imageSize": [
+            1600,
+            720
+          ],
+          "explicitCutoutPolicy": "always"
+        }
+      },
+      "magic5PhysicalDevice": "NOT RUN - MagicOS 7.1 portrait"
+    },
+    "collectionOperations": "PASS - native detail/sort/multiselect cancel/menu/drawer; system return covered by widgets"
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-MINIMAL.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -92,10 +139,19 @@
   },
   "humanAcceptanceDevice": {
     "device": "tingyu-api36 / emulator-5556",
-    "version": "0.1.3",
-    "versionCode": 2004,
-    "update": "PASS - same-signer Release adb install -r; no uninstall or data clearing",
-    "launch": "PASS - MainActivity cold start",
-    "userDataReview": "not inspected by automation"
+    "version": "0.1.4",
+    "versionCode": 2005,
+    "update": "PASS - same-signer Release adb install -r; no uninstall or data clearing; original UID 10219 retained",
+    "launch": "PASS - MainActivity cold start after package-file repair",
+    "userDataReview": "Opaque app-data backup saved locally with 0600 permissions; original directory and UID preserved; account/playlist contents not inspected by automation",
+    "restartIncident": "After emulator cold restart, package settings and app-data remained but code path did not resolve. Saved private app-data backup and repaired via same-signer install -r + sync."
+  },
+  "emulatorSilence": {
+    "status": "OPEN - not claimed fixed",
+    "reportedDevice": "tingyu-api36 / emulator-5556",
+    "symptom": "progress advances; pause/play does not restore sound",
+    "evidence": "Android track/mixer/focus not muted, no underflow; Mac default built-in stereo output, not muted",
+    "mitigation": "project AVD microphone input disabled, audio output retained; cold restart with user data retained",
+    "audibleRecheck": "PENDING - needs human listening"
   }
 }

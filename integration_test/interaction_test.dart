@@ -11,6 +11,7 @@ import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/downloads.dart';
 import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/theme.dart';
 import '../test/support/fakes.dart';
 
 Uint8List tone() {
@@ -118,18 +119,44 @@ void main() {
         await tap('上移第 2 首');
         expect(p.queue, [secondTrack.id, firstTrack.id]);
         await tap('关闭队列');
+        await tap('tab-library');
+        await tap('原生验收歌单');
+        expect(find.byType(PlaylistSummary), findsOneWidget);
+        await binding.convertFlutterSurfaceToImage();
+        await tester.pump();
+        await binding.takeScreenshot('collection-detail');
+        await tap('歌曲排序');
+        await binding.takeScreenshot('collection-sort');
+        await tap('sort-recent');
+        expect(p.collectionSort[p.playlists.single.id], 'recent');
+        await tap('批量选择');
+        await tap('select-${firstTrack.id}');
+        await binding.takeScreenshot('collection-selection');
+        await tap('批量移出歌单');
+        await tap('取消');
+        expect(p.playlists.single.trackIds, [firstTrack.id]);
+        await tap('退出多选');
+        await tap('歌单更多');
+        await binding.takeScreenshot('collection-more');
+        Navigator.of(tester.element(find.text('编辑名称与简介'))).pop();
+        await tester.pumpAndSettle();
+        await tap('返回音乐库');
+        await tap('音乐库更多');
+        await binding.takeScreenshot('application-drawer');
+        await tap('关闭应用菜单');
         await tap('展开播放器');
-        await tap('列表循环 · 切换模式');
-        await tap('单曲循环');
+        await tap('cycle-mode');
+        expect(p.mode, 'repeat');
+        expect(find.byType(SimpleDialog), findsNothing);
         await tap('下一首');
         await waitFor(() => p.current?.id == secondTrack.id && !p.opening);
-        await tap('单曲循环 · 切换模式');
-        await tap('随机播放');
+        await tap('cycle-mode');
+        expect(p.mode, 'shuffle');
         await tap('下一首');
         await waitFor(() => p.current?.id == firstTrack.id && !p.opening);
         expect(p.library.keys.take(libraryOrder.length), libraryOrder);
-        await tap('随机播放 · 切换模式');
-        await tap('列表循环');
+        await tap('cycle-mode');
+        expect(p.mode, 'order');
         await tap('歌词');
         await tester.enterText(
           find.byType(TextField).last,
@@ -137,7 +164,6 @@ void main() {
         );
         await tap('保存歌词');
         await waitFor(() => p.lyricText.contains('原生验收歌词'));
-        await binding.convertFlutterSurfaceToImage();
         await tester.pump();
         await binding.takeScreenshot('audit-native-player');
         await tap('返回');
@@ -146,8 +172,7 @@ void main() {
         await tap('播放或暂停');
         expect(p.playing, isFalse);
         reject = true;
-        await tap('更多 ${firstTrack.title}');
-        await tap('下载');
+        await tap('download-${firstTrack.id}');
         await tap('tab-downloads');
         await waitFor(
           () => p.downloads.tasks.single.status == DownloadStatus.failed,
@@ -159,6 +184,20 @@ void main() {
           () => p.downloads.tasks.single.status == DownloadStatus.completed,
         );
         await binding.takeScreenshot('audit-native-download-complete');
+        await tap('展开播放器');
+        final downloadedButton = find.byKey(
+          ValueKey('download-${firstTrack.id}'),
+        );
+        expect(tester.widget<Pressable>(downloadedButton).selected, isTrue);
+        expect(
+          find.descendant(of: downloadedButton, matching: find.byType(Text)),
+          findsNothing,
+        );
+        expect(find.byType(SimpleDialog), findsNothing);
+        await binding.takeScreenshot('minimal-player-downloaded');
+        await tap('download-${firstTrack.id}');
+        expect(find.byType(DownloadsPanel), findsOneWidget);
+
         final beforeOffline = requests;
         api.offline = true;
         await tap('播放已下载歌曲');

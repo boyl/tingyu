@@ -1,5 +1,7 @@
 package app.tingyu.tingyu
 
+import android.graphics.Color
+import android.view.WindowManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -11,6 +13,7 @@ class MainActivity : AudioServiceActivity() {
     private var keyboardWasVisible = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureDisplayEdges()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.decorView.setOnApplyWindowInsetsListener { _, insets ->
                 val keyboardVisible = insets.isVisible(WindowInsets.Type.ime())
@@ -27,6 +30,28 @@ class MainActivity : AudioServiceActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) window.decorView.post { hideSystemBars() }
+    }
+
+    // Extend the background into camera cutouts; Flutter SafeArea protects controls.
+    // Explicit policy is required on Android 9-14, including vendor Android builds.
+    @Suppress("DEPRECATION")
+    private fun configureDisplayEdges() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                } else {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+        }
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
     }
 
     @Suppress("DEPRECATION")
