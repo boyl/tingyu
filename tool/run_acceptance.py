@@ -12,6 +12,12 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--device', help='Run native Android navigation integration test on this device')
 args = parser.parse_args()
+if args.device:
+    adb = ROOT.parent / '.toolchains/android-sdk/platform-tools/adb'
+    adb_command = str(adb) if adb.exists() else 'adb'
+    identity = subprocess.check_output([adb_command, '-s', args.device, 'emu', 'avd', 'name'], text=True, timeout=10)
+    if identity.splitlines()[0].strip() != 'tingyu-regression':
+        parser.error('Native acceptance requires the isolated tingyu-regression AVD; never use the human acceptance device.')
 output = ROOT / 'artifacts' / 'acceptance'
 output.mkdir(parents=True, exist_ok=True)
 flutter = ['flutter'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']

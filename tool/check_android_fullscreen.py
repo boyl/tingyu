@@ -17,6 +17,9 @@ args = parser.parse_args()
 if not args.device.startswith('emulator-'):
     parser.error('This automated lifecycle check is limited to a local emulator.')
 adb = shutil.which('adb') or str(ROOT.parent / '.toolchains/android-sdk/platform-tools/adb')
+identity = subprocess.check_output([adb, '-s', args.device, 'emu', 'avd', 'name'], text=True, timeout=10)
+if identity.splitlines()[0].strip() != 'tingyu-regression':
+    parser.error('Use the isolated tingyu-regression AVD; do not interrupt the human acceptance device.')
 out = ROOT / 'artifacts/acceptance/release'
 out.mkdir(parents=True, exist_ok=True)
 results = {}

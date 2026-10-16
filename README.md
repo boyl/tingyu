@@ -66,7 +66,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
-- Android 0.1.1 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
+- Android 0.1.2 ABI 拆分 Release：ARM64 约 22.3 MB，仍为开发签名；并非全量验收完成的正式发布。
 - 静态分析零问题，22 项离线测试通过；模拟器两种尺寸的导航和收藏夹导入布局专项通过；公开视频取流探测是单独的历史证据。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
@@ -91,3 +91,5 @@ python3 tool/run_acceptance.py --device emulator-5554
 本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。然后运行 `sh tool/flutterw.sh run -d emulator-5556`。首次全屏会出现 Android 自带操作提示，确认后可从屏幕边缘临时呼出系统栏。
 
 Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，先选择再导入；导入入口固定在底部。桌面账号窗口使用限制宽高的对话框。专项验收结果见 `docs/ACCEPTANCE-2026-10-16.md`。
+
+自动测试请使用 `TINGYU_EMULATOR_TEST=1 TINGYU_EMULATOR_HEADLESS=1 sh tool/android_emulator.sh` 启动独立的 `emulator-5558`。人工验收设备 `emulator-5556` 保留真实登录和歌单，不允许测试脚本降级安装或注入测试数据。播放器顶部返回导航固定显示，不随封面与歌词滚动。

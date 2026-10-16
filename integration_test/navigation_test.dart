@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,6 +97,67 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('tab-library')));
       await tester.pumpAndSettle();
       expect(scrollState.position.pixels, closeTo(offset, 1));
+      // Real local WAV decoding verifies that returning never pauses playback.
+      final audioDirectory = await Directory.systemTemp.createTemp(
+        'tingyu-back-test-',
+      );
+      final audioFile = File('${audioDirectory.path}/silence.wav');
+      final pcmBytes = 44100 * 30 * 2;
+      final wav = Uint8List(44 + pcmBytes), header = ByteData(44);
+      header.setUint32(4, 36 + pcmBytes, Endian.little);
+      header.setUint32(16, 16, Endian.little);
+      header.setUint16(20, 1, Endian.little);
+      header.setUint16(22, 1, Endian.little);
+      header.setUint32(24, 44100, Endian.little);
+      header.setUint32(28, 88200, Endian.little);
+      header.setUint16(32, 2, Endian.little);
+      header.setUint16(34, 16, Endian.little);
+      header.setUint32(40, pcmBytes, Endian.little);
+      wav.setRange(0, 44, header.buffer.asUint8List());
+      for (final chunk in [
+        (0, 'RIFF'),
+        (8, 'WAVE'),
+        (12, 'fmt '),
+        (36, 'data'),
+      ]) {
+        wav.setRange(chunk.$1, chunk.$1 + 4, chunk.$2.codeUnits);
+      }
+      await audioFile.writeAsBytes(wav);
+      controller.current = controller.library.values.firstWhere(
+        (t) => t.bvid.startsWith('acceptance-'),
+      );
+      await controller.playback.open(controller.current!, file: audioFile.path);
+      unawaited(controller.playback.play());
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(controller.playing, isTrue);
+      await tester.tap(find.byKey(const ValueKey('展开播放器')));
+      await tester.pumpAndSettle();
+      final playerScroll = find.byKey(const ValueKey('player-content'));
+      await tester.drag(playerScroll, const Offset(0, -650));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('返回')).hitTestable(), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('返回'))).dy,
+        lessThan(80),
+      );
+      await tester.tap(find.byKey(const ValueKey('返回')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(scrollState.position.pixels, closeTo(offset, 1));
+      expect(controller.playing, isTrue);
+      final lastPosition = controller.position;
+      await tester.tap(find.byKey(const ValueKey('展开播放器')));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(controller.playing, isTrue);
+      expect(controller.position, greaterThanOrEqualTo(lastPosition));
+      await controller.playback.pause();
+      await controller.playback.player.stop();
+      controller.current = null;
+      controller.clearError();
+      await audioDirectory.delete(recursive: true);
       controller.library.removeWhere(
         (_, track) => track.bvid.startsWith('acceptance-'),
       );

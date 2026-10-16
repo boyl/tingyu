@@ -743,6 +743,8 @@ class MiniPlayer extends StatelessWidget {
         children: [
           Expanded(
             child: Pressable(
+              key: const ValueKey('展开播放器'),
+              label: '展开播放器',
               onPressed: () => context.push('/player'),
               padding: EdgeInsets.zero,
               child: Row(
@@ -878,8 +880,10 @@ class PlayerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(libraryProvider), track = p.current;
+    void goBack() => context.canPop() ? context.pop() : context.go('/');
     if (track == null) {
       return Scaffold(
+        appBar: PlayerHeader(onBack: goBack, status: '正在播放'),
         body: EmptyView(
           '还没有正在播放的曲目',
           '搜索一首歌开始聆听',
@@ -976,32 +980,18 @@ class PlayerScreen extends ConsumerWidget {
       ],
     );
     return Scaffold(
+      appBar: PlayerHeader(
+        onBack: goBack,
+        status: p.opening ? '正在解析…' : '正在播放 · ${p.quality}',
+        onMore: () => showTrackActions(context, p, track, null),
+      ),
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
+          key: const ValueKey('player-content'),
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Row(
-                children: [
-                  action(
-                    Icons.keyboard_arrow_down,
-                    '收起播放器',
-                    () => context.canPop() ? context.pop() : context.go('/'),
-                  ),
-                  const Spacer(),
-                  Text(
-                    p.opening ? '正在解析…' : '正在播放 · ${p.quality}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const Spacer(),
-                  action(
-                    Icons.more_horiz,
-                    '歌曲操作',
-                    () => showTrackActions(context, p, track, null),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
               if (p.error.isNotEmpty)
                 errorBox(context, p.error, () => p.play(track, at: p.position)),
               Center(
@@ -1027,6 +1017,51 @@ class PlayerScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Navigation stays outside the scrollable content, including empty playback.
+class PlayerHeader extends StatelessWidget implements PreferredSizeWidget {
+  const PlayerHeader({
+    super.key,
+    required this.onBack,
+    required this.status,
+    this.onMore,
+  });
+  final VoidCallback onBack;
+  final String status;
+  final VoidCallback? onMore;
+  @override
+  Size get preferredSize => const Size.fromHeight(64);
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: context.tokens.background,
+    child: SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            labelButton('返回', onBack, icon: Icons.arrow_back),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                status,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: context.tokens.muted),
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (onMore != null)
+              action(Icons.more_horiz, '歌曲操作', onMore)
+            else
+              const SizedBox(width: 48),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class LyricPanel extends StatefulWidget {

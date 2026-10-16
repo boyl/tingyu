@@ -1,8 +1,8 @@
 {
-  "version": "0.1.1+2",
+  "version": "0.1.2+3",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "03c330050ee2f1d486106c0db48bcda84c757176a0b59b0b7a5b83656af4863f",
+  "sourceSha256": "0f89d8cf1b71dd0f7a636d26df0a446af1a4329853407b1d9db1610b9092580f",
   "staticAnalysis": "PASS",
   "offlineTestsPassed": 22,
   "liveProbeDefaultSkipped": 1,
@@ -23,7 +23,9 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "bff2699353f2ad06c09fc9abdb8516b51d7bbc2cf60260648381bda7c3559a4c"
+    "testedReleaseSha256": "d567d0f455a33a612cb12a148dcbc67accc2a15fb624af8b2aa1bf4e1cb916fe",
+    "device": "tingyu-regression / emulator-5558",
+    "playerReturn": "PASS - fixed visible back action after scrolling, button/system return preserve source offset and real local WAV playback"
   },
   "artifactManifest": "tool/release-apks.json",
   "acceptanceReport": "docs/ACCEPTANCE-2026-10-16.md",

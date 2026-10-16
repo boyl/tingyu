@@ -1,25 +1,25 @@
 {
-  "version": "0.1.1+2",
+  "version": "0.1.2+3",
   "signing": "development/debug key",
   "validation": "ZIP integrity and exact ABI passed; arm64 installed and fullscreen lifecycle checked on Android 16 emulator; full product acceptance pending",
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.1-android-arm64-v8a-release.apk",
-      "bytes": 22294991,
-      "sha256": "bff2699353f2ad06c09fc9abdb8516b51d7bbc2cf60260648381bda7c3559a4c"
+      "path": "artifacts/tingyu-0.1.2-android-arm64-v8a-release.apk",
+      "bytes": 22294947,
+      "sha256": "d567d0f455a33a612cb12a148dcbc67accc2a15fb624af8b2aa1bf4e1cb916fe"
     },
     {
       "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.1-android-armeabi-v7a-release.apk",
-      "bytes": 19835159,
-      "sha256": "92e3a9da58600949f470dd79c6c39b102e427edbd712159d8791cda47bf62a7a"
+      "path": "artifacts/tingyu-0.1.2-android-armeabi-v7a-release.apk",
+      "bytes": 19835115,
+      "sha256": "746157278e02fce91de9320eb8c33767a62f62867f71c3c5f119c298e2d319b2"
     },
     {
       "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.1-android-x86_64-release.apk",
-      "bytes": 23746723,
-      "sha256": "c61863ee7c44e13fcb796cb3201b6ed7bf9c1f0ade1a304a7d93e5be28c047a7"
+      "path": "artifacts/tingyu-0.1.2-android-x86_64-release.apk",
+      "bytes": 23746679,
+      "sha256": "3de8b8431b9db6e0465e41c2eb2619ae62276865b1e89d9a5b97495827bc2ae7"
     }
   ]
 }

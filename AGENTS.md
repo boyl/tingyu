@@ -10,3 +10,5 @@
 - CI 目前仅手动触发，不自动上传商店或发布 Release。Windows 分发必须包含完整 Release 目录，不能只复制 tingyu.exe。
 
 - 每轮改动必须先按 docs/ACCEPTANCE.md 执行工程验收，再交付人工验收。使用 tool/run_acceptance.py 保存源码指纹、日志与结果；FAIL / NOT RUN 不得写成 PASS。Android 导航变更必须运行模拟器集成测试；系统栏、后台播放、真机行为分别记录。
+
+- 自动原生回归仅可使用独立 tingyu-regression AVD（5558），禁止在用户手工验收设备 tingyu-api36（5556）执行会装测试包或注入夹具的流程。对用户设备更新仅允许同签名 Release 的 `adb install -r`，不得降级卸载或清理数据。
