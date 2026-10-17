@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
+import 'package:tingyu/services/downloads.dart';
 import 'support/fakes.dart';
 
 class TransferApi extends FixtureApi {
@@ -24,6 +25,67 @@ Future<void> until(bool Function() check) async {
 }
 
 void main() {
+  test(
+    'completed downloads sort by finish time and persist without mutating task order',
+    () async {
+      final fixture = await TestLibrary.create();
+      DownloadManager? restored;
+      try {
+        final older = DateTime.utc(2026, 10, 16, 10);
+        final newer = older.add(const Duration(hours: 1));
+        final oldFile = await File(
+          '${fixture.directory.path}/old.m4a',
+        ).writeAsBytes([1]);
+        final newFile = await File(
+          '${fixture.directory.path}/new.m4a',
+        ).writeAsBytes([2]);
+        final old = DownloadTask(
+          firstTrack,
+          status: DownloadStatus.completed,
+          lyricStatus: DownloadLyricStatus.missing,
+          received: 1,
+          filePath: oldFile.path,
+          completedAt: older,
+        );
+        final recent = DownloadTask(
+          secondTrack,
+          status: DownloadStatus.completed,
+          lyricStatus: DownloadLyricStatus.missing,
+          received: 1,
+          filePath: newFile.path,
+          completedAt: newer,
+        );
+        final paused = DownloadTask(firstTrack, status: DownloadStatus.paused);
+        fixture.downloads.tasks.addAll([old, recent, paused]);
+        expect(fixture.downloads.completedTasks, [recent, old]);
+        expect(fixture.downloads.incompleteTasks, [paused]);
+        expect(fixture.downloads.tasks, [old, recent, paused]);
+        expect(DownloadTask.fromJson(recent.toJson()).completedAt, newer);
+        await fixture.downloads.prepareForExit();
+        restored = DownloadManager(
+          fixture.api,
+          fixture.db,
+          fixture.directory,
+          lyricsClient: FixtureLyrics(),
+        );
+        await restored.initialize();
+        expect(restored.completedTasks.map((d) => d.track.id), [
+          secondTrack.id,
+          firstTrack.id,
+        ]);
+        expect(restored.completedTasks.map((d) => d.completedAt), [
+          newer,
+          older,
+        ]);
+        expect(restored.incompleteTasks.single.status, DownloadStatus.paused);
+      } finally {
+        await restored?.prepareForExit();
+        restored?.dispose();
+        await fixture.close();
+      }
+    },
+  );
+
   test(
     'cancel active transfer, retry, invalidate missing file and remove without orphan files',
     () async {
@@ -73,6 +135,9 @@ void main() {
         slow = false;
         await manager.retry(task);
         await until(() => task.status == DownloadStatus.completed);
+        expect(task.completedAt, isNotNull);
+        expect(task.completedAt!.isUtc, isTrue);
+        final firstCompletion = task.completedAt!;
         final local = await manager.availablePath(firstTrack);
         expect(local, isNotNull);
         expect(await File(local!).length(), 32768);
@@ -81,6 +146,7 @@ void main() {
         expect(task.status, DownloadStatus.failed);
         await manager.retry(task);
         await until(() => task.status == DownloadStatus.completed);
+        expect(task.completedAt!.isBefore(firstCompletion), isFalse);
         await manager.remove(task);
         expect(manager.tasks, isEmpty);
         expect(

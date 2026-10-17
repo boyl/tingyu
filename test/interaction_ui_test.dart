@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart' show ProcessingState, PlayerState;
 import 'package:tingyu/main.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/ui/app.dart';
@@ -394,10 +395,28 @@ void main() {
       expect(find.byType(PlayingIndicator), findsOneWidget);
       await p.toggle();
       await settle(tester);
-      expect(find.byType(PlayingIndicator), findsNothing);
+      expect(
+        tester.widget<PlayingIndicator>(find.byType(PlayingIndicator)).playing,
+        isFalse,
+      );
       await p.toggle();
       await settle(tester);
       expect(find.byType(PlayingIndicator), findsOneWidget);
+      final player = fixture.playback.player;
+      player.state = ProcessingState.idle;
+      player.states.add(PlayerState(true, ProcessingState.idle));
+      await settle(tester);
+      expect(
+        tester.widget<PlayingIndicator>(find.byType(PlayingIndicator)).playing,
+        isFalse,
+        reason: '停止时即使后端保留 playing 意图，也必须静态',
+      );
+      await p.play(current);
+      await settle(tester);
+      expect(
+        tester.widget<PlayingIndicator>(find.byType(PlayingIndicator)).playing,
+        isTrue,
+      );
       final queue = find.byKey(const ValueKey('queue-list'));
       final scrollable = find.descendant(
         of: queue,
@@ -484,6 +503,24 @@ void main() {
           }
         }
       }
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'search empty hint about importing favorites disappears after login',
+    (tester) async {
+      await mount(tester);
+      router.go('/search');
+      await settle(tester);
+      expect(find.textContaining('登录后可导入收藏夹'), findsOneWidget);
+      fixture.api.loggedIn = true;
+      fixture.controller.profile = {'uname': '测试账号', 'mid': 1};
+      fixture.controller.notifyListeners();
+      await settle(tester);
+      expect(find.textContaining('登录后可导入收藏夹'), findsNothing);
+      expect(find.text('搜索歌曲、UP 主或视频链接。'), findsOneWidget);
+      expect(find.text('前往哔哩哔哩'), findsOneWidget);
       await unmount(tester);
     },
   );
@@ -856,6 +893,162 @@ void main() {
   );
 
   testWidgets(
+    'download tabs default to newest files, retain per-tab searches and never auto-switch on completion',
+    (tester) async {
+      final pendingTrack = Track(
+        bvid: 'BVpending',
+        cid: 1,
+        title: '待处理歌曲',
+        artist: 'UP',
+        cover: '',
+        duration: 30,
+      );
+      final old = DownloadTask(
+        firstTrack,
+        status: DownloadStatus.completed,
+        completedAt: DateTime.utc(2026, 10, 16),
+        lyricStatus: DownloadLyricStatus.available,
+      );
+      final recent = DownloadTask(
+        secondTrack,
+        status: DownloadStatus.completed,
+        completedAt: DateTime.utc(2026, 10, 17),
+        lyricStatus: DownloadLyricStatus.available,
+      );
+      final pending = DownloadTask(pendingTrack, status: DownloadStatus.paused);
+      fixture.downloads.tasks.addAll([old, recent, pending]);
+      await mount(tester, size: const Size(1024, 1000));
+      router.go('/downloads');
+      await settle(tester);
+      double y(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      expect(
+        find.byKey(ValueKey('download-row-${pendingTrack.id}')),
+        findsNothing,
+      );
+      expect(
+        y('download-row-${secondTrack.id}'),
+        lessThan(y('download-row-${firstTrack.id}')),
+      );
+      await tap(tester, '搜索本地歌曲');
+      await tester.enterText(
+        find.byKey(const ValueKey('downloads-search-0')),
+        firstTrack.title,
+      );
+      await settle(tester);
+      expect(
+        find.byKey(ValueKey('download-row-${secondTrack.id}')),
+        findsNothing,
+      );
+      await tap(tester, 'downloads-tab-tasks');
+      expect(
+        find.byKey(ValueKey('download-row-${pendingTrack.id}')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('downloads-search-0')), findsNothing);
+      await tap(tester, '搜索本地歌曲');
+      await tester.enterText(
+        find.byKey(const ValueKey('downloads-search-1')),
+        pendingTrack.title,
+      );
+      await settle(tester);
+      await tap(tester, 'downloads-tab-completed');
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('downloads-search-0')))
+            .controller!
+            .text,
+        firstTrack.title,
+      );
+      await tap(tester, 'downloads-tab-tasks');
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('downloads-search-1')))
+            .controller!
+            .text,
+        pendingTrack.title,
+      );
+      pending.status = DownloadStatus.completed;
+      pending.completedAt = DateTime.utc(2026, 10, 18);
+      fixture.controller.clearError();
+      await settle(tester);
+      expect(
+        tester
+            .widget<Pressable>(
+              find.byKey(const ValueKey('downloads-tab-tasks')),
+            )
+            .selected,
+        isTrue,
+      );
+      expect(
+        find.byKey(ValueKey('download-row-${pendingTrack.id}')),
+        findsNothing,
+      );
+      await tap(tester, 'downloads-tab-completed');
+      await tap(tester, '清除本地搜索');
+      expect(
+        y('download-row-${pendingTrack.id}'),
+        lessThan(y('download-row-${secondTrack.id}')),
+      );
+      expect(fixture.downloads.tasks, [old, recent, pending]);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'long download tabs preserve independent scroll and return only the visible tab to top',
+    (tester) async {
+      for (var i = 0; i < 80; i++) {
+        for (final done in [true, false]) {
+          fixture.downloads.tasks.add(
+            DownloadTask(
+              Track(
+                bvid: 'BVtab${done ? 'done' : 'task'}$i',
+                cid: i + 1,
+                title: '歌曲 $i',
+                artist: 'UP',
+                cover: '',
+                duration: 30,
+              ),
+              status: done ? DownloadStatus.completed : DownloadStatus.paused,
+              completedAt: done
+                  ? DateTime.utc(2026, 10, 17).add(Duration(minutes: i))
+                  : null,
+            ),
+          );
+        }
+      }
+      await mount(tester);
+      router.go('/downloads');
+      await settle(tester);
+      ScrollPosition position(int i) => tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: find.byKey(PageStorageKey('downloads-list-$i')),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      final files = position(0);
+      files.jumpTo(1200);
+      await settle(tester);
+      expect(find.byKey(const ValueKey('scroll-to-top')), findsOneWidget);
+      await tap(tester, 'downloads-tab-tasks');
+      final tasks = position(1);
+      tasks.jumpTo(800);
+      await settle(tester);
+      await tap(tester, 'downloads-tab-completed');
+      expect(position(0).pixels, 1200);
+      await tap(tester, 'downloads-tab-tasks');
+      expect(position(1).pixels, 800);
+      await tap(tester, 'scroll-to-top');
+      expect(tasks.pixels, 0);
+      await tap(tester, 'downloads-tab-completed');
+      expect(files.pixels, 1200);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'download icons expose waiting progress completion pause and failure without visible text',
     (tester) async {
       await fixture.controller.play(firstTrack);
@@ -948,6 +1141,7 @@ void main() {
             '/search',
             '/likes',
             '/downloads',
+            '/downloads?section=tasks',
             '/settings',
             '/playlist/${p.playlists.single.id}',
             '/player',

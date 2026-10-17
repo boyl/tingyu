@@ -36,6 +36,23 @@ class DownloadManager extends ChangeNotifier {
   final Directory directory;
   final Dio _http;
   final List<DownloadTask> tasks = [];
+  List<DownloadTask> get incompleteTasks =>
+      tasks.where((task) => task.status != DownloadStatus.completed).toList();
+
+  /// Display order only: never reorder the transfer queue or playback source.
+  List<DownloadTask> get completedTasks {
+    final indexed = tasks.indexed
+        .where((entry) => entry.$2.status == DownloadStatus.completed)
+        .toList();
+    indexed.sort((a, b) {
+      final time = (b.$2.completedAt?.microsecondsSinceEpoch ?? 0).compareTo(
+        a.$2.completedAt?.microsecondsSinceEpoch ?? 0,
+      );
+      return time != 0 ? time : b.$1.compareTo(a.$1);
+    });
+    return indexed.map((entry) => entry.$2).toList();
+  }
+
   final _localCovers = <String, File>{};
   final _coverJobs = <DownloadTask, Future<void>>{};
   final _coverWrites = <DownloadTask, Future<File>>{};
@@ -62,6 +79,8 @@ class DownloadManager extends ChangeNotifier {
           t.status = DownloadStatus.failed;
           t.error = '下载文件已丢失或不完整，请重新下载';
           t.filePath = null;
+        } else {
+          t.completedAt ??= (await file.lastModified()).toUtc();
         }
       } else if (t.status == DownloadStatus.downloading) {
         t.status = DownloadStatus.paused;
@@ -140,6 +159,7 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     t.status = DownloadStatus.waiting;
+    t.completedAt = null;
     t.error = null;
     t.received = 0;
     t.total = 0;
@@ -243,6 +263,7 @@ class DownloadManager extends ChangeNotifier {
           pending.filePath = file.path;
           pending.received = bytes;
           pending.total = bytes;
+          pending.completedAt = DateTime.now().toUtc();
           pending.status = DownloadStatus.completed;
           _queueLyrics(pending);
           notifyListeners();

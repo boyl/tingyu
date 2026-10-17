@@ -116,7 +116,10 @@ GoRouter createRouter() => GoRouter(
                 path: route == 'library' ? '/' : '/$route',
                 pageBuilder: (_, state) => NoTransitionPage(
                   key: state.pageKey,
-                  child: AppShell(page: route),
+                  child: AppShell(
+                    page: route,
+                    downloadSection: state.uri.queryParameters['section'],
+                  ),
                 ),
                 routes: [
                   if (route == 'library')

@@ -43,8 +43,13 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       danger;
   static const space = 8.0,
       radius = 12.0,
+      collectionRadius = 16.0,
+      downloadTabWidth = 116.0,
+      downloadTabHeight = 56.0,
+      tabIndicatorHeight = 3.0,
       playerRadius = 20.0,
       playingPeriod = Duration(milliseconds: 900),
+      scrollReturn = Duration(milliseconds: 320),
       pressDuration = Duration(milliseconds: 100),
       transition = Duration(milliseconds: 180);
   static const light = TingyuTokens(

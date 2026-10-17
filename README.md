@@ -66,17 +66,18 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
+- 0.1.10 队列统一动态/静态音柱，长列表增加按需出现的回顶入口，下载任务与已下载分页、已下载按完成时间倒序，并明确外部 B 站入口。已登录时搜索空态不再提示导入收藏夹。见 [音柱与回顶验收](docs/ACCEPTANCE-2026-10-17-QUEUE-INDICATOR.md)。
 - 0.1.9 长列表按需构建、进度刷新隔离、向当前歌单本地多选/在线定向添加、分类现场恢复和轻量歌单过渡，见 [滚动及选歌验收](docs/ACCEPTANCE-2026-10-17-SCROLL.md)。
 - 0.1.8 封面持久复用、下载歌词补全、B 站 CC/AI 字幕与已有内嵌歌词读取，支持系统选择位置导出带封面、元数据、内嵌 LRC 的 M4A；不转码、不修改原下载。覆盖边界见 [离线与导出验收](docs/ACCEPTANCE-2026-10-17-OFFLINE-EXPORT.md)。
 - 0.1.7 队列当前标记/定位、本地列表搜索、主题首次切换稳定性、四字歌单编辑与紧凑简介输入，见 [交互验收](docs/ACCEPTANCE-2026-10-17-INTERACTIONS.md)。
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.9 ABI 拆分 Release：具体大小见下方包清单，仍为开发签名；并非全量验收完成的正式发布。
+- Android 0.1.10 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.10)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
-- 新增工作流仅支持手动触发，尚未运行。工程仓库为私有 `boyl/tingyu`，可执行三平台构建；构建产物不入库。
+- 新增工作流仅支持手动触发，尚未运行。工程仓库为公开的 `boyl/tingyu`；构建产物不入库，Android 安装包只附在 Release。
 - 浏览器地址仍是先前 React 原型。正式 Flutter 工程需运行原生应用或安装 APK 才能体验真实接口。
 
 

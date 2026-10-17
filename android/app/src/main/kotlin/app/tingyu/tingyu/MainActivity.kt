@@ -22,6 +22,24 @@ class MainActivity : AudioServiceActivity() {
     private val exportRequest = 7018
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/external").setMethodCallHandler { call, result ->
+            if (call.method != "openBilibiliApp") { result.notImplemented(); return@setMethodCallHandler }
+            var opened = false
+            for (packageName in listOf("tv.danmaku.bili", "com.bilibili.app.in")) {
+                val intent = packageManager.getLaunchIntentForPackage(packageName) ?: continue
+                try {
+                    startActivity(intent)
+                    opened = true
+                    break
+                } catch (_: android.content.ActivityNotFoundException) {
+                    // Try another official client, then let Dart open the browser.
+                } catch (_: SecurityException) {
+                    // A disabled/restricted client is not a successful handoff.
+                }
+            }
+            result.success(opened)
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/export").setMethodCallHandler { call, result ->
             if (call.method != "saveM4a") { result.notImplemented(); return@setMethodCallHandler }
             if (exportResult != null) { result.error("BUSY", "已有导出任务", null); return@setMethodCallHandler }

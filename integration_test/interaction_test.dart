@@ -9,6 +9,7 @@ import 'package:tingyu/main.dart' as app;
 import 'package:tingyu/controllers/library_controller.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/downloads.dart';
+import 'package:tingyu/services/bilibili_link.dart';
 import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/ui/app.dart';
 import 'package:tingyu/ui/theme.dart';
@@ -89,6 +90,21 @@ void main() {
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
       ).read(app.libraryProvider);
+      // This isolated AVD intentionally has no official Bilibili app installed.
+      expect(
+        await BilibiliLinkLauncher.channel.invokeMethod<bool>(
+          'openBilibiliApp',
+        ),
+        isFalse,
+      );
+      Uri? externalFallback;
+      await BilibiliLinkLauncher(
+        openBrowser: (uri) async {
+          externalFallback = uri;
+          return true;
+        },
+      ).open();
+      expect(externalFallback, BilibiliLinkLauncher.home);
       Future<void> waitFor(bool Function() check) async {
         for (var i = 0; i < 160 && !check(); i++) {
           await tester.pump(const Duration(milliseconds: 100));
@@ -116,6 +132,9 @@ void main() {
 
       try {
         await tap('tab-search');
+        await binding.convertFlutterSurfaceToImage();
+        await tester.pump();
+        await binding.takeScreenshot('search-external-entry');
         await tester.enterText(find.byType(TextField), '音乐');
         await waitFor(() => p.results.length == 2);
         reject = false;
@@ -141,7 +160,6 @@ void main() {
         await tap('tab-library');
         await tap('原生验收歌单');
         expect(find.byType(PlaylistSummary), findsOneWidget);
-        await binding.convertFlutterSurfaceToImage();
         await tester.pump();
         await binding.takeScreenshot('collection-detail');
         await tap('歌曲排序');
@@ -229,15 +247,36 @@ void main() {
         reject = true;
         await tap('download-${firstTrack.id}');
         await tap('tab-downloads');
+        await tap('downloads-tab-tasks');
         await waitFor(
           () => p.downloads.tasks.single.status == DownloadStatus.failed,
         );
         expect(find.text('下载连接失败，请重试'), findsOneWidget);
+        expect(
+          tester
+              .widget<Pressable>(
+                find.byKey(const ValueKey('downloads-tab-tasks')),
+              )
+              .selected,
+          isTrue,
+        );
+        await binding.takeScreenshot('downloads-tasks-tab');
         reject = false;
         await tap('重试下载');
         await waitFor(
           () => p.downloads.tasks.single.status == DownloadStatus.completed,
         );
+        expect(p.downloads.tasks.single.completedAt, isNotNull);
+        expect(
+          tester
+              .widget<Pressable>(
+                find.byKey(const ValueKey('downloads-tab-tasks')),
+              )
+              .selected,
+          isTrue,
+        );
+        expect(find.text('没有下载任务'), findsOneWidget);
+        await tap('downloads-tab-completed');
         await binding.takeScreenshot('audit-native-download-complete');
         await tap('展开播放器');
         final downloadedButton = find.byKey(
@@ -358,13 +397,64 @@ void main() {
         await binding.takeScreenshot('queue-playing-indicator-next-frame');
         await p.toggle();
         await tester.pump(const Duration(milliseconds: 200));
-        expect(find.byType(PlayingIndicator), findsNothing);
+        expect(
+          tester
+              .widget<PlayingIndicator>(find.byType(PlayingIndicator))
+              .playing,
+          isFalse,
+        );
+        expect(tester.getRect(find.byType(PlayingIndicator)), indicatorRect);
+        await binding.takeScreenshot('queue-paused-indicator');
+        await tester.pump(const Duration(milliseconds: 200));
+        await binding.takeScreenshot('queue-paused-indicator-next-frame');
         await p.toggle();
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(PlayingIndicator), findsOneWidget);
+        final stoppedTrack = p.current!;
+        await p.playback.player.stop();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(
+          tester
+              .widget<PlayingIndicator>(find.byType(PlayingIndicator))
+              .playing,
+          isFalse,
+        );
+        expect(tester.getRect(find.byType(PlayingIndicator)), indicatorRect);
+        await binding.takeScreenshot('queue-stopped-indicator');
+        await tester.pump(const Duration(milliseconds: 200));
+        await binding.takeScreenshot('queue-stopped-indicator-next-frame');
+        await p.play(stoppedTrack);
+        await waitFor(() => p.playing && !p.opening);
+        final queueScroll = tester.state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const ValueKey('queue-list')),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        queueScroll.position.jumpTo(queueScroll.position.maxScrollExtent);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('scroll-to-top')))
+              .overlaps(tester.getRect(find.byKey(const ValueKey('移除第 51 首')))),
+          isFalse,
+          reason: '列表末尾操作不能被回顶按钮遮挡',
+        );
+        await binding.takeScreenshot('queue-return-to-top');
+        await tap('scroll-to-top');
+        expect(queueScroll.position.pixels, 0);
+        expect(find.byKey(const ValueKey('scroll-to-top')), findsNothing);
         await tap('关闭队列');
         await tap('返回');
         await tap('tab-library');
+        final libraryScroll = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        libraryScroll.position.jumpTo(libraryScroll.position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('scroll-to-top')), findsOneWidget);
+        await tap('scroll-to-top');
+        expect(libraryScroll.position.pixels, 0);
         await tester.scrollUntilVisible(
           find.byKey(const ValueKey('搜索本地歌曲')),
           -400,
@@ -404,6 +494,9 @@ void main() {
           await binding.takeScreenshot('depth-search-$theme');
           await tap('tab-downloads');
           await binding.takeScreenshot('depth-downloads-$theme');
+          await tap('downloads-tab-tasks');
+          await binding.takeScreenshot('depth-download-tasks-$theme');
+          await tap('downloads-tab-completed');
           await tap('tab-library');
         }
         await p.setTheme('a');

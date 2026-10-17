@@ -4,17 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../main.dart';
 import '../controllers/library_controller.dart';
 import '../models/music.dart';
 import '../services/media_export.dart';
+import '../services/bilibili_link.dart';
 import 'theme.dart';
 import 'playing_indicator.dart';
+import 'scroll_to_top.dart';
 part 'library_views.dart';
 part 'settings_views.dart';
 part 'playlist_add_views.dart';
+part 'downloads_views.dart';
 
 bool matchesLocal(Track? track, String query) {
   if (track == null) return false;
@@ -234,10 +238,59 @@ class EmptyView extends StatelessWidget {
   );
 }
 
+class BilibiliExternalLink extends StatelessWidget {
+  const BilibiliExternalLink({super.key, this.launcher});
+  final BilibiliLinkLauncher? launcher;
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.tokens.surface,
+          border: Border.all(color: context.tokens.line),
+          borderRadius: BorderRadius.circular(TingyuTokens.radius),
+        ),
+        child: Pressable(
+          key: const ValueKey('open-bilibili-external'),
+          label: '前往哔哩哔哩，打开外部 App 或浏览器',
+          onPressed: () =>
+              report(context, (launcher ?? BilibiliLinkLauncher()).open),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '前往哔哩哔哩',
+                style: TextStyle(
+                  color: context.tokens.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: TingyuTokens.space),
+              Icon(Icons.open_in_new, size: 18, color: context.tokens.accent),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: TingyuTokens.space),
+      Text(
+        '优先打开 App，未安装时使用浏览器',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 11, color: context.tokens.muted),
+      ),
+    ],
+  );
+}
+
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({super.key, required this.page, this.playlistId});
+  const AppShell({
+    super.key,
+    required this.page,
+    this.playlistId,
+    this.downloadSection,
+  });
   final String page;
-  final String? playlistId;
+  final String? playlistId, downloadSection;
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
 }
@@ -421,11 +474,10 @@ class _AppShellState extends ConsumerState<AppShell> {
           if (search.text.isEmpty)
             EmptyView(
               '从一首歌开始',
-              '搜索 B 站视频，或粘贴视频链接。\n音乐内容来自 B 站，登录后可导入收藏夹。',
-              child: labelButton(
-                '打开 B 站',
-                () => launchUrl(Uri.parse('https://www.bilibili.com/')),
-              ),
+              p.profile != null || p.api.hasSession
+                  ? '搜索歌曲、UP 主或视频链接。'
+                  : '搜索歌曲、UP 主或视频链接。\n登录后可导入收藏夹。',
+              child: const BilibiliExternalLink(),
             ),
           if (!p.searching &&
               search.text.isNotEmpty &&
@@ -581,50 +633,58 @@ class _AppShellState extends ConsumerState<AppShell> {
                                 widget.playlistId != null))
                           SizedBox(width: 224, child: sidebar(p)),
                         Expanded(
-                          child: CustomScrollView(
-                            key: PageStorageKey(
-                              'page-${widget.page}-${widget.playlistId}',
-                            ),
-                            slivers: [
-                              SliverPadding(
-                                padding: EdgeInsets.fromLTRB(
-                                  desktop ? 36 : 20,
-                                  desktop ? 36 : 20,
-                                  desktop ? 36 : 20,
-                                  0,
-                                ),
-                                sliver: SliverToBoxAdapter(child: content),
-                              ),
-                              SliverPadding(
-                                padding: EdgeInsets.fromLTRB(
-                                  desktop ? 36 : 20,
-                                  0,
-                                  desktop ? 36 : 20,
-                                  desktop ? 36 : 20,
-                                ),
-                                sliver: widget.page == 'downloads'
-                                    ? DownloadsPanel(
-                                        p,
-                                        query: localSearch.text,
-                                        sliver: true,
-                                      )
-                                    : collection
-                                    ? DecoratedSliver(
-                                        decoration: BoxDecoration(
-                                          color: t.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            TingyuTokens.radius,
-                                          ),
+                          child: widget.page == 'downloads'
+                              ? DownloadsWorkspace(
+                                  p,
+                                  tasks: widget.downloadSection == 'tasks',
+                                  desktop: desktop,
+                                )
+                              : ScrollToTop(
+                                  builder: (scroll) => CustomScrollView(
+                                    controller: scroll,
+                                    key: PageStorageKey(
+                                      'page-${widget.page}-${widget.playlistId}',
+                                    ),
+                                    slivers: [
+                                      SliverPadding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          desktop ? 36 : 20,
+                                          desktop ? 36 : 20,
+                                          desktop ? 36 : 20,
+                                          0,
                                         ),
-                                        sliver: SliverPadding(
-                                          padding: const EdgeInsets.all(8),
-                                          sliver: rowSliver,
+                                        sliver: SliverToBoxAdapter(
+                                          child: content,
                                         ),
-                                      )
-                                    : rowSliver,
-                              ),
-                            ],
-                          ),
+                                      ),
+                                      SliverPadding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          desktop ? 36 : 20,
+                                          0,
+                                          desktop ? 36 : 20,
+                                          TingyuTokens.space * 10,
+                                        ),
+                                        sliver: collection
+                                            ? DecoratedSliver(
+                                                decoration: BoxDecoration(
+                                                  color: t.surface,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        TingyuTokens.radius,
+                                                      ),
+                                                ),
+                                                sliver: SliverPadding(
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
+                                                  sliver: rowSliver,
+                                                ),
+                                              )
+                                            : rowSliver,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -886,7 +946,9 @@ class PlaylistDownloadAction extends ConsumerWidget {
             ? null
             : () => report(context, () async {
                 if (allDone || active) {
-                  context.go('/downloads');
+                  context.go(
+                    '/downloads?section=${allDone ? 'completed' : 'tasks'}',
+                  );
                   return;
                 }
                 for (final track in tracks) {
@@ -963,7 +1025,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
       if (completed ||
           task?.status == DownloadStatus.downloading ||
           task?.status == DownloadStatus.waiting) {
-        context.go('/downloads');
+        context.go('/downloads?section=${completed ? 'completed' : 'tasks'}');
         return;
       }
       setState(() => preparing = true);
@@ -1797,107 +1859,121 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
             Expanded(
               child: p.queue.isEmpty
                   ? const EmptyView('队列是空的', '从搜索结果添加下一首声音。')
-                  : ListView.builder(
-                      key: const ValueKey('queue-list'),
+                  : ScrollToTop(
                       controller: scroll,
-                      itemExtent: rowHeight,
-                      itemCount: p.queue.length,
-                      itemBuilder: (context, i) {
-                        final track = p.library[p.queue[i]]!;
-                        final current = track.id == p.current?.id;
-                        return ColoredBox(
-                          color: current ? t.tint : t.surface,
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 28,
-                                child: current
-                                    ? p.playing
-                                          ? const Center(
-                                              child: PlayingIndicator(),
-                                            )
-                                          : Icon(
-                                              Icons.pause,
-                                              color: t.accent,
-                                              size: 18,
-                                            )
-                                    : Text(
-                                        '${i + 1}',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: t.muted,
-                                          fontSize: 11,
+                      builder: (controller) => ListView.builder(
+                        key: const ValueKey('queue-list'),
+                        padding: const EdgeInsets.only(
+                          bottom: TingyuTokens.space * 10,
+                        ),
+                        controller: scroll,
+                        itemExtent: rowHeight,
+                        itemCount: p.queue.length,
+                        itemBuilder: (context, i) {
+                          final track = p.library[p.queue[i]]!;
+                          final current = track.id == p.current?.id;
+                          return ColoredBox(
+                            color: current ? t.tint : t.surface,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 28,
+                                  child: current
+                                      ? Center(
+                                          child: PlayingIndicator(
+                                            playing:
+                                                p.playing &&
+                                                p
+                                                        .playback
+                                                        .player
+                                                        .processingState !=
+                                                    ProcessingState.idle &&
+                                                p
+                                                        .playback
+                                                        .player
+                                                        .processingState !=
+                                                    ProcessingState.completed,
+                                          ),
+                                        )
+                                      : Text(
+                                          '${i + 1}',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: t.muted,
+                                            fontSize: 11,
+                                          ),
                                         ),
-                                      ),
-                              ),
-                              Expanded(
-                                child: Pressable(
-                                  key: ValueKey('queue-track-${track.id}'),
-                                  label:
-                                      '${current ? '当前歌曲，' : ''}${track.title}',
-                                  selected: current,
-                                  selectionFill: false,
-                                  onPressed: () =>
-                                      report(context, () => p.play(track)),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 8,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        track.title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: current ? t.accent : t.text,
+                                ),
+                                Expanded(
+                                  child: Pressable(
+                                    key: ValueKey('queue-track-${track.id}'),
+                                    label:
+                                        '${current ? '当前歌曲，' : ''}${track.title}',
+                                    selected: current,
+                                    selectionFill: false,
+                                    onPressed: () =>
+                                        report(context, () => p.play(track)),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          track.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: current ? t.accent : t.text,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        track.artist,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: t.muted,
-                                          fontSize: 11,
+                                        Text(
+                                          track.artist,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: t.muted,
+                                            fontSize: 11,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              action(
-                                Icons.arrow_upward,
-                                '上移第 ${i + 1} 首',
-                                i == 0
-                                    ? null
-                                    : () async {
-                                        await p.moveQueue(i, -1);
-                                        if (current && mounted) locate(p);
-                                      },
-                              ),
-                              action(
-                                Icons.arrow_downward,
-                                '下移第 ${i + 1} 首',
-                                i == p.queue.length - 1
-                                    ? null
-                                    : () async {
-                                        await p.moveQueue(i, 1);
-                                        if (current && mounted) locate(p);
-                                      },
-                              ),
-                              action(
-                                Icons.close,
-                                '移除第 ${i + 1} 首',
-                                () => p.removeQueue(track.id),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                                action(
+                                  Icons.arrow_upward,
+                                  '上移第 ${i + 1} 首',
+                                  i == 0
+                                      ? null
+                                      : () async {
+                                          await p.moveQueue(i, -1);
+                                          if (current && mounted) locate(p);
+                                        },
+                                ),
+                                action(
+                                  Icons.arrow_downward,
+                                  '下移第 ${i + 1} 首',
+                                  i == p.queue.length - 1
+                                      ? null
+                                      : () async {
+                                          await p.moveQueue(i, 1);
+                                          if (current && mounted) locate(p);
+                                        },
+                                ),
+                                action(
+                                  Icons.close,
+                                  '移除第 ${i + 1} 首',
+                                  () => p.removeQueue(track.id),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
             ),
           ],
@@ -1913,36 +1989,41 @@ class DownloadsPanel extends StatelessWidget {
     super.key,
     this.query = '',
     this.sliver = false,
+    this.showTasks = false,
   });
-  final bool sliver;
+  final bool sliver, showTasks;
   final LibraryController p;
   final String query;
   @override
   Widget build(BuildContext context) {
-    if (p.downloads.tasks.isEmpty) {
-      const empty = EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
-      return sliver ? const SliverToBoxAdapter(child: empty) : empty;
-    }
-    final tasks = p.downloads.tasks
+    final active = p.downloads.incompleteTasks
         .where((d) => matchesLocal(d.track, query))
         .toList();
+    final done = p.downloads.completedTasks
+        .where((d) => matchesLocal(d.track, query))
+        .toList();
+    final tasks = showTasks ? active : done;
     if (tasks.isEmpty) {
-      const empty = EmptyView('没有匹配的歌曲', '试试其他歌名或 UP 主。');
-      return sliver ? const SliverToBoxAdapter(child: empty) : empty;
+      final empty = query.trim().isNotEmpty
+          ? const EmptyView('没有匹配的歌曲', '试试其他歌名或 UP 主。')
+          : showTasks
+          ? const EmptyView('没有下载任务', '新任务会显示在这里。')
+          : const EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
+      return sliver ? SliverToBoxAdapter(child: empty) : empty;
     }
-    final completed = p.downloads.tasks
-            .where((d) => d.status == DownloadStatus.completed)
-            .length,
-        bytes = p.downloads.tasks
-            .where((d) => d.status == DownloadStatus.completed)
-            .fold<int>(0, (v, d) => v + d.received);
+    final bytes = done.fold<int>(0, (v, d) => v + d.received);
     final children = <WidgetBuilder>[
-      (_) => Text(
-        '$completed 首已下载 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
-      ),
-      (_) => const SizedBox(height: 20),
+      if (!showTasks)
+        (_) => Padding(
+          padding: const EdgeInsets.only(bottom: TingyuTokens.space * 2),
+          child: Text(
+            '${done.length} 首 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
+            style: TextStyle(color: context.tokens.muted, fontSize: 11),
+          ),
+        ),
       for (final d in tasks)
         (_) => Padding(
+          key: ValueKey('download-row-${d.track.id}'),
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: [
@@ -1966,10 +2047,10 @@ class DownloadsPanel extends StatelessWidget {
                               '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
                             DownloadStatus.completed => switch (d.lyricStatus) {
                               DownloadLyricStatus.waiting ||
-                              DownloadLyricStatus.fetching => '已下载 · 正在匹配歌词',
-                              DownloadLyricStatus.available => '已下载 · 歌词已保存',
-                              DownloadLyricStatus.missing => '已下载 · 未匹配到歌词',
-                              DownloadLyricStatus.failed => '已下载 · 歌词获取失败',
+                              DownloadLyricStatus.fetching => '正在匹配歌词',
+                              DownloadLyricStatus.available => '歌词已保存',
+                              DownloadLyricStatus.missing => '未匹配到歌词',
+                              DownloadLyricStatus.failed => '歌词获取失败',
                             },
                             DownloadStatus.failed => '下载失败',
                             DownloadStatus.paused => '下载已中断，点击重试',

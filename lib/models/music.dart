@@ -72,6 +72,7 @@ class DownloadTask {
     this.received = 0,
     this.total = 0,
     this.filePath,
+    this.completedAt,
     this.error,
   });
   final Track track;
@@ -79,6 +80,7 @@ class DownloadTask {
   DownloadLyricStatus lyricStatus;
   int received, total;
   String? filePath, error;
+  DateTime? completedAt;
   double? get progress => total > 0 ? (received / total).clamp(0, 1) : null;
   Map<String, dynamic> toJson() => {
     'track': track.toJson(),
@@ -87,6 +89,7 @@ class DownloadTask {
     'received': received,
     'total': total,
     'filePath': filePath,
+    'completedAt': completedAt?.toUtc().toIso8601String(),
     'error': error,
   };
   factory DownloadTask.fromJson(Map<String, dynamic> j) => DownloadTask(
@@ -98,6 +101,9 @@ class DownloadTask {
     received: j['received'] ?? 0,
     total: j['total'] ?? 0,
     filePath: j['filePath'],
+    completedAt: j['completedAt'] == null
+        ? null
+        : DateTime.parse(j['completedAt']),
     error: j['error'],
   );
 }

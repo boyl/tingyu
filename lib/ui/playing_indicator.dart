@@ -4,7 +4,8 @@ import 'theme.dart';
 
 /// Paint-only animation, isolated from queue layout and playback position.
 class PlayingIndicator extends StatefulWidget {
-  const PlayingIndicator({super.key});
+  const PlayingIndicator({super.key, this.playing = true});
+  final bool playing;
   @override
   State<PlayingIndicator> createState() => _PlayingIndicatorState();
 }
@@ -18,10 +19,22 @@ class _PlayingIndicatorState extends State<PlayingIndicator>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context) ||
+    syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant PlayingIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.playing != widget.playing) syncAnimation();
+  }
+
+  void syncAnimation() {
+    if (!widget.playing ||
+        MediaQuery.disableAnimationsOf(context) ||
         !TickerMode.valuesOf(context).enabled) {
       phase.stop();
-      phase.value = .25;
+      phase.value =
+          .18; // A consistent unequal-height silhouette in every static state.
     } else if (!phase.isAnimating) {
       phase.repeat();
     }
@@ -35,7 +48,7 @@ class _PlayingIndicatorState extends State<PlayingIndicator>
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '正在播放',
+    label: widget.playing ? '正在播放' : '当前歌曲，未播放',
     child: RepaintBoundary(
       child: CustomPaint(
         size: const Size(18, 18),
