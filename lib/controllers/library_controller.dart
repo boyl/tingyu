@@ -730,10 +730,14 @@ class LibraryController extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final found = await lyricsClient.search(lyricsClient.clean(t.title));
+      final found = await lyricsClient.match(
+        t,
+        isCurrent: () =>
+            !_disposed && epoch == _lyricEpoch && current?.id == t.id,
+      );
       if (_disposed || epoch != _lyricEpoch || current?.id != t.id) return;
-      if (found.isNotEmpty) {
-        await chooseLyrics(found.first, t, expectedEpoch: epoch);
+      if (found != null) {
+        await chooseLyrics(found, t, expectedEpoch: epoch);
       }
     } on Exception {
       if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
@@ -754,7 +758,10 @@ class LibraryController extends ChangeNotifier {
       return;
     }
     final epoch = expectedEpoch ?? ++_lyricEpoch;
-    final text = candidate['syncedLyrics'] ?? candidate['plainLyrics'] ?? '';
+    final synced = candidate['syncedLyrics'] as String?;
+    final text = synced != null && synced.trim().isNotEmpty
+        ? synced
+        : candidate['plainLyrics'] as String? ?? '';
     await downloads.saveLyrics(t, text);
     if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
       lyricText = text;

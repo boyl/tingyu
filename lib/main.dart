@@ -126,6 +126,7 @@ class TingyuApp extends ConsumerWidget {
       title: '听屿',
       debugShowCheckedModeBanner: false,
       theme: tingyuTheme(theme),
+      themeAnimationDuration: Duration.zero,
       routerConfig: router ?? _router,
     );
   }

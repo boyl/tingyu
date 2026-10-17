@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/theme.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tingyu/main.dart' as app;
 
@@ -89,6 +90,32 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
+      await binding.convertFlutterSurfaceToImage();
+      for (final theme in ['b', 'c', 'a']) {
+        await controller.setTheme(theme);
+        await tester.pumpAndSettle();
+        for (final tab in ['likes', 'library', 'downloads', 'search']) {
+          await tester.tap(find.byKey(ValueKey('tab-$tab')));
+          for (final milliseconds in [0, 16, 100, 200]) {
+            await tester.pump(Duration(milliseconds: milliseconds));
+            final nav = find.byType(CompactNavigation);
+            expect(
+              Theme.of(
+                tester.element(nav),
+              ).extension<TingyuTokens>()!.background,
+              tingyuTheme(theme).extension<TingyuTokens>()!.background,
+            );
+            expect(
+              find.descendant(
+                of: nav,
+                matching: find.byType(AnimatedContainer),
+              ),
+              findsNothing,
+            );
+          }
+          await binding.takeScreenshot('theme-first-visit-$theme-$tab');
+        }
+      }
       await controller.setTheme('a');
       await tester.enterText(find.byType(TextField), '');
       await tester.tap(find.byKey(const ValueKey('tab-library')));
@@ -162,7 +189,6 @@ void main() {
       expect(find.text('音乐库'), findsWidgets);
       controller.clearError();
       scrollState.position.jumpTo(0);
-      await binding.convertFlutterSurfaceToImage();
       for (final theme in ['a', 'b', 'c']) {
         await controller.setTheme(theme);
         await tester.pumpAndSettle();

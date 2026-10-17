@@ -12,6 +12,12 @@ import 'theme.dart';
 part 'library_views.dart';
 part 'settings_views.dart';
 
+bool matchesLocal(Track? track, String query) {
+  if (track == null) return false;
+  final text = '${track.title} ${track.artist} ${track.bvid}'.toLowerCase();
+  return query.toLowerCase().trim().split(RegExp(r'\s+')).every(text.contains);
+}
+
 Widget action(
   IconData icon,
   String label,
@@ -210,6 +216,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     search = TextEditingController(text: ref.read(libraryProvider).query);
   }
 
+  final localSearch = TextEditingController();
+  bool localSearchOpen = false;
   bool selecting = false;
   final Set<String> selection = {};
   String get collectionKey => widget.playlistId ?? widget.page;
@@ -220,19 +228,24 @@ class _AppShellState extends ConsumerState<AppShell> {
         oldWidget.playlistId != widget.playlistId) {
       selecting = false;
       selection.clear();
+      localSearch.clear();
+      localSearchOpen = false;
     }
   }
 
-  List<String> visibleIds(LibraryController p, Playlist? list) =>
-      p.collectionIds(
+  List<String> visibleIds(LibraryController p, Playlist? list) => p
+      .collectionIds(
         collectionKey,
         widget.page == 'likes' ? p.likes : list?.trackIds ?? p.library.keys,
-      );
+      )
+      .where((id) => matchesLocal(p.library[id], localSearch.text))
+      .toList();
   Timer? debounce;
   @override
   void dispose() {
     debounce?.cancel();
     search.dispose();
+    localSearch.dispose();
     super.dispose();
   }
 
@@ -284,6 +297,15 @@ class _AppShellState extends ConsumerState<AppShell> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
+            if (!selecting && widget.page != 'search')
+              action(
+                Icons.search,
+                '搜索本地歌曲',
+                () => setState(() {
+                  localSearchOpen = !localSearchOpen;
+                  if (!localSearchOpen) localSearch.clear();
+                }),
+              ),
             if (selecting)
               labelButton(
                 '全选',
@@ -310,6 +332,24 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
         const SizedBox(height: 24),
+        if (localSearchOpen && widget.page != 'search') ...[
+          TextField(
+            key: const ValueKey('local-search'),
+            controller: localSearch,
+            decoration: InputDecoration(
+              hintText: '搜索当前列表的歌名、UP 主',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: action(
+                Icons.close,
+                '清除本地搜索',
+                () => setState(localSearch.clear),
+              ),
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (p.error.isNotEmpty) errorBox(context, p.error, p.clearError),
         if (widget.page == 'search') ...[
           TextField(
@@ -358,9 +398,10 @@ class _AppShellState extends ConsumerState<AppShell> {
               ),
             ),
         ],
-        if (widget.page == 'downloads') DownloadsPanel(p),
+        if (widget.page == 'downloads')
+          DownloadsPanel(p, query: localSearch.text),
         if (['library', 'likes', 'playlist'].contains(widget.page)) ...[
-          if (widget.page == 'library') ...[
+          if (widget.page == 'library' && localSearch.text.trim().isEmpty) ...[
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -530,6 +571,15 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   List<Widget> _libraryRows(LibraryController p, Playlist? list) {
     final ids = visibleIds(p, list);
+    if (ids.isEmpty && localSearch.text.trim().isNotEmpty) {
+      return [
+        EmptyView(
+          '没有匹配的歌曲',
+          '试试其他歌名或 UP 主。',
+          child: labelButton('清除搜索', () => setState(localSearch.clear)),
+        ),
+      ];
+    }
     if (ids.isEmpty) {
       return [
         EmptyView(
@@ -647,7 +697,7 @@ Future<void> showPlaylistActions(
   (ctx) => SimpleDialog(
     title: Text(list.name),
     children: [
-      labelButton('编辑名称与简介', () async {
+      labelButton('编辑歌单', () async {
         Navigator.pop(ctx);
         await showDialog<void>(
           context: context,
@@ -1538,91 +1588,209 @@ class _LyricPanelState extends State<LyricPanel> {
   }
 }
 
-Future<void> showQueue(BuildContext context) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.tokens.surface,
-    builder: (ctx) => Consumer(
-      builder: (ctx, ref, _) {
-        final p = ref.watch(libraryProvider);
-        return SafeArea(
-          child: SizedBox(
-            height: MediaQuery.sizeOf(ctx).height * .7,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text('播放队列 · ${p.queue.length} 首')),
-                      labelButton('清空', () async {
-                        if (await confirm(ctx, '清空队列并停止播放？')) {
-                          await p.clearQueue();
-                        }
-                      }),
-                      action(Icons.close, '关闭队列', () => Navigator.pop(ctx)),
-                    ],
+Future<void> showQueue(BuildContext context) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: context.tokens.surface,
+  builder: (_) => const QueuePanel(),
+);
+
+class QueuePanel extends ConsumerStatefulWidget {
+  const QueuePanel({super.key});
+  @override
+  ConsumerState<QueuePanel> createState() => _QueuePanelState();
+}
+
+class _QueuePanelState extends ConsumerState<QueuePanel> {
+  late final ScrollController scroll;
+  @override
+  void initState() {
+    super.initState();
+    final p = ref.read(libraryProvider);
+    final index = p.queue.indexOf(p.current?.id ?? '');
+    scroll = ScrollController(
+      initialScrollOffset: (index < 0 ? 0 : index) * rowHeight,
+    );
+  }
+
+  String? located;
+  bool initialized = false;
+  static const rowHeight = 72.0;
+
+  void locate(LibraryController p) {
+    final index = p.queue.indexOf(p.current?.id ?? '');
+    if (index < 0 || !scroll.hasClients) return;
+    final target =
+        (index * rowHeight -
+                (scroll.position.viewportDimension - rowHeight) / 2)
+            .clamp(0.0, scroll.position.maxScrollExtent);
+    scroll.jumpTo(target);
+  }
+
+  @override
+  void dispose() {
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = ref.watch(libraryProvider), t = context.tokens;
+    if (!initialized || located != p.current?.id) {
+      initialized = true;
+      located = p.current?.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) locate(ref.read(libraryProvider));
+      });
+    }
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * .7,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(child: Text('播放队列 · ${p.queue.length} 首')),
+                  action(
+                    Icons.my_location,
+                    '定位当前歌曲',
+                    p.queue.contains(p.current?.id) ? () => locate(p) : null,
                   ),
-                ),
-                Expanded(
-                  child: p.queue.isEmpty
-                      ? const EmptyView('队列是空的', '从搜索结果添加下一首声音。')
-                      : ListView.builder(
-                          itemCount: p.queue.length,
-                          itemBuilder: (ctx, i) {
-                            final track = p.library[p.queue[i]]!;
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: Pressable(
-                                    onPressed: () => p.play(track),
-                                    child: Text(
-                                      track.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                  labelButton('清空', () async {
+                    if (await confirm(context, '清空队列并停止播放？')) {
+                      await p.clearQueue();
+                    }
+                  }),
+                  action(Icons.close, '关闭队列', () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: p.queue.isEmpty
+                  ? const EmptyView('队列是空的', '从搜索结果添加下一首声音。')
+                  : ListView.builder(
+                      key: const ValueKey('queue-list'),
+                      controller: scroll,
+                      itemExtent: rowHeight,
+                      itemCount: p.queue.length,
+                      itemBuilder: (context, i) {
+                        final track = p.library[p.queue[i]]!;
+                        final current = track.id == p.current?.id;
+                        return ColoredBox(
+                          color: current ? t.tint : t.surface,
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 28,
+                                child: current
+                                    ? Icon(
+                                        p.playing
+                                            ? Icons.graphic_eq
+                                            : Icons.pause,
+                                        color: t.accent,
+                                        size: 18,
+                                      )
+                                    : Text(
+                                        '${i + 1}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: t.muted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                              ),
+                              Expanded(
+                                child: Pressable(
+                                  key: ValueKey('queue-track-${track.id}'),
+                                  label:
+                                      '${current ? '当前歌曲，' : ''}${track.title}',
+                                  selected: current,
+                                  selectionFill: false,
+                                  onPressed: () =>
+                                      report(context, () => p.play(track)),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 8,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        track.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: current ? t.accent : t.text,
+                                        ),
+                                      ),
+                                      Text(
+                                        track.artist,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: t.muted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                action(
-                                  Icons.arrow_upward,
-                                  '上移第 ${i + 1} 首',
-                                  i == 0 ? null : () => p.moveQueue(i, -1),
-                                ),
-                                action(
-                                  Icons.arrow_downward,
-                                  '下移第 ${i + 1} 首',
-                                  i == p.queue.length - 1
-                                      ? null
-                                      : () => p.moveQueue(i, 1),
-                                ),
-                                action(
-                                  Icons.close,
-                                  '移除第 ${i + 1} 首',
-                                  () => p.removeQueue(track.id),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                ),
-              ],
+                              ),
+                              action(
+                                Icons.arrow_upward,
+                                '上移第 ${i + 1} 首',
+                                i == 0
+                                    ? null
+                                    : () async {
+                                        await p.moveQueue(i, -1);
+                                        if (current && mounted) locate(p);
+                                      },
+                              ),
+                              action(
+                                Icons.arrow_downward,
+                                '下移第 ${i + 1} 首',
+                                i == p.queue.length - 1
+                                    ? null
+                                    : () async {
+                                        await p.moveQueue(i, 1);
+                                        if (current && mounted) locate(p);
+                                      },
+                              ),
+                              action(
+                                Icons.close,
+                                '移除第 ${i + 1} 首',
+                                () => p.removeQueue(track.id),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ),
-        );
-      },
-    ),
-  );
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class DownloadsPanel extends StatelessWidget {
-  const DownloadsPanel(this.p, {super.key});
+  const DownloadsPanel(this.p, {super.key, this.query = ''});
   final LibraryController p;
+  final String query;
   @override
   Widget build(BuildContext context) {
     if (p.downloads.tasks.isEmpty) {
       return const EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
     }
+    final tasks = p.downloads.tasks
+        .where((d) => matchesLocal(d.track, query))
+        .toList();
+    if (tasks.isEmpty) return const EmptyView('没有匹配的歌曲', '试试其他歌名或 UP 主。');
     final completed = p.downloads.tasks
             .where((d) => d.status == DownloadStatus.completed)
             .length,
@@ -1636,7 +1804,7 @@ class DownloadsPanel extends StatelessWidget {
           '$completed 首已下载 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
         ),
         const SizedBox(height: 20),
-        for (final d in p.downloads.tasks)
+        for (final d in tasks)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(

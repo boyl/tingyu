@@ -138,8 +138,16 @@ void main() {
         await tap('退出多选');
         await tap('歌单更多');
         await binding.takeScreenshot('collection-more');
-        Navigator.of(tester.element(find.text('编辑名称与简介'))).pop();
+        await tap('编辑歌单');
+        await tester.enterText(
+          find.byKey(const ValueKey('playlist-description')),
+          '夜晚听的歌',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
         await tester.pumpAndSettle();
+        await binding.takeScreenshot('playlist-edit-description');
+        await tap('保存');
+        expect(p.playlists.single.description, '夜晚听的歌');
         await tap('返回音乐库');
         await tap('打开设置');
         await binding.takeScreenshot('settings-page');
@@ -295,10 +303,27 @@ void main() {
         await binding.takeScreenshot('shuffle-51-track-player');
         await tap('播放队列');
         expect(find.text('播放队列 · 51 首'), findsOneWidget);
+        final currentRow = find.byKey(ValueKey('queue-track-${p.current!.id}'));
+        expect(currentRow, findsOneWidget);
+        expect(tester.widget<Pressable>(currentRow).selected, isTrue);
         await binding.takeScreenshot('shuffle-51-track-queue');
         await tap('关闭队列');
         await tap('返回');
         await tap('tab-library');
+        await tap('搜索本地歌曲');
+        await tester.enterText(
+          find.byKey(const ValueKey('local-search')),
+          '回归曲目17',
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('play-BVnative17:1017')),
+          findsOneWidget,
+        );
+        expect(find.byKey(ValueKey('play-${firstTrack.id}')), findsNothing);
+        await binding.takeScreenshot('local-library-search');
+        await tap('清除本地搜索');
+        await tap('搜索本地歌曲');
         final scroll = find.byType(Scrollable).first;
         await tester.scrollUntilVisible(
           find.text('最近播放'),

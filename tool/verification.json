@@ -1,11 +1,11 @@
 {
-  "version": "0.1.6+7",
+  "version": "0.1.7+8",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "a83598f473d92ab7381723035cfae106fe9bd9d1e2519ad0688d83940796ca88",
-  "checkedAt": "2026-10-16T15:35:36.452974+00:00",
+  "sourceSha256": "dc14816b3713a2284d0d8b7156e328a6e773ecb2242142247541d7be7afcfe2b",
+  "checkedAt": "2026-10-17T01:45:23.468642+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 65,
+  "offlineTestsPassed": 71,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -43,7 +43,7 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "781a15bc3eb7a3f23d2dbfed80cefef97cdca00f79b9adf7825aeb7063bcbd1b",
+    "testedReleaseSha256": "5045c3f499caf18dbb949bf47d8501a6a0476db8506fa093533186c45360b200",
     "displayCutout": {
       "checks": {
         "portrait": {
@@ -102,7 +102,7 @@
     }
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-16-PLAYBACK.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-17-INTERACTIONS.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -173,7 +173,7 @@
     "topEdge": "PASS - no black strip, content reaches top; user reported",
     "scope": "Playback, download and top edge only; not complete device acceptance"
   },
-  "humanDeviceUpdateThisRound": "NOT RUN - human emulator is not running; physical acceptance APK provided",
+  "humanDeviceUpdateThisRound": "PASS - same-signer 0.1.7 Release adb install -r + sync; launch verified, existing 52-song library visible; user acceptance pending",
   "visualHierarchy": {
     "status": "PASS - rendered native screenshots reviewed",
     "themes": [
@@ -195,5 +195,12 @@
       "artifacts/acceptance/screenshots/depth-search-a.png",
       "artifacts/acceptance/screenshots/depth-downloads-c.png"
     ]
+  },
+  "interaction017": {
+    "queue": "PASS - 82-track late selection unit, native 51 queue current marker/visible on open",
+    "localSearch": "PASS - offline scope/empty/clear/queue semantics and native filtered library",
+    "themeFirstVisits": "PASS - 3 themes x 4 tabs x 4 frame times; native screenshots reviewed",
+    "playlistEditor": "PASS - four-character menu, single-line growing description and native screenshot",
+    "lyrics": "PASS - cleaning/candidate score/duration/stale matching fixtures; Mac public LRCLIB metadata probe, physical coverage not validated"
   }
 }

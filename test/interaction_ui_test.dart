@@ -100,6 +100,120 @@ void main() {
   );
 
   testWidgets(
+    'queue locates and marks a late current track, supports locate and updates after removal',
+    (tester) async {
+      final p = fixture.controller;
+      for (var i = 0; i < 80; i++) {
+        await p.remember(
+          Track(
+            bvid: 'BVqueue$i',
+            cid: i + 100,
+            title: '队列歌曲$i',
+            artist: 'UP',
+            cover: '',
+            duration: 30,
+          ),
+        );
+      }
+      final ids = p.library.keys.toList();
+      final current = p.library[ids[65]]!;
+      await p.playFromCollection(current, ids);
+      await mount(tester);
+      await tap(tester, '播放队列');
+      final row = find.byKey(ValueKey('queue-track-${current.id}'));
+      expect(row, findsOneWidget);
+      expect(tester.widget<Pressable>(row).selected, isTrue);
+      final queue = find.byKey(const ValueKey('queue-list'));
+      final scrollable = find.descendant(
+        of: queue,
+        matching: find.byType(Scrollable),
+      );
+      final state = tester.state<ScrollableState>(scrollable);
+      expect(state.position.pixels, greaterThan(3000));
+      state.position.jumpTo(0);
+      await tester.pumpAndSettle();
+      await tap(tester, '定位当前歌曲');
+      expect(state.position.pixels, greaterThan(3000));
+      await tap(tester, '上移第 66 首');
+      expect(p.queue[64], current.id);
+      expect(tester.widget<Pressable>(row).selected, isTrue);
+      await tap(tester, '关闭队列');
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'local search filters offline library and likes, clears without deleting songs',
+    (tester) async {
+      final p = fixture.controller;
+      fixture.api.offline = true;
+      await mount(tester);
+      await tap(tester, '搜索本地歌曲');
+      await tester.enterText(
+        find.byKey(const ValueKey('local-search')),
+        firstTrack.title,
+      );
+      await settle(tester);
+      expect(find.byKey(ValueKey('play-${firstTrack.id}')), findsOneWidget);
+      expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsNothing);
+      await tap(tester, 'play-${firstTrack.id}');
+      expect(p.queue, [firstTrack.id]);
+      await tester.enterText(
+        find.byKey(const ValueKey('local-search')),
+        '没有这样的歌',
+      );
+      await settle(tester);
+      expect(find.text('没有匹配的歌曲'), findsOneWidget);
+      await tap(tester, '清除搜索');
+      expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsOneWidget);
+      expect(p.library.length, 2);
+      await p.toggleLike(secondTrack);
+      router.go('/likes');
+      await settle(tester);
+      await tap(tester, '搜索本地歌曲');
+      await tester.enterText(
+        find.byKey(const ValueKey('local-search')),
+        firstTrack.title,
+      );
+      await settle(tester);
+      expect(find.text('没有匹配的歌曲'), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'first visits after theme changes use new colors on every frame and retain branch state',
+    (tester) async {
+      await mount(tester);
+      for (final theme in ['b', 'c', 'a']) {
+        await tester.runAsync(() => fixture.controller.setTheme(theme));
+        for (final tab in ['search', 'downloads', 'likes', 'library']) {
+          await tester.tap(find.byKey(ValueKey('tab-$tab')));
+          for (final delta in [0, 16, 100, 200]) {
+            await tester.pump(Duration(milliseconds: delta));
+            final nav = find.byType(CompactNavigation);
+            expect(
+              Theme.of(
+                tester.element(nav),
+              ).extension<TingyuTokens>()!.background,
+              tingyuTheme(theme).extension<TingyuTokens>()!.background,
+            );
+            expect(
+              find.descendant(
+                of: nav,
+                matching: find.byType(AnimatedContainer),
+              ),
+              findsNothing,
+            );
+            expect(tester.takeException(), isNull);
+          }
+        }
+      }
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'settings returns to its source with search input and playback preserved',
     (tester) async {
       await fixture.controller.play(firstTrack);
@@ -180,11 +294,17 @@ void main() {
       expect(fixture.controller.playlists.single.trackIds, [firstTrack.id]);
       await tap(tester, '晨间');
       await tap(tester, '歌单更多');
-      await tap(tester, '编辑名称与简介');
+      await tap(tester, '编辑歌单');
       await tester.enterText(
         find.byKey(const ValueKey('playlist-name')),
         '新的歌单',
       );
+      final descriptionField = tester.widget<TextField>(
+        find.byKey(const ValueKey('playlist-description')),
+      );
+      expect(descriptionField.minLines, 1);
+      expect(descriptionField.maxLines, 4);
+      expect(descriptionField.decoration!.isDense, isTrue);
       await tester.enterText(
         find.byKey(const ValueKey('playlist-description')),
         '夜晚听的歌',

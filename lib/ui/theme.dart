@@ -259,11 +259,15 @@ class _PressableState extends State<Pressable> {
   bool down = false, hover = false, focus = false, pending = false;
   Future<void> _invoke() async {
     if (pending || widget.onPressed == null) return;
-    setState(() => pending = true);
-    try {
-      await widget.onPressed!();
-    } finally {
-      if (mounted) setState(() => pending = false);
+    final result = widget.onPressed!();
+    if (result is Future) {
+      if (!mounted) return;
+      setState(() => pending = true);
+      try {
+        await result;
+      } finally {
+        if (mounted) setState(() => pending = false);
+      }
     }
   }
 
@@ -304,10 +308,7 @@ class _PressableState extends State<Pressable> {
             duration: MediaQuery.disableAnimationsOf(context)
                 ? Duration.zero
                 : TingyuTokens.pressDuration,
-            child: AnimatedContainer(
-              duration: MediaQuery.disableAnimationsOf(context)
-                  ? Duration.zero
-                  : TingyuTokens.transition,
+            child: Container(
               constraints: BoxConstraints(
                 minWidth: widget.minSize,
                 minHeight: widget.minSize,
