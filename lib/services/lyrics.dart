@@ -1,8 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' as html;
 import '../models/music.dart';
+import 'bilibili.dart';
 
 class LyricsClient {
+  LyricsClient({this.subtitleClient});
+  final BilibiliClient? subtitleClient;
+  final _cancel = CancelToken();
+  CancelToken? _activeMatch;
+  void cancelRequests() {
+    _cancel.cancel();
+    _activeMatch?.cancel();
+  }
+
   final _http = Dio(
     BaseOptions(
       baseUrl: 'https://lrclib.net/api',
@@ -52,13 +62,40 @@ class LyricsClient {
   Future<Map<String, dynamic>?> match(
     Track track, {
     bool Function()? isCurrent,
+  }) {
+    _activeMatch?.cancel();
+    final token = _activeMatch = CancelToken();
+    return _match(track, token, isCurrent: isCurrent).whenComplete(() {
+      if (identical(_activeMatch, token)) _activeMatch = null;
+    });
+  }
+
+  Future<Map<String, dynamic>?> _match(
+    Track track,
+    CancelToken token, {
+    bool Function()? isCurrent,
   }) async {
+    String? subtitleFailure;
+    if (subtitleClient != null && isCurrent?.call() != false) {
+      try {
+        final subtitle = await subtitleClient!.subtitleLyrics(
+          track,
+          cancelToken: token,
+        );
+        if (isCurrent?.call() == false) return null;
+        if (subtitle != null) return subtitle;
+      } on AppFailure catch (e) {
+        subtitleFailure = e.message;
+      } on DioException {
+        subtitleFailure = '视频字幕暂不可用';
+      }
+    }
     final keywords = queries(track.title);
     Map<String, dynamic>? best;
     var bestScore = 0.0;
     for (final query in keywords) {
       if (isCurrent?.call() == false) return null;
-      final found = await search(query);
+      final found = await search(query, cancelToken: token);
       if (isCurrent?.call() == false) return null;
       for (final item in found) {
         final name = _normalized('${item['trackName'] ?? ''}');
@@ -85,12 +122,22 @@ class LyricsClient {
       }
       if (bestScore >= 90) break;
     }
+    if (best == null && subtitleFailure != null) {
+      throw AppFailure(subtitleFailure);
+    }
     return best;
   }
 
-  Future<List<Map<String, dynamic>>> search(String query) async {
+  Future<List<Map<String, dynamic>>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
     try {
-      final r = await _http.get('/search', queryParameters: {'q': query});
+      final r = await _http.get(
+        '/search',
+        queryParameters: {'q': query},
+        cancelToken: cancelToken ?? _cancel,
+      );
       return (r.data as List)
           .map((e) => Map<String, dynamic>.from(e))
           .where(

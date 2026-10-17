@@ -1,11 +1,11 @@
 {
-  "version": "0.1.7+8",
+  "version": "0.1.8+9",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "dc14816b3713a2284d0d8b7156e328a6e773ecb2242142247541d7be7afcfe2b",
-  "checkedAt": "2026-10-17T01:45:23.468642+00:00",
+  "sourceSha256": "495e4ac2e73eb183512b7b0726e61737a976b4cca4125858353bdf846efb4217",
+  "checkedAt": "2026-10-17T02:41:27.113269+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 71,
+  "offlineTestsPassed": 81,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -43,7 +43,7 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "5045c3f499caf18dbb949bf47d8501a6a0476db8506fa093533186c45360b200",
+    "testedReleaseSha256": "c3de8c7847b06b2dad3379f7b29bdce0fdc089ac910db741eaad01ffe9f8e354",
     "displayCutout": {
       "checks": {
         "portrait": {
@@ -102,7 +102,7 @@
     }
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-17-INTERACTIONS.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-17-OFFLINE-EXPORT.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -173,7 +173,7 @@
     "topEdge": "PASS - no black strip, content reaches top; user reported",
     "scope": "Playback, download and top edge only; not complete device acceptance"
   },
-  "humanDeviceUpdateThisRound": "PASS - same-signer 0.1.7 Release adb install -r + sync; launch verified, existing 52-song library visible; user acceptance pending",
+  "humanDeviceUpdateThisRound": "PASS - same-signer 0.1.8 Release adb install -r + sync; launch verified, existing 52-song library and playlists visible; user acceptance pending",
   "visualHierarchy": {
     "status": "PASS - rendered native screenshots reviewed",
     "themes": [
@@ -202,5 +202,15 @@
     "themeFirstVisits": "PASS - 3 themes x 4 tabs x 4 frame times; native screenshots reviewed",
     "playlistEditor": "PASS - four-character menu, single-line growing description and native screenshot",
     "lyrics": "PASS - cleaning/candidate score/duration/stale matching fixtures; Mac public LRCLIB metadata probe, physical coverage not validated"
+  },
+  "offlineExport018": {
+    "covers": "PASS - one transfer for 20 same-URL consumers, persistent disk reuse, max 4 concurrent requests; native 5 tab round trips request same URL once",
+    "lyricsAttachments": "PASS - serial independent worker, audio queue not blocked, manual choice preserved, missing/fail/retry/remove paths",
+    "subtitles": "PASS - signed metadata/cid/provenance/cookie boundary fixtures; real logged-in subtitle availability not verified",
+    "embeddedM4a": "PASS - head/tail moov, original audio payload retained, title/UP/cover/LRC readback, own-file embedded lyrics preserved",
+    "androidSave": "PASS - real ACTION_CREATE_DOCUMENT save/cancel; SHA byte readback; content URI playback",
+    "realBilibiliExport": "PASS - downloaded public BV tagged and export decoded locally",
+    "desktops": "NOT RUN - shared implementation and native selectors configured; no native desktop acceptance this round",
+    "appVersionCompatibility": "No old-version migration or dual format. Removed unreachable old settings states and version-specific signature metadata name."
   }
 }

@@ -169,11 +169,15 @@ class BilibiliClient {
     _guestCookie = 'buvid3=${d['b_3']}; buvid4=${d['b_4']}';
   }
 
-  Future<Map<String, String>> _signed(Map<String, String> values) async {
+  Future<Map<String, String>> _signed(
+    Map<String, String> values, {
+    CancelToken? cancelToken,
+  }) async {
     if (_wbiAt == null || DateTime.now().difference(_wbiAt!).inMinutes > 30) {
       // nav returns WBI material even when the top-level status is -101.
       final r = await http.get(
         'https://api.bilibili.com/x/web-interface/nav',
+        cancelToken: cancelToken,
         options: Options(headers: headers),
       );
       final w = (r.data['data'] as Map?)?['wbi_img'] as Map?;
@@ -301,6 +305,76 @@ class BilibiliClient {
     }, '${((audio['bandwidth'] as num) / 1000).round()} kbps');
   }
 
+  /// Player subtitle tracks are separate from the DASH audio resource.
+  Future<Map<String, dynamic>?> subtitleLyrics(
+    Track track, {
+    CancelToken? cancelToken,
+  }) async {
+    if (!hasSession || track.cid <= 0) return null;
+    final data = await _get(
+      '/x/player/wbi/v2',
+      params: await _signed({'bvid': track.bvid, 'cid': '${track.cid}'}),
+      cancelToken: cancelToken,
+    );
+    if (data['cid'] != null && data['cid'] != track.cid) {
+      throw const AppFailure('字幕与当前分 P 不一致');
+    }
+    final subtitle = data['subtitle'] as Map?;
+    final tracks = (subtitle?['subtitles'] as List? ?? [])
+        .whereType<Map>()
+        .toList();
+    int rank(Map value) {
+      final lan = '${value['lan'] ?? ''}';
+      return (lan.startsWith('zh')
+              ? 0
+              : lan.startsWith('ai-zh')
+              ? 10
+              : 20) +
+          (value['type'] == 1 ? 2 : 0);
+    }
+
+    tracks.sort((a, b) => rank(a).compareTo(rank(b)));
+    for (final item in tracks.take(2)) {
+      var url = '${item['subtitle_url'] ?? ''}';
+      if (url.startsWith('//')) url = 'https:$url';
+      final uri = Uri.tryParse(url);
+      // Send no account credentials to a subtitle CDN or arbitrary supplied URL.
+      if (uri == null ||
+          uri.scheme != 'https' ||
+          !(uri.host.endsWith('.hdslb.com') ||
+              uri.host.endsWith('.bilibili.com'))) {
+        continue;
+      }
+      final response = await http.get(
+        url,
+        cancelToken: cancelToken,
+        options: Options(
+          headers: {
+            'User-Agent': userAgent,
+            'Referer': 'https://www.bilibili.com/',
+          },
+        ),
+      );
+      final body = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+      final lrc = subtitleToLrc(
+        (body as Map)['body'] as List? ?? [],
+        duration: track.duration,
+      );
+      if (lrc.isNotEmpty) {
+        return {
+          'trackName': track.title,
+          'syncedLyrics': lrc,
+          'source': item['type'] == 1 || '${item['lan']}'.startsWith('ai-')
+              ? 'bilibili-ai-subtitle'
+              : 'bilibili-cc-subtitle',
+        };
+      }
+    }
+    return null;
+  }
+
   Future<({String url, String key})> createQr() async {
     final d = await _get(
       'https://passport.bilibili.com/x/passport-login/web/qrcode/generate',
@@ -379,4 +453,44 @@ class BilibiliClient {
     final parts = '$value'.split(':');
     return parts.fold(0, (n, v) => n * 60 + (int.tryParse(v) ?? 0));
   }
+}
+
+/// Retains subtitle start/end times, including silent gaps between captions.
+String subtitleToLrc(List<dynamic> body, {int duration = 0}) {
+  final rows = <({double from, double to, String text})>[];
+  for (final raw in body.whereType<Map>()) {
+    final from = raw['from'], to = raw['to'];
+    final text = html
+        .parse('${raw['content'] ?? ''}')
+        .body!
+        .text
+        .replaceAll(RegExp(r'[\r\n]+'), ' ')
+        .trim();
+    if (from is! num ||
+        to is! num ||
+        !from.isFinite ||
+        !to.isFinite ||
+        from < 0 ||
+        to <= from ||
+        text.isEmpty) {
+      continue;
+    }
+    if (duration > 0 && from > duration + 5) continue;
+    rows.add((from: from.toDouble(), to: to.toDouble(), text: text));
+  }
+  rows.sort((a, b) => a.from.compareTo(b.from));
+  String stamp(double seconds) {
+    final cs = (seconds * 100).round();
+    return '[${(cs ~/ 6000).toString().padLeft(2, '0')}:${((cs ~/ 100) % 60).toString().padLeft(2, '0')}.${(cs % 100).toString().padLeft(2, '0')}]';
+  }
+
+  final lines = <String>[];
+  for (var i = 0; i < rows.length; i++) {
+    final row = rows[i];
+    lines.add('${stamp(row.from)}${row.text}');
+    if (i == rows.length - 1 || rows[i + 1].from > row.to + .1) {
+      lines.add('${stamp(row.to)} ');
+    }
+  }
+  return lines.join('\n');
 }

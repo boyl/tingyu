@@ -17,7 +17,7 @@ class LibraryController extends ChangeNotifier {
     this.downloads,
     this.playback, {
     LyricsClient? lyricsClient,
-  }) : lyricsClient = lyricsClient ?? LyricsClient() {
+  }) : lyricsClient = lyricsClient ?? LyricsClient(subtitleClient: api) {
     playback.onNext = () => unawaited(next());
     playback.onPrevious = () => unawaited(next(-1));
     playback.onCompleted = () => unawaited(next(1, true));
@@ -95,6 +95,7 @@ class LibraryController extends ChangeNotifier {
       searchError = '',
       query = '',
       lyricText = '',
+      lyricSource = '',
       lyricError = '';
   bool standard = false,
       searching = false,
@@ -167,7 +168,30 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _downloadsChanged() => notifyListeners();
+  String? _loadingDownloadedLyrics;
+  void _downloadsChanged() {
+    final track = current;
+    if (!_disposed &&
+        track != null &&
+        lyricText.isEmpty &&
+        _loadingDownloadedLyrics != track.id &&
+        downloads.tasks.any(
+          (d) =>
+              d.track.id == track.id &&
+              d.lyricStatus == DownloadLyricStatus.available,
+        )) {
+      _loadingDownloadedLyrics = track.id;
+      unawaited(
+        _loadLyrics(track).whenComplete(() {
+          if (_loadingDownloadedLyrics == track.id) {
+            _loadingDownloadedLyrics = null;
+          }
+        }),
+      );
+    }
+    if (!_disposed) notifyListeners();
+  }
+
   Future<void> save() => db.writeState('library', {
     'libraryOrder': library.keys.toList(),
     'collectionSort': collectionSort,
@@ -669,6 +693,8 @@ class LibraryController extends ChangeNotifier {
     quality = '';
     parts = [];
     lyricText = '';
+    lyricSource = '';
+    lyricOffset = 0;
     lyricError = '';
     position = Duration.zero;
     await _withPlayer(() async {
@@ -723,10 +749,13 @@ class LibraryController extends ChangeNotifier {
     lyricError = '';
     notifyListeners();
     try {
-      final cached = await downloads.lyrics(t);
+      final document = await downloads.lyricDocument(t);
+      final cached = document?['lrc'] as String?;
       if (_disposed || epoch != _lyricEpoch || current?.id != t.id) return;
       if (cached != null) {
         lyricText = cached;
+        lyricSource = document?['source'] as String? ?? 'manual';
+        lyricOffset = document?['offset'] as int? ?? 0;
         notifyListeners();
         return;
       }
@@ -762,9 +791,15 @@ class LibraryController extends ChangeNotifier {
     final text = synced != null && synced.trim().isNotEmpty
         ? synced
         : candidate['plainLyrics'] as String? ?? '';
-    await downloads.saveLyrics(t, text);
+    await downloads.saveLyrics(
+      t,
+      text,
+      source: candidate['source'] as String? ?? 'lrclib',
+    );
     if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
       lyricText = text;
+      lyricSource = candidate['source'] as String? ?? 'lrclib';
+      lyricOffset = 0;
       lyricError = '';
       notifyListeners();
     }
@@ -776,9 +811,10 @@ class LibraryController extends ChangeNotifier {
       throw const AppFailure('歌曲已切换，请重新打开歌词窗口');
     }
     ++_lyricEpoch;
-    await downloads.saveLyrics(target, text);
+    await downloads.saveLyrics(target, text, offset: offset ?? lyricOffset);
     if (_disposed || current?.id != target.id) return;
     lyricText = text;
+    lyricSource = 'manual';
     lyricError = '';
     if (offset != null) lyricOffset = offset;
     await save();
@@ -822,6 +858,7 @@ class LibraryController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    lyricsClient.cancelRequests();
     ++_playEpoch;
     ++_searchEpoch;
     _saveTimer?.cancel();

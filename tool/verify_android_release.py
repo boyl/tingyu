@@ -40,7 +40,7 @@ for abi, offset in [('armeabi-v7a', 1000), ('arm64-v8a', 2000), ('x86_64', 4000)
                   'exactAbi': 'PASS', 'versionCode': str(code)})
 manifest = {'version': f'{version}+{number}', 'sourceSha256': report['sourceSha256'],
             'signing': 'development/debug key', 'signerCertificateSha256': expected_cert,
-            'sameSignerAs0_1_3': True, 'validation': 'ZIP, exact ABI, package, version and signatures PASS',
+            'sameDevelopmentSigner': True, 'validation': 'ZIP, exact ABI, package, version and signatures PASS',
             'apks': items, 'runtimeEvidence': 'artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json',
             'limitations': ['physical Android lockscreen/Bluetooth/calls/background scenarios pending', 'emulator audible issue deferred by user', 'native desktops pending']}
 (ROOT / 'tool/release-apks.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')

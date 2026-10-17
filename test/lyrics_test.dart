@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/lyrics.dart';
@@ -6,7 +7,10 @@ class SearchLyrics extends LyricsClient {
   final seen = <String>[];
   List<Map<String, dynamic>> results = [];
   @override
-  Future<List<Map<String, dynamic>>> search(String query) async {
+  Future<List<Map<String, dynamic>>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
     seen.add(query);
     return results;
   }

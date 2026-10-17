@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tingyu/main.dart' as app;
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/bilibili.dart';
+import 'package:tingyu/services/media_export.dart';
+import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import '../test/support/fakes.dart' show MemoryCredentials, FixtureLyrics;
 
 void main() {
@@ -92,6 +95,25 @@ void main() {
         stages['offlineDecode'] = 'PASS';
         expect(p.playback.player.volume, 1);
         stages['playerGain'] = 1;
+        await p.playback.pause();
+        final file = p.downloads.tasks.single.filePath!;
+        final cover = p.downloads.coverFile(track);
+        final prepared = await MediaExporter().prepare(
+          audio: File(file),
+          track: track,
+          directory: directory,
+          cover: await cover.exists() ? cover : null,
+          lyrics: await p.downloads.lyrics(track),
+        );
+        expect(readMetadata(prepared.file).title, track.title);
+        await p.playback.open(track, file: prepared.file.path);
+        unawaited(p.playback.play());
+        await tester.pump(const Duration(seconds: 2));
+        expect(p.playback.player.playing, isTrue);
+        expect(p.playback.player.position.inMilliseconds, greaterThan(500));
+        stages['realM4aExportDecode'] =
+            'PASS - public Bilibili audio tagged, reread, decoded locally';
+        await p.playback.pause();
       } finally {
         binding.reportData = {
           'liveProbe': stages,

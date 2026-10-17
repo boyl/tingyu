@@ -119,8 +119,10 @@ class FixtureApi extends BilibiliClient {
 class FixtureLyrics extends LyricsClient {
   Future<List<Map<String, dynamic>>> Function(String)? answer;
   @override
-  Future<List<Map<String, dynamic>>> search(String query) async =>
-      answer == null ? [] : answer!(query);
+  Future<List<Map<String, dynamic>>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async => answer == null ? [] : answer!(query);
 }
 
 class FakePlayer implements AudioPlayer {
@@ -250,7 +252,12 @@ class TestLibrary {
       NativeDatabase(File('${directory.path}/library.sqlite')),
     );
     final api = FixtureApi(), playback = FakePlayback();
-    final downloads = DownloadManager(api, db, directory);
+    final downloads = DownloadManager(
+      api,
+      db,
+      directory,
+      lyricsClient: FixtureLyrics(),
+    );
     final controller = LibraryController(
       api,
       db,

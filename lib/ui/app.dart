@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../main.dart';
 import '../controllers/library_controller.dart';
 import '../models/music.dart';
+import '../services/media_export.dart';
 import 'theme.dart';
 part 'library_views.dart';
 part 'settings_views.dart';
@@ -132,41 +134,75 @@ class _NameDialogState extends State<_NameDialog> {
   );
 }
 
-class Artwork extends ConsumerWidget {
+class Artwork extends ConsumerStatefulWidget {
   const Artwork(this.track, {super.key, this.size = 48});
   final Track track;
   final double size;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final p = ref.read(libraryProvider), file = p.downloads.coverFile(track);
+  ConsumerState<Artwork> createState() => _ArtworkState();
+}
+
+class _ArtworkState extends ConsumerState<Artwork> {
+  late Future<File?> image;
+  void load() {
+    final p = ref.read(libraryProvider);
+    final downloaded = p.downloads.coverFile(widget.track);
+    image = downloaded.existsSync()
+        ? Future.value(downloaded)
+        : p.downloads.covers.get(widget.track.cover);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  @override
+  void didUpdateWidget(covariant Artwork oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track.cover != widget.track.cover) load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = ref.read(libraryProvider);
+    final downloaded = p.downloads.coverFile(widget.track);
+    final cached = p.downloads.covers.peek(widget.track.cover);
+    final pixels = (widget.size * MediaQuery.devicePixelRatioOf(context) * 2)
+        .ceil()
+        .clamp(96, 2048);
     Widget fallback() => ColoredBox(
       color: context.tokens.tint,
       child: Center(
         child: Icon(
           Icons.graphic_eq,
-          size: size / 3,
+          size: widget.size / 3,
           color: context.tokens.accent,
         ),
       ),
     );
+    Widget render(File? file) => file == null
+        ? fallback()
+        : Image.file(
+            file,
+            fit: BoxFit.cover,
+            cacheWidth: pixels,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => fallback(),
+          );
     return ClipRRect(
       borderRadius: BorderRadius.circular(TingyuTokens.radius),
       child: SizedBox(
-        width: size,
-        height: size,
-        child: file.existsSync()
-            ? Image.file(
-                file,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback(),
-              )
-            : track.cover.isEmpty
-            ? fallback()
-            : Image.network(
-                track.cover,
-                fit: BoxFit.cover,
-                headers: const {'Referer': 'https://www.bilibili.com/'},
-                errorBuilder: (_, _, _) => fallback(),
+        width: widget.size,
+        height: widget.size,
+        child: downloaded.existsSync()
+            ? render(downloaded)
+            : cached != null
+            ? render(cached)
+            : FutureBuilder(
+                future: image,
+                builder: (_, snapshot) => render(snapshot.data),
               ),
       ),
     );
@@ -265,7 +301,6 @@ class _AppShellState extends ConsumerState<AppShell> {
       'search' => '搜索',
       'downloads' => '下载',
       'likes' => '我喜欢的',
-      'settings' => '设置',
       'playlist' => list?.name ?? '歌单不存在',
       _ => '音乐库',
     };
@@ -660,7 +695,6 @@ class _AppShellState extends ConsumerState<AppShell> {
           '设置',
           () => context.push('/settings'),
           icon: Icons.settings_outlined,
-          selected: widget.page == 'settings',
         ),
       ],
     ),
@@ -1564,26 +1598,42 @@ class _LyricPanelState extends State<LyricPanel> {
         }
       });
     }
-    return ListView.builder(
-      controller: scroll,
-      itemCount: lines.length,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemBuilder: (ctx, i) => SizedBox(
-        height: 64,
-        child: Center(
-          child: Text(
-            lines[i].text,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: i == index ? context.tokens.accent : context.tokens.muted,
-              fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
-              fontSize: 16,
+    return Column(
+      children: [
+        if (p.lyricSource.startsWith('bilibili-'))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              p.lyricSource == 'bilibili-ai-subtitle' ? 'B 站 AI 字幕' : 'B 站字幕',
+              style: TextStyle(fontSize: 10, color: context.tokens.muted),
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            controller: scroll,
+            itemCount: lines.length,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            itemBuilder: (ctx, i) => SizedBox(
+              height: 64,
+              child: Center(
+                child: Text(
+                  lines[i].text,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: i == index
+                        ? context.tokens.accent
+                        : context.tokens.muted,
+                    fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -1827,7 +1877,14 @@ class DownloadsPanel extends StatelessWidget {
                               DownloadStatus.waiting => '等待下载',
                               DownloadStatus.downloading =>
                                 '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
-                              DownloadStatus.completed => '已下载 · 可离线播放',
+                              DownloadStatus.completed => switch (d
+                                  .lyricStatus) {
+                                DownloadLyricStatus.waiting ||
+                                DownloadLyricStatus.fetching => '已下载 · 正在匹配歌词',
+                                DownloadLyricStatus.available => '已下载 · 歌词已保存',
+                                DownloadLyricStatus.missing => '已下载 · 未匹配到歌词',
+                                DownloadLyricStatus.failed => '已下载 · 歌词获取失败',
+                              },
                               DownloadStatus.failed => '下载失败',
                               DownloadStatus.paused => '下载已中断，点击重试',
                             },
@@ -1855,25 +1912,116 @@ class DownloadsPanel extends StatelessWidget {
                   DownloadStatus.paused,
                 ].contains(d.status))
                   action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
-                action(
-                  d.status == DownloadStatus.completed
-                      ? Icons.delete_outline
-                      : Icons.close,
-                  '移除下载',
-                  () async {
-                    if (d.status != DownloadStatus.completed ||
-                        await confirm(context, '删除音频和离线资料？歌单与喜欢记录会保留。')) {
-                      if (context.mounted) {
-                        await report(context, () => p.removeDownload(d));
-                      }
-                    }
-                  },
-                ),
+                if (d.status == DownloadStatus.completed)
+                  action(
+                    Icons.more_horiz,
+                    '下载选项 ${d.track.title}',
+                    () => showDownloadActions(context, p, d),
+                  )
+                else
+                  action(Icons.close, '移除下载', () => p.removeDownload(d)),
               ],
             ),
           ),
       ],
     );
+  }
+}
+
+Future<void> showDownloadActions(
+  BuildContext context,
+  LibraryController p,
+  DownloadTask task,
+) => showContentActions(
+  context,
+  (ctx) => SimpleDialog(
+    title: Text(task.track.title),
+    children: [
+      labelButton('导出歌曲', () async {
+        Navigator.pop(ctx);
+        await report(context, () => exportTrack(context, p, task));
+      }, icon: Icons.ios_share_outlined),
+      if ([
+        DownloadLyricStatus.missing,
+        DownloadLyricStatus.failed,
+      ].contains(task.lyricStatus))
+        labelButton('补全歌词', () async {
+          Navigator.pop(ctx);
+          await p.downloads.retryLyrics(task);
+        }, icon: Icons.lyrics_outlined),
+      labelButton('移除下载', () async {
+        Navigator.pop(ctx);
+        if (await confirm(context, '删除音频和离线资料？歌单与喜欢记录会保留。')) {
+          await p.removeDownload(task);
+        }
+      }, icon: Icons.delete_outline),
+    ],
+  ),
+);
+
+Future<void> exportTrack(
+  BuildContext context,
+  LibraryController p,
+  DownloadTask task,
+) async {
+  final audio = await p.downloads.availablePath(task.track);
+  if (audio == null) throw const AppFailure('下载文件已丢失，请重新下载');
+  final coverFile = p.downloads.coverFile(task.track);
+  final cover = await coverFile.exists()
+      ? coverFile
+      : await p.downloads.covers.get(task.track.cover);
+  final document = await p.downloads.lyricDocument(task.track);
+  final rawLyrics = document?['lrc'] as String?;
+  final offset = document?['offset'] as int? ?? 0;
+  final lyrics = rawLyrics == null || rawLyrics.trim().isEmpty
+      ? null
+      : offset == 0
+      ? rawLyrics
+      : '[offset:$offset]\n$rawLyrics';
+  final exporter = MediaExporter();
+  if (!context.mounted) return;
+  final navigator = Navigator.of(context, rootNavigator: true);
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: Text('正在准备导出'),
+          content: LinearProgressIndicator(),
+        ),
+      ),
+    ),
+  );
+  late PreparedExport prepared;
+  try {
+    prepared = await exporter.prepare(
+      audio: File(audio),
+      track: task.track,
+      directory: Directory('${p.downloads.directory.path}/exports'),
+      cover: cover,
+      lyrics: lyrics,
+    );
+  } finally {
+    if (context.mounted) navigator.pop();
+  }
+  try {
+    if (!context.mounted) return;
+    final path = await exporter.save(prepared, task.track.title);
+    if (path == null || !context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('已导出'),
+        content: Text(
+          'M4A · ${prepared.hasCover ? '封面' : '无封面'} · ${prepared.hasLyrics ? '内嵌歌词' : '未匹配到歌词'}',
+        ),
+        actions: [labelButton('完成', () => Navigator.pop(ctx))],
+      ),
+    );
+  } finally {
+    await prepared.file.parent.delete(recursive: true);
   }
 }
 

@@ -7,22 +7,43 @@ import 'package:path/path.dart' as path;
 import '../models/music.dart';
 import 'bilibili.dart';
 import 'storage.dart';
+import 'covers.dart';
+import 'lyrics.dart';
+import 'media_export.dart';
 
 class DownloadManager extends ChangeNotifier {
-  DownloadManager(this.api, this.db, this.directory, {Dio? dio})
-    : _http =
-          dio ??
-          Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 40),
-            ),
-          );
+  DownloadManager(
+    this.api,
+    this.db,
+    this.directory, {
+    Dio? dio,
+    LyricsClient? lyricsClient,
+  }) : lyricsClient = lyricsClient ?? LyricsClient(subtitleClient: api),
+       _http =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 15),
+               receiveTimeout: const Duration(seconds: 40),
+             ),
+           ) {
+    covers = CoverCache(Directory('${directory.path}/covers'), dio: _http);
+  }
+  late final CoverCache covers;
+  final LyricsClient lyricsClient;
   final BilibiliClient api;
   final AppDatabase db;
   final Directory directory;
   final Dio _http;
   final List<DownloadTask> tasks = [];
+  final _coverJobs = <DownloadTask, Future<void>>{};
+  final _coverWrites = <DownloadTask, Future<File>>{};
+  final _lyricQueue = <DownloadTask>[];
+  final _lyricRevisions = <String, int>{};
+  final _lyricWrites = <String, Future<void>>{};
+  Future<void>? _lyricPumpFuture;
+  bool _lyricRunning = false;
+  DownloadTask? _lyricActive;
   bool _running = false, _closed = false;
   Future<void>? _pumpFuture;
   CancelToken? _cancel;
@@ -49,6 +70,15 @@ class DownloadManager extends ChangeNotifier {
     }
     notifyListeners();
     _startPump();
+    for (final task in tasks) {
+      if (task.status == DownloadStatus.completed &&
+          [
+            DownloadLyricStatus.waiting,
+            DownloadLyricStatus.fetching,
+          ].contains(task.lyricStatus)) {
+        _queueLyrics(task);
+      }
+    }
   }
 
   String? localPath(Track t) {
@@ -119,6 +149,10 @@ class DownloadManager extends ChangeNotifier {
 
   Future<void> remove(DownloadTask t) async {
     tasks.remove(t);
+    _lyricQueue.remove(t);
+    _lyricRevisions[t.track.id] = (_lyricRevisions[t.track.id] ?? 0) + 1;
+    await _lyricWrites[t.track.id];
+    await _coverWrites[t];
     if (_active == t) {
       final done = _activeDone?.future;
       _cancel?.cancel();
@@ -147,7 +181,11 @@ class DownloadManager extends ChangeNotifier {
     _saveTimer?.cancel();
     _saveTimer = null;
     _cancel?.cancel();
+    lyricsClient.cancelRequests();
     await _pumpFuture;
+    await _lyricPumpFuture;
+    await covers.close();
+    await Future.wait(_coverJobs.values.toList());
     await _save();
   }
 
@@ -204,25 +242,9 @@ class DownloadManager extends ChangeNotifier {
           pending.received = bytes;
           pending.total = bytes;
           pending.status = DownloadStatus.completed;
+          _queueLyrics(pending);
           notifyListeners();
-          // Cover failure is visible but does not invalidate an intact audio file.
-          if (pending.track.cover.isNotEmpty) {
-            try {
-              await _http.download(
-                pending.track.cover,
-                path.join(directory.path, '${_stem(pending.track)}.cover'),
-                cancelToken: _cancel,
-                options: Options(
-                  headers: {
-                    'User-Agent': BilibiliClient.userAgent,
-                    'Referer': 'https://www.bilibili.com/',
-                  },
-                ),
-              );
-            } on DioException catch (e) {
-              if (!CancelToken.isCancel(e)) pending.error = '音频已下载，封面获取失败';
-            }
-          }
+          if (pending.track.cover.isNotEmpty) _queueCover(pending);
           await db.saveTrack(pending.track);
         } on DioException catch (e) {
           if (tasks.contains(pending)) {
@@ -256,26 +278,194 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
-  Future<void> saveLyrics(Track t, String text) async {
-    await File(
-      path.join(directory.path, '${_stem(t)}.lyrics'),
-    ).writeAsString(jsonEncode({'lrc': text}));
+  void _queueCover(DownloadTask task) {
+    if (_closed || _coverJobs.containsKey(task)) return;
+    final job = _attachCover(task);
+    _coverJobs[task] = job;
+    unawaited(job.whenComplete(() => _coverJobs.remove(task)));
   }
 
-  Future<String?> lyrics(Track t) async {
-    final f = File(path.join(directory.path, '${_stem(t)}.lyrics'));
-    return await f.exists()
-        ? jsonDecode(await f.readAsString())['lrc'] as String?
+  Future<void> _attachCover(DownloadTask task) async {
+    try {
+      final cover = await covers.get(task.track.cover);
+      if (!tasks.contains(task) || _closed) return;
+      if (cover == null) {
+        task.error = '音频已下载，封面获取失败';
+      } else {
+        final write = cover.copy(
+          path.join(directory.path, '${_stem(task.track)}.cover'),
+        );
+        _coverWrites[task] = write;
+        try {
+          await write;
+        } finally {
+          if (identical(_coverWrites[task], write)) _coverWrites.remove(task);
+        }
+      }
+    } on FileSystemException {
+      if (tasks.contains(task) && !_closed) task.error = '音频已下载，封面保存失败';
+    } finally {
+      if (tasks.contains(task)) await _save();
+      if (!_closed) notifyListeners();
+    }
+  }
+
+  Future<void> retryLyrics(DownloadTask task) async {
+    if (_closed ||
+        !tasks.contains(task) ||
+        task.status != DownloadStatus.completed ||
+        _lyricActive == task) {
+      return;
+    }
+    task.lyricStatus = DownloadLyricStatus.waiting;
+    _queueLyrics(task);
+    await _save();
+    if (!_closed) notifyListeners();
+  }
+
+  void _queueLyrics(DownloadTask task) {
+    if (_closed || _lyricQueue.contains(task) || _lyricActive == task) return;
+    _lyricQueue.add(task);
+    if (!_lyricRunning) _lyricPumpFuture = _runLyrics();
+  }
+
+  Future<void> _runLyrics() async {
+    _lyricRunning = true;
+    try {
+      while (!_closed && _lyricQueue.isNotEmpty) {
+        final task = _lyricActive = _lyricQueue.removeAt(0);
+        if (!tasks.contains(task)) continue;
+        final revision = _lyricRevisions[task.track.id] ?? 0;
+        bool valid() =>
+            !_closed &&
+            tasks.contains(task) &&
+            (_lyricRevisions[task.track.id] ?? 0) == revision;
+        task.lyricStatus = DownloadLyricStatus.fetching;
+        notifyListeners();
+        try {
+          String? cached;
+          try {
+            cached = await lyrics(task.track);
+          } on FormatException {
+            cached = null;
+          }
+          if (!valid()) continue;
+          if (cached != null && cached.trim().isNotEmpty) {
+            task.lyricStatus = DownloadLyricStatus.available;
+          } else {
+            final embedded = task.filePath == null
+                ? null
+                : await MediaExporter.embeddedLyrics(File(task.filePath!));
+            if (!valid()) continue;
+            final candidate = embedded != null
+                ? <String, dynamic>{
+                    'syncedLyrics': embedded,
+                    'source': 'embedded',
+                  }
+                : await lyricsClient.match(task.track, isCurrent: valid);
+            if (!valid()) continue;
+            final synced = candidate?['syncedLyrics'] as String?;
+            final text = synced != null && synced.trim().isNotEmpty
+                ? synced
+                : candidate?['plainLyrics'] as String?;
+            if (text == null || text.trim().isEmpty) {
+              task.lyricStatus = DownloadLyricStatus.missing;
+            } else {
+              await _writeLyrics(
+                task.track,
+                text,
+                expectedRevision: revision,
+                allowed: () => !_closed && tasks.contains(task),
+                source: candidate?['source'] as String? ?? 'lrclib',
+              );
+              if (valid()) task.lyricStatus = DownloadLyricStatus.available;
+            }
+          }
+        } on AppFailure {
+          if (valid()) task.lyricStatus = DownloadLyricStatus.failed;
+        } on FileSystemException {
+          if (valid()) task.lyricStatus = DownloadLyricStatus.failed;
+        } finally {
+          if (_closed && task.lyricStatus == DownloadLyricStatus.fetching) {
+            task.lyricStatus = DownloadLyricStatus.waiting;
+          }
+          if (tasks.contains(task)) await _save();
+          if (!_closed) notifyListeners();
+          _lyricActive = null;
+        }
+      }
+    } finally {
+      _lyricRunning = false;
+      _lyricActive = null;
+    }
+  }
+
+  Future<void> saveLyrics(
+    Track t,
+    String text, {
+    String source = 'manual',
+    int offset = 0,
+  }) async {
+    _lyricRevisions[t.id] = (_lyricRevisions[t.id] ?? 0) + 1;
+    await _writeLyrics(t, text, source: source, offset: offset);
+    for (final task in tasks.where((task) => task.track.id == t.id)) {
+      task.lyricStatus = text.trim().isEmpty
+          ? DownloadLyricStatus.missing
+          : DownloadLyricStatus.available;
+    }
+    if (!_closed) notifyListeners();
+  }
+
+  Future<void> _writeLyrics(
+    Track t,
+    String text, {
+    int? expectedRevision,
+    bool Function()? allowed,
+    String source = 'manual',
+    int offset = 0,
+  }) async {
+    final previous = _lyricWrites[t.id];
+    final done = Completer<void>();
+    _lyricWrites[t.id] = done.future;
+    try {
+      if (previous != null) await previous;
+      if (allowed?.call() == false ||
+          (expectedRevision != null &&
+              (_lyricRevisions[t.id] ?? 0) != expectedRevision)) {
+        return;
+      }
+      final file = File(path.join(directory.path, '${_stem(t)}.lyrics'));
+      final temp = File('${file.path}.tmp');
+      await temp.writeAsString(
+        jsonEncode({'lrc': text, 'source': source, 'offset': offset}),
+        flush: true,
+      );
+      await temp.rename(file.path);
+    } finally {
+      done.complete();
+      if (identical(_lyricWrites[t.id], done.future)) _lyricWrites.remove(t.id);
+    }
+  }
+
+  Future<Map<String, dynamic>?> lyricDocument(Track t) async {
+    final file = File(path.join(directory.path, '${_stem(t)}.lyrics'));
+    return await file.exists()
+        ? Map<String, dynamic>.from(jsonDecode(await file.readAsString()))
         : null;
   }
+
+  Future<String?> lyrics(Track t) async =>
+      (await lyricDocument(t))?['lrc'] as String?;
 
   File coverFile(Track t) =>
       File(path.join(directory.path, '${_stem(t)}.cover'));
   @override
   void dispose() {
     _closed = true;
+    lyricsClient.cancelRequests();
     _saveTimer?.cancel();
     _cancel?.cancel();
+    unawaited(covers.close());
     super.dispose();
   }
 }

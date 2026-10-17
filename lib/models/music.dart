@@ -62,10 +62,13 @@ class Playlist {
 
 enum DownloadStatus { waiting, downloading, completed, failed, paused }
 
+enum DownloadLyricStatus { waiting, fetching, available, missing, failed }
+
 class DownloadTask {
   DownloadTask(
     this.track, {
     this.status = DownloadStatus.waiting,
+    this.lyricStatus = DownloadLyricStatus.waiting,
     this.received = 0,
     this.total = 0,
     this.filePath,
@@ -73,12 +76,14 @@ class DownloadTask {
   });
   final Track track;
   DownloadStatus status;
+  DownloadLyricStatus lyricStatus;
   int received, total;
   String? filePath, error;
   double? get progress => total > 0 ? (received / total).clamp(0, 1) : null;
   Map<String, dynamic> toJson() => {
     'track': track.toJson(),
     'status': status.name,
+    'lyricStatus': lyricStatus.name,
     'received': received,
     'total': total,
     'filePath': filePath,
@@ -87,6 +92,9 @@ class DownloadTask {
   factory DownloadTask.fromJson(Map<String, dynamic> j) => DownloadTask(
     Track.fromJson(Map<String, dynamic>.from(j['track'])),
     status: DownloadStatus.values.byName(j['status']),
+    lyricStatus: DownloadLyricStatus.values.byName(
+      j['lyricStatus'] ?? 'waiting',
+    ),
     received: j['received'] ?? 0,
     total: j['total'] ?? 0,
     filePath: j['filePath'],
@@ -114,7 +122,7 @@ List<LyricLine> parseLrc(String text) {
   for (final line in text.split('\n')) {
     final matches = pattern.allMatches(line);
     final words = line.replaceAll(pattern, '').trim();
-    if (words.isEmpty) continue;
+    if (words.isEmpty && matches.isEmpty) continue;
     for (final m in matches) {
       lines.add(
         LyricLine(

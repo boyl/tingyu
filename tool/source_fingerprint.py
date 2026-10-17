@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def source_fingerprint(root: Path) -> str:
-    files = [root / name for name in ('pubspec.yaml', 'pubspec.lock', 'tool/source_fingerprint.py')]
+    files = [root / name for name in ('pubspec.yaml', 'pubspec.lock', 'tool/source_fingerprint.py', 'tool/run_acceptance.py', 'tool/run_android_export_test.py')]
     for folder in ('lib', 'android/app/src', 'test', 'integration_test'):
         files.extend(file for file in (root / folder).rglob('*')
                      if file.is_file() and file.name != 'GeneratedPluginRegistrant.java')

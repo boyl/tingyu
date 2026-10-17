@@ -37,6 +37,7 @@ Future<void> runTingyu({
       api,
       db,
       Directory(path.join(directory.path, 'downloads')),
+      lyricsClient: lyricsClient,
     );
     final playback = await PlaybackHandler.initialize();
     final controller = LibraryController(

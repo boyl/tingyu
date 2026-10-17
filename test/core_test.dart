@@ -9,6 +9,7 @@ import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/bilibili.dart';
 import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/services/downloads.dart';
+import 'support/fakes.dart' show FixtureLyrics;
 
 class MemoryCredentials implements CredentialStore {
   String? value;
@@ -173,7 +174,12 @@ void main() {
       ],
     });
     final api = BilibiliClient(MemoryCredentials());
-    final manager = DownloadManager(api, db, dir);
+    final manager = DownloadManager(
+      api,
+      db,
+      dir,
+      lyricsClient: FixtureLyrics(),
+    );
     await manager.initialize();
     expect(manager.tasks.single.status, DownloadStatus.failed);
     expect(manager.localPath(track), isNull);
@@ -255,6 +261,7 @@ void main() {
         db,
         dir,
         dio: transfer,
+        lyricsClient: FixtureLyrics(),
       );
       await manager.initialize();
       await db.writeState('library', {
@@ -314,6 +321,7 @@ void main() {
       db,
       dir,
       dio: transfer,
+      lyricsClient: FixtureLyrics(),
     );
     await manager.initialize();
     await manager.enqueue(track);

@@ -1,37 +1,37 @@
 {
-  "version": "0.1.7+8",
-  "sourceSha256": "dc14816b3713a2284d0d8b7156e328a6e773ecb2242142247541d7be7afcfe2b",
+  "version": "0.1.8+9",
+  "sourceSha256": "495e4ac2e73eb183512b7b0726e61737a976b4cca4125858353bdf846efb4217",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
-  "sameSignerAs0_1_3": true,
+  "sameDevelopmentSigner": true,
   "validation": "ZIP, exact ABI, package, version and signatures PASS",
   "apks": [
     {
       "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.7-android-armeabi-v7a-release.apk",
-      "bytes": 19950915,
-      "sha256": "1216406bf4db23ac42d998d256709abe7ba1bfa1a50aae7042bcf7f05444676e",
+      "path": "artifacts/tingyu-0.1.8-android-armeabi-v7a-release.apk",
+      "bytes": 20427807,
+      "sha256": "36c249edffc252d2f89805f2dbe599399f38c98534639603e5fb17a69c344e16",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "1008"
+      "versionCode": "1009"
     },
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.7-android-arm64-v8a-release.apk",
-      "bytes": 22361595,
-      "sha256": "5045c3f499caf18dbb949bf47d8501a6a0476db8506fa093533186c45360b200",
+      "path": "artifacts/tingyu-0.1.8-android-arm64-v8a-release.apk",
+      "bytes": 22772951,
+      "sha256": "c3de8c7847b06b2dad3379f7b29bdce0fdc089ac910db741eaad01ffe9f8e354",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2008"
+      "versionCode": "2009"
     },
     {
       "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.7-android-x86_64-release.apk",
-      "bytes": 23813327,
-      "sha256": "45006fd62df32d60e1566075a5d2fb2f2cb79d0db0c936a2b80403f0c725c8d1",
+      "path": "artifacts/tingyu-0.1.8-android-x86_64-release.apk",
+      "bytes": 24224683,
+      "sha256": "e5b72071b122b2b00ec5103df763ed61311012d68ed28997a7c899d64e534554",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "4008"
+      "versionCode": "4009"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json",

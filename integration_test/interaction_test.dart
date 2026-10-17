@@ -13,6 +13,7 @@ import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/ui/app.dart';
 import 'package:tingyu/ui/theme.dart';
 import '../test/support/fakes.dart';
+import '../test/support/export_fixture.dart' show testCover;
 
 Uint8List tone() {
   const count = 44100 * 30;
@@ -50,8 +51,15 @@ void main() {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final wav = tone();
       var reject = true;
-      var requests = 0;
+      var requests = 0, coverRequests = 0;
       server.listen((request) async {
+        if (request.uri.path == '/cover.png') {
+          coverRequests++;
+          request.response.headers.contentType = ContentType('image', 'png');
+          request.response.add(testCover());
+          await request.response.close();
+          return;
+        }
         requests++;
         if (reject) {
           request.response.statusCode = 503;
@@ -259,6 +267,7 @@ void main() {
         downloads.dispose();
         await restored.playback.close();
         await reopened.close();
+        await tap('下载选项 ${firstTrack.title}');
         await tap('移除下载');
         await tap('确认');
         await waitFor(() => p.downloads.tasks.isEmpty);
@@ -341,6 +350,30 @@ void main() {
           await tap('tab-library');
         }
         await p.setTheme('a');
+        final covered = Track(
+          bvid: 'BVcover',
+          cid: 9001,
+          title: '封面复用测试',
+          artist: '测试UP',
+          cover: 'http://127.0.0.1:${server.port}/cover.png',
+          duration: 30,
+        );
+        await p.remember(covered);
+        await p.download(covered);
+        await waitFor(
+          () => p.downloads.tasks.any(
+            (d) =>
+                d.track.id == covered.id &&
+                d.status == DownloadStatus.completed,
+          ),
+        );
+        await waitFor(() => p.downloads.coverFile(covered).existsSync());
+        for (var i = 0; i < 5; i++) {
+          await tap('tab-downloads');
+          await tap('tab-library');
+        }
+        expect(coverRequests, 1, reason: '歌曲行、下载、切页与不同尺寸必须复用同一 URL 封面');
+        await binding.takeScreenshot('cover-cache-tab-revisit');
       } finally {
         await p.playback.pause();
         await p.downloads.prepareForExit();
