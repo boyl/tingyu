@@ -30,6 +30,7 @@ if args.device:
     for name, target in [('android-navigation', 'navigation_test.dart'), ('android-interactions', 'interaction_test.dart')]:
         commands.append((name, flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', f'--target=integration_test/{target}', '-d', args.device]))
     commands.append(('android-export', [sys.executable, 'tool/run_android_export_test.py', '--device', args.device]))
+    commands.append(('android-scroll-performance', flutter + ['drive', '--profile', '--no-pub', '--driver=test_driver/performance_driver.dart', '--target=integration_test/scroll_performance_test.dart', '-d', args.device]))
     if args.live:
         commands.append(('android-live-playback', flutter + ['drive', '--no-pub', '--driver=test_driver/integration_driver.dart', '--target=integration_test/live_playback_test.dart', '-d', args.device]))
 fingerprint_before = source_fingerprint(ROOT)

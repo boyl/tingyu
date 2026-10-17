@@ -1,11 +1,11 @@
 {
-  "version": "0.1.8+9",
+  "version": "0.1.9+10",
   "flutter": "3.47.7",
   "dart": "3.13.5",
-  "sourceSha256": "495e4ac2e73eb183512b7b0726e61737a976b4cca4125858353bdf846efb4217",
-  "checkedAt": "2026-10-17T02:41:27.113269+00:00",
+  "sourceSha256": "0aac177aefb20449f7eeffd3d1f7ecf90cb3e1d675225f4a72da23faca2193c8",
+  "checkedAt": "2026-10-17T07:19:23.330234+00:00",
   "staticAnalysis": "PASS",
-  "offlineTestsPassed": 81,
+  "offlineTestsPassed": 87,
   "liveProbeDefaultSkipped": 1,
   "desktopPackagingTestsPassed": 3,
   "sharedPageMatrix": {
@@ -43,7 +43,7 @@
       "transient-bars": "PASS",
       "transient-dismiss": "PASS"
     },
-    "testedReleaseSha256": "c3de8c7847b06b2dad3379f7b29bdce0fdc089ac910db741eaad01ffe9f8e354",
+    "testedReleaseSha256": "cab852c8770cdc52e3bb174baaba302b0b5e2d6cd1df1185a460cc2a7ec43857",
     "displayCutout": {
       "checks": {
         "portrait": {
@@ -102,7 +102,7 @@
     }
   },
   "artifactManifest": "tool/release-apks.json",
-  "acceptanceReport": "docs/ACCEPTANCE-2026-10-17-OFFLINE-EXPORT.md",
+  "acceptanceReport": "docs/ACCEPTANCE-2026-10-17-SCROLL.md",
   "androidInteractionReviewReady": true,
   "humanHandoffReady": false,
   "fullProductAcceptance": "NOT COMPLETE - physical Android, real account and native desktops pending",
@@ -173,7 +173,7 @@
     "topEdge": "PASS - no black strip, content reaches top; user reported",
     "scope": "Playback, download and top edge only; not complete device acceptance"
   },
-  "humanDeviceUpdateThisRound": "PASS - same-signer 0.1.8 Release adb install -r + sync; launch verified, existing 52-song library and playlists visible; user acceptance pending",
+  "humanDeviceUpdateThisRound": "NOT RUN - human emulator 5556 is offline; not started, reset or modified. Same-signer 0.1.9 APK prepared for physical acceptance.",
   "visualHierarchy": {
     "status": "PASS - rendered native screenshots reviewed",
     "themes": [
@@ -212,5 +212,117 @@
     "realBilibiliExport": "PASS - downloaded public BV tagged and export decoded locally",
     "desktops": "NOT RUN - shared implementation and native selectors configured; no native desktop acceptance this round",
     "appVersionCompatibility": "No old-version migration or dual format. Removed unreachable old settings states and version-specific signature metadata name."
+  },
+  "scroll019": {
+    "structure": "PASS - 500 tracks are virtualized; 100 playhead ticks cause zero library notifications or row replacement",
+    "profile": {
+      "scroll_library": {
+        "frames": 254,
+        "build": {
+          "p50Ms": 0.297,
+          "p95Ms": 1.114,
+          "maxMs": 3.242,
+          "over16_67ms": 0
+        },
+        "raster": {
+          "p50Ms": 6.279,
+          "p95Ms": 16.004,
+          "maxMs": 23.474,
+          "over16_67ms": 9
+        },
+        "mountedArtworks": 11
+      },
+      "scroll_downloads": {
+        "frames": 257,
+        "build": {
+          "p50Ms": 0.272,
+          "p95Ms": 1.071,
+          "maxMs": 6.412,
+          "over16_67ms": 0
+        },
+        "raster": {
+          "p50Ms": 6.519,
+          "p95Ms": 17.544,
+          "maxMs": 22.662,
+          "over16_67ms": 23
+        },
+        "mountedArtworks": 12
+      },
+      "scroll_playlist": {
+        "frames": 253,
+        "build": {
+          "p50Ms": 0.271,
+          "p95Ms": 1.037,
+          "maxMs": 4.05,
+          "over16_67ms": 0
+        },
+        "raster": {
+          "p50Ms": 6.518,
+          "p95Ms": 18.2,
+          "maxMs": 21.196,
+          "over16_67ms": 30
+        },
+        "mountedArtworks": 11
+      },
+      "baseline": false,
+      "scenario": "500 tracks, 1024px local covers, 20Hz playhead, library/downloads, profile emulator; not physical-device FPS"
+    },
+    "baseline018": {
+      "scroll_library": {
+        "frames": 56,
+        "build": {
+          "p50Ms": 72.068,
+          "p95Ms": 88.507,
+          "maxMs": 90.158,
+          "over16_67ms": 56
+        },
+        "raster": {
+          "p50Ms": 3.125,
+          "p95Ms": 3.735,
+          "maxMs": 4.133,
+          "over16_67ms": 0
+        },
+        "mountedArtworks": 502
+      },
+      "scroll_downloads": {
+        "frames": 47,
+        "build": {
+          "p50Ms": 108.218,
+          "p95Ms": 130.449,
+          "maxMs": 153.537,
+          "over16_67ms": 47
+        },
+        "raster": {
+          "p50Ms": 3.984,
+          "p95Ms": 4.718,
+          "maxMs": 5.877,
+          "over16_67ms": 0
+        },
+        "mountedArtworks": 501
+      },
+      "scroll_playlist": {
+        "frames": 35,
+        "build": {
+          "p50Ms": 184.714,
+          "p95Ms": 203.162,
+          "maxMs": 223.908,
+          "over16_67ms": 35
+        },
+        "raster": {
+          "p50Ms": 2.886,
+          "p95Ms": 5.577,
+          "maxMs": 6.419,
+          "over16_67ms": 0
+        },
+        "mountedArtworks": 502
+      },
+      "baseline": true,
+      "scenario": "500 tracks, 1024px local covers, 20Hz playhead, library/downloads, profile emulator; not physical-device FPS"
+    },
+    "profileScope": "Same emulator, fixtures and gestures; baseline 2b4cc06. Build cost and mounted rows verified. Raster over-budget frames reported, not a physical FPS guarantee.",
+    "addSongs": "PASS - local selection, duplicate disabled, cancel, batch save failure/retry, online target add, selection preserved on return; native screenshots",
+    "navigation": "PASS - branch state restored on cross-tab return, reselect current library returns root; scoped short collection transitions; reduced motion zero duration",
+    "playingIndicator": "PASS - native icon crop changes between frames; pause/resume and reduced-motion ticker release tested",
+    "physicalDevice": "PENDING - requires user repeat same scrolling/navigation after this update"
   }
 }

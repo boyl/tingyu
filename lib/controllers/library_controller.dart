@@ -28,7 +28,6 @@ class LibraryController extends ChangeNotifier {
             playback.player.processingState != ProcessingState.idle) {
           position = v;
         }
-        if (!_disposed) notifyListeners();
       }),
     );
     _subscriptions.add(
@@ -106,7 +105,9 @@ class LibraryController extends ChangeNotifier {
   bool _disposed = false;
   Track? current;
   List<Track> results = [], parts = [];
-  Duration position = Duration.zero;
+  final playhead = ValueNotifier<Duration>(Duration.zero);
+  Duration get position => playhead.value;
+  set position(Duration value) => playhead.value = value;
   Map<String, dynamic>? profile;
   List<LyricLine> get lines => parseLrc(lyricText);
   bool get playing => playback.player.playing;
@@ -593,6 +594,35 @@ class LibraryController extends ChangeNotifier {
     await save();
   }
 
+  Future<void> addLibraryTracks(String playlistId, Iterable<String> ids) async {
+    final index = playlists.indexWhere((list) => list.id == playlistId);
+    if (index < 0) throw const AppFailure('歌单已删除，请返回音乐库');
+    final selected = ids.toSet();
+    if (selected.any((id) => !library.containsKey(id))) {
+      throw const AppFailure('部分歌曲已移除，请重新选择');
+    }
+    final previous = playlists[index];
+    final updated = Playlist(
+      previous.id,
+      previous.name,
+      {...previous.trackIds, ...selected}.toList(),
+      description: previous.description,
+    );
+    playlists[index] = updated;
+    try {
+      await save();
+    } on Exception {
+      final currentIndex = playlists.indexWhere(
+        (list) => list.id == playlistId,
+      );
+      if (currentIndex >= 0 && identical(playlists[currentIndex], updated)) {
+        playlists[currentIndex] = previous;
+      }
+      rethrow;
+    }
+    notifyListeners();
+  }
+
   Future<void> editPlaylist(
     Playlist l, {
     String? name,
@@ -866,6 +896,7 @@ class LibraryController extends ChangeNotifier {
       unawaited(sub.cancel());
     }
     downloads.removeListener(_downloadsChanged);
+    playhead.dispose();
     super.dispose();
   }
 }

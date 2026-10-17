@@ -1,6 +1,6 @@
 {
-  "version": "0.1.8+9",
-  "sourceSha256": "495e4ac2e73eb183512b7b0726e61737a976b4cca4125858353bdf846efb4217",
+  "version": "0.1.9+10",
+  "sourceSha256": "0aac177aefb20449f7eeffd3d1f7ecf90cb3e1d675225f4a72da23faca2193c8",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,30 +8,30 @@
   "apks": [
     {
       "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.8-android-armeabi-v7a-release.apk",
-      "bytes": 20427807,
-      "sha256": "36c249edffc252d2f89805f2dbe599399f38c98534639603e5fb17a69c344e16",
+      "path": "artifacts/tingyu-0.1.9-android-armeabi-v7a-release.apk",
+      "bytes": 20476967,
+      "sha256": "697f6124cf557fe2d94212a7b4ec6ea134f0cc47babbbbc1225ef19bdc16db89",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "1009"
+      "versionCode": "1010"
     },
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.8-android-arm64-v8a-release.apk",
-      "bytes": 22772951,
-      "sha256": "c3de8c7847b06b2dad3379f7b29bdce0fdc089ac910db741eaad01ffe9f8e354",
+      "path": "artifacts/tingyu-0.1.9-android-arm64-v8a-release.apk",
+      "bytes": 22838495,
+      "sha256": "cab852c8770cdc52e3bb174baaba302b0b5e2d6cd1df1185a460cc2a7ec43857",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2009"
+      "versionCode": "2010"
     },
     {
       "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.8-android-x86_64-release.apk",
-      "bytes": 24224683,
-      "sha256": "e5b72071b122b2b00ec5103df763ed61311012d68ed28997a7c899d64e534554",
+      "path": "artifacts/tingyu-0.1.9-android-x86_64-release.apk",
+      "bytes": 24290227,
+      "sha256": "c37adcdf2993cc7d0f01fa116208c2d398100cc38bacb115d7bcb2c9a7cccd28",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "4009"
+      "versionCode": "4010"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json",

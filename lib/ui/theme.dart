@@ -44,6 +44,7 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
   static const space = 8.0,
       radius = 12.0,
       playerRadius = 20.0,
+      playingPeriod = Duration(milliseconds: 900),
       pressDuration = Duration(milliseconds: 100),
       transition = Duration(milliseconds: 180);
   static const light = TingyuTokens(

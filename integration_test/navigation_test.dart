@@ -51,7 +51,7 @@ void main() {
       }
       controller.clearError();
       await tester.pumpAndSettle();
-      final libraryScroll = find.byType(SingleChildScrollView).first;
+      final libraryScroll = find.byType(CustomScrollView).first;
       await tester.drag(libraryScroll, const Offset(0, -500));
       await tester.pumpAndSettle();
       final scrollState = tester.state<ScrollableState>(

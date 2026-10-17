@@ -73,6 +73,36 @@ Future<void> runTingyu({
   }
 }
 
+Page<void> collectionPage(
+  BuildContext context, {
+  required LocalKey key,
+  required Widget child,
+}) {
+  final reduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  return CustomTransitionPage<void>(
+    key: key,
+    child: RepaintBoundary(child: child),
+    transitionDuration: reduced ? Duration.zero : TingyuTokens.transition,
+    reverseTransitionDuration: reduced
+        ? Duration.zero
+        : TingyuTokens.transition,
+    transitionsBuilder: (context, animation, secondary, child) {
+      if (MediaQuery.disableAnimationsOf(context)) return child;
+      final eased = animation.drive(CurveTween(curve: Curves.easeOutCubic));
+      return FadeTransition(
+        opacity: eased,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(.035, 0),
+            end: Offset.zero,
+          ).animate(eased),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final _router = createRouter();
 GoRouter createRouter() => GoRouter(
   routes: [
@@ -92,10 +122,39 @@ GoRouter createRouter() => GoRouter(
                   if (route == 'library')
                     GoRoute(
                       path: 'playlist/:id',
-                      builder: (_, state) => AppShell(
-                        page: 'playlist',
-                        playlistId: state.pathParameters['id'],
+                      pageBuilder: (context, state) => collectionPage(
+                        context,
+                        key: state.pageKey,
+                        child: AppShell(
+                          page: 'playlist',
+                          playlistId: state.pathParameters['id'],
+                        ),
                       ),
+                      routes: [
+                        GoRoute(
+                          path: 'add',
+                          pageBuilder: (context, state) => collectionPage(
+                            context,
+                            key: state.pageKey,
+                            child: PlaylistAddScreen(
+                              playlistId: state.pathParameters['id']!,
+                            ),
+                          ),
+                          routes: [
+                            GoRoute(
+                              path: 'search',
+                              pageBuilder: (context, state) => collectionPage(
+                                context,
+                                key: state.pageKey,
+                                child: AppShell(
+                                  page: 'search',
+                                  playlistId: state.pathParameters['id'],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                 ],
               ),

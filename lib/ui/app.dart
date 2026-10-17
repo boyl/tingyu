@@ -11,8 +11,10 @@ import '../controllers/library_controller.dart';
 import '../models/music.dart';
 import '../services/media_export.dart';
 import 'theme.dart';
+import 'playing_indicator.dart';
 part 'library_views.dart';
 part 'settings_views.dart';
+part 'playlist_add_views.dart';
 
 bool matchesLocal(Track? track, String query) {
   if (track == null) return false;
@@ -146,10 +148,7 @@ class _ArtworkState extends ConsumerState<Artwork> {
   late Future<File?> image;
   void load() {
     final p = ref.read(libraryProvider);
-    final downloaded = p.downloads.coverFile(widget.track);
-    image = downloaded.existsSync()
-        ? Future.value(downloaded)
-        : p.downloads.covers.get(widget.track.cover);
+    image = p.downloads.artworkFile(widget.track);
   }
 
   @override
@@ -161,14 +160,16 @@ class _ArtworkState extends ConsumerState<Artwork> {
   @override
   void didUpdateWidget(covariant Artwork oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.track.cover != widget.track.cover) load();
+    if (oldWidget.track.cover != widget.track.cover ||
+        oldWidget.track.id != widget.track.id) {
+      load();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final p = ref.read(libraryProvider);
-    final downloaded = p.downloads.coverFile(widget.track);
-    final cached = p.downloads.covers.peek(widget.track.cover);
+    final cached = p.downloads.cachedArtwork(widget.track);
     final pixels = (widget.size * MediaQuery.devicePixelRatioOf(context) * 2)
         .ceil()
         .clamp(96, 2048);
@@ -196,14 +197,11 @@ class _ArtworkState extends ConsumerState<Artwork> {
       child: SizedBox(
         width: widget.size,
         height: widget.size,
-        child: downloaded.existsSync()
-            ? render(downloaded)
-            : cached != null
-            ? render(cached)
-            : FutureBuilder(
-                future: image,
-                builder: (_, snapshot) => render(snapshot.data),
-              ),
+        child: FutureBuilder<File?>(
+          future: image,
+          initialData: cached,
+          builder: (_, snapshot) => render(snapshot.data),
+        ),
       ),
     );
   }
@@ -287,7 +285,9 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   void navigate(String page) {
     FocusManager.instance.primaryFocus?.unfocus();
-    context.go(page == 'library' ? '/' : '/$page');
+    final index = ['library', 'search', 'downloads', 'likes'].indexOf(page);
+    final shell = StatefulNavigationShell.of(context);
+    shell.goBranch(index, initialLocation: shell.widget.currentIndex == index);
   }
 
   @override
@@ -298,7 +298,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         .where((l) => l.id == widget.playlistId)
         .firstOrNull;
     final title = switch (widget.page) {
-      'search' => '搜索',
+      'search' => widget.playlistId == null ? '搜索' : '在线搜索',
       'downloads' => '下载',
       'likes' => '我喜欢的',
       'playlist' => list?.name ?? '歌单不存在',
@@ -317,6 +317,14 @@ class _AppShellState extends ConsumerState<AppShell> {
                   selecting = false;
                   selection.clear();
                 }),
+              )
+            else if (widget.page == 'search' && widget.playlistId != null)
+              action(
+                Icons.arrow_back,
+                '返回选歌',
+                () => context.canPop()
+                    ? context.pop()
+                    : context.go('/playlist/${widget.playlistId}/add'),
               )
             else if (widget.page == 'playlist')
               action(Icons.arrow_back, '返回音乐库', () => navigate('library'))
@@ -358,7 +366,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 final name = await nameDialog(context);
                 if (name != null && context.mounted) await p.addPlaylist(name);
               })
-            else if (list != null)
+            else if (widget.page == 'playlist' && list != null)
               action(
                 Icons.more_horiz,
                 '歌单更多',
@@ -424,17 +432,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               p.results.isEmpty &&
               p.searchError.isEmpty)
             const EmptyView('没有找到相关内容', '换个关键词，或直接粘贴 BV 号。'),
-          for (final track in p.results) TrackRow(track),
-          if (p.results.isNotEmpty && !p.searching)
-            Center(
-              child: labelButton(
-                '加载更多',
-                () => p.search(search.text, page: p.searchPage + 1),
-              ),
-            ),
         ],
-        if (widget.page == 'downloads')
-          DownloadsPanel(p, query: localSearch.text),
         if (['library', 'likes', 'playlist'].contains(widget.page)) ...[
           if (widget.page == 'library' && localSearch.text.trim().isEmpty) ...[
             Wrap(
@@ -512,16 +510,31 @@ class _AppShellState extends ConsumerState<AppShell> {
             }),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: t.surface,
-              borderRadius: BorderRadius.circular(TingyuTokens.radius),
-            ),
-            child: Column(children: _libraryRows(p, list).toList()),
-          ),
         ],
       ],
+    );
+    final collection = ['library', 'likes', 'playlist'].contains(widget.page);
+    final rows = widget.page == 'search'
+        ? <WidgetBuilder>[
+            for (final track in p.results)
+              (_) =>
+                  TrackRow(track, key: ValueKey(track.id), addToPlaylist: list),
+            if (p.results.isNotEmpty && !p.searching)
+              (_) => Center(
+                child: labelButton(
+                  '加载更多',
+                  () => p.search(search.text, page: p.searchPage + 1),
+                ),
+              ),
+          ]
+        : collection
+        ? _libraryRows(p, list)
+        : <WidgetBuilder>[];
+    final rowSliver = SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, i) => rows[i](context),
+        childCount: rows.length,
+      ),
     );
     return PopScope(
       canPop: !selecting && widget.page != 'playlist',
@@ -563,14 +576,54 @@ class _AppShellState extends ConsumerState<AppShell> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (desktop) SizedBox(width: 224, child: sidebar(p)),
+                        if (desktop &&
+                            !(widget.page == 'search' &&
+                                widget.playlistId != null))
+                          SizedBox(width: 224, child: sidebar(p)),
                         Expanded(
-                          child: SingleChildScrollView(
+                          child: CustomScrollView(
                             key: PageStorageKey(
                               'page-${widget.page}-${widget.playlistId}',
                             ),
-                            padding: EdgeInsets.all(desktop ? 36 : 20),
-                            child: content,
+                            slivers: [
+                              SliverPadding(
+                                padding: EdgeInsets.fromLTRB(
+                                  desktop ? 36 : 20,
+                                  desktop ? 36 : 20,
+                                  desktop ? 36 : 20,
+                                  0,
+                                ),
+                                sliver: SliverToBoxAdapter(child: content),
+                              ),
+                              SliverPadding(
+                                padding: EdgeInsets.fromLTRB(
+                                  desktop ? 36 : 20,
+                                  0,
+                                  desktop ? 36 : 20,
+                                  desktop ? 36 : 20,
+                                ),
+                                sliver: widget.page == 'downloads'
+                                    ? DownloadsPanel(
+                                        p,
+                                        query: localSearch.text,
+                                        sliver: true,
+                                      )
+                                    : collection
+                                    ? DecoratedSliver(
+                                        decoration: BoxDecoration(
+                                          color: t.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            TingyuTokens.radius,
+                                          ),
+                                        ),
+                                        sliver: SliverPadding(
+                                          padding: const EdgeInsets.all(8),
+                                          sliver: rowSliver,
+                                        ),
+                                      )
+                                    : rowSliver,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -586,11 +639,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                       }),
                     )
                   else
-                    MiniPlayer(p),
+                    RepaintBoundary(child: MiniPlayer(p)),
                 ],
               ),
             ),
-            bottomNavigationBar: desktop
+            bottomNavigationBar:
+                desktop ||
+                    (widget.page == 'search' && widget.playlistId != null)
                 ? null
                 : CompactNavigation(
                     selected: widget.page == 'playlist'
@@ -604,11 +659,11 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
-  List<Widget> _libraryRows(LibraryController p, Playlist? list) {
+  List<WidgetBuilder> _libraryRows(LibraryController p, Playlist? list) {
     final ids = visibleIds(p, list);
     if (ids.isEmpty && localSearch.text.trim().isNotEmpty) {
       return [
-        EmptyView(
+        (_) => EmptyView(
           '没有匹配的歌曲',
           '试试其他歌名或 UP 主。',
           child: labelButton('清除搜索', () => setState(localSearch.clear)),
@@ -617,32 +672,34 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
     if (ids.isEmpty) {
       return [
-        EmptyView(
+        (_) => EmptyView(
           list == null ? '这里还很安静' : '歌单还没有歌曲',
           '去搜索喜欢的声音，加入你的音乐收藏。',
           child: labelButton(
             list == null ? '去搜索' : '添加歌曲',
-            () => navigate('search'),
+            () => list == null
+                ? navigate('search')
+                : context.push('/playlist/${list.id}/add'),
           ),
         ),
       ];
     }
-    return ids
-        .where(p.library.containsKey)
-        .map(
-          (id) => selecting
-              ? SelectionTrackRow(
-                  p.library[id]!,
-                  selected: selection.contains(id),
-                  onPressed: () => setState(() {
-                    selection.contains(id)
-                        ? selection.remove(id)
-                        : selection.add(id);
-                  }),
-                )
-              : TrackRow(p.library[id]!, playlist: list, sourceIds: ids),
-        )
-        .toList();
+    return ids.where(p.library.containsKey).map((id) {
+      // A lazy row can be built while async canonicalization awaits persistence.
+      // Keep the immutable track from this collection snapshot until notified.
+      final track = p.library[id]!;
+      return (BuildContext _) => selecting
+          ? SelectionTrackRow(
+              track,
+              selected: selection.contains(id),
+              onPressed: () => setState(() {
+                selection.contains(id)
+                    ? selection.remove(id)
+                    : selection.add(id);
+              }),
+            )
+          : TrackRow(track, playlist: list, sourceIds: ids);
+    }).toList();
   }
 
   Widget sidebar(LibraryController p) => Container(
@@ -740,7 +797,7 @@ Future<void> showPlaylistActions(
       }, icon: Icons.edit_outlined),
       labelButton('添加歌曲', () {
         Navigator.pop(ctx);
-        context.go('/search');
+        context.push('/playlist/${list.id}/add');
       }, icon: Icons.playlist_add),
       labelButton('下载全部', () async {
         Navigator.pop(ctx);
@@ -952,7 +1009,14 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
 }
 
 class TrackRow extends ConsumerWidget {
-  const TrackRow(this.track, {super.key, this.playlist, this.sourceIds});
+  const TrackRow(
+    this.track, {
+    super.key,
+    this.playlist,
+    this.sourceIds,
+    this.addToPlaylist,
+  });
+  final Playlist? addToPlaylist;
   final Track track;
   final Playlist? playlist;
   final List<String>? sourceIds;
@@ -1028,10 +1092,13 @@ class TrackRow extends ConsumerWidget {
               selected: liked,
             ),
           ],
-          TrackDownloadAction(
-            track,
-            key: ValueKey('download-action-${track.id}'),
-          ),
+          if (addToPlaylist != null)
+            PlaylistAddTrackAction(track: track, playlist: addToPlaylist!)
+          else
+            TrackDownloadAction(
+              track,
+              key: ValueKey('download-action-${track.id}'),
+            ),
           action(
             Icons.more_horiz,
             '更多 ${track.title}',
@@ -1307,7 +1374,12 @@ class SeekBar extends StatelessWidget {
   const SeekBar(this.p, {super.key});
   final LibraryController p;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder<Duration>(
+    valueListenable: p.playhead,
+    builder: (context, _, _) => buildProgress(context),
+  );
+
+  Widget buildProgress(BuildContext context) {
     final duration =
             p.playback.player.duration ??
             Duration(seconds: p.current?.duration ?? 0),
@@ -1557,7 +1629,12 @@ class _LyricPanelState extends State<LyricPanel> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder<Duration>(
+    valueListenable: widget.p.playhead,
+    builder: (context, _, _) => buildLyrics(context),
+  );
+
+  Widget buildLyrics(BuildContext context) {
     final p = widget.p, lines = p.lines;
     if (lines.isEmpty) {
       return Center(
@@ -1735,13 +1812,15 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                               SizedBox(
                                 width: 28,
                                 child: current
-                                    ? Icon(
-                                        p.playing
-                                            ? Icons.graphic_eq
-                                            : Icons.pause,
-                                        color: t.accent,
-                                        size: 18,
-                                      )
+                                    ? p.playing
+                                          ? const Center(
+                                              child: PlayingIndicator(),
+                                            )
+                                          : Icon(
+                                              Icons.pause,
+                                              color: t.accent,
+                                              size: 18,
+                                            )
                                     : Text(
                                         '${i + 1}',
                                         textAlign: TextAlign.center,
@@ -1829,102 +1908,119 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
 }
 
 class DownloadsPanel extends StatelessWidget {
-  const DownloadsPanel(this.p, {super.key, this.query = ''});
+  const DownloadsPanel(
+    this.p, {
+    super.key,
+    this.query = '',
+    this.sliver = false,
+  });
+  final bool sliver;
   final LibraryController p;
   final String query;
   @override
   Widget build(BuildContext context) {
     if (p.downloads.tasks.isEmpty) {
-      return const EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
+      const empty = EmptyView('还没有下载', '点击歌曲或歌单的下载图标。');
+      return sliver ? const SliverToBoxAdapter(child: empty) : empty;
     }
     final tasks = p.downloads.tasks
         .where((d) => matchesLocal(d.track, query))
         .toList();
-    if (tasks.isEmpty) return const EmptyView('没有匹配的歌曲', '试试其他歌名或 UP 主。');
+    if (tasks.isEmpty) {
+      const empty = EmptyView('没有匹配的歌曲', '试试其他歌名或 UP 主。');
+      return sliver ? const SliverToBoxAdapter(child: empty) : empty;
+    }
     final completed = p.downloads.tasks
             .where((d) => d.status == DownloadStatus.completed)
             .length,
         bytes = p.downloads.tasks
             .where((d) => d.status == DownloadStatus.completed)
             .fold<int>(0, (v, d) => v + d.received);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$completed 首已下载 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
-        ),
-        const SizedBox(height: 20),
-        for (final d in tasks)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                Artwork(d.track),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        d.track.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        d.error ??
-                            switch (d.status) {
-                              DownloadStatus.waiting => '等待下载',
-                              DownloadStatus.downloading =>
-                                '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
-                              DownloadStatus.completed => switch (d
-                                  .lyricStatus) {
-                                DownloadLyricStatus.waiting ||
-                                DownloadLyricStatus.fetching => '已下载 · 正在匹配歌词',
-                                DownloadLyricStatus.available => '已下载 · 歌词已保存',
-                                DownloadLyricStatus.missing => '已下载 · 未匹配到歌词',
-                                DownloadLyricStatus.failed => '已下载 · 歌词获取失败',
-                              },
-                              DownloadStatus.failed => '下载失败',
-                              DownloadStatus.paused => '下载已中断，点击重试',
+    final children = <WidgetBuilder>[
+      (_) => Text(
+        '$completed 首已下载 · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB',
+      ),
+      (_) => const SizedBox(height: 20),
+      for (final d in tasks)
+        (_) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Artwork(d.track),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      d.track.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      d.error ??
+                          switch (d.status) {
+                            DownloadStatus.waiting => '等待下载',
+                            DownloadStatus.downloading =>
+                              '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
+                            DownloadStatus.completed => switch (d.lyricStatus) {
+                              DownloadLyricStatus.waiting ||
+                              DownloadLyricStatus.fetching => '已下载 · 正在匹配歌词',
+                              DownloadLyricStatus.available => '已下载 · 歌词已保存',
+                              DownloadLyricStatus.missing => '已下载 · 未匹配到歌词',
+                              DownloadLyricStatus.failed => '已下载 · 歌词获取失败',
                             },
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: context.tokens.muted,
-                        ),
+                            DownloadStatus.failed => '下载失败',
+                            DownloadStatus.paused => '下载已中断，点击重试',
+                          },
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.tokens.muted,
                       ),
-                      if (d.status == DownloadStatus.downloading)
-                        LinearProgressIndicator(value: d.progress),
-                    ],
-                  ),
+                    ),
+                    if (d.status == DownloadStatus.downloading)
+                      LinearProgressIndicator(value: d.progress),
+                  ],
                 ),
-                if (d.status == DownloadStatus.completed)
-                  action(
-                    Icons.play_arrow,
-                    '播放已下载歌曲',
-                    () => p.playDownloaded(d.track),
-                  )
-                else if (d.status == DownloadStatus.downloading ||
-                    d.status == DownloadStatus.waiting)
-                  action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
-                else if ([
-                  DownloadStatus.failed,
-                  DownloadStatus.paused,
-                ].contains(d.status))
-                  action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
-                if (d.status == DownloadStatus.completed)
-                  action(
-                    Icons.more_horiz,
-                    '下载选项 ${d.track.title}',
-                    () => showDownloadActions(context, p, d),
-                  )
-                else
-                  action(Icons.close, '移除下载', () => p.removeDownload(d)),
-              ],
-            ),
+              ),
+              if (d.status == DownloadStatus.completed)
+                action(
+                  Icons.play_arrow,
+                  '播放已下载歌曲',
+                  () => p.playDownloaded(d.track),
+                )
+              else if (d.status == DownloadStatus.downloading ||
+                  d.status == DownloadStatus.waiting)
+                action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
+              else if ([
+                DownloadStatus.failed,
+                DownloadStatus.paused,
+              ].contains(d.status))
+                action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
+              if (d.status == DownloadStatus.completed)
+                action(
+                  Icons.more_horiz,
+                  '下载选项 ${d.track.title}',
+                  () => showDownloadActions(context, p, d),
+                )
+              else
+                action(Icons.close, '移除下载', () => p.removeDownload(d)),
+            ],
           ),
-      ],
-    );
+        ),
+    ];
+    return sliver
+        ? SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => children[i](context),
+              childCount: children.length,
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children.map((build) => build(context)).toList(),
+          );
   }
 }
 

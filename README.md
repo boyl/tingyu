@@ -66,12 +66,13 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
+- 0.1.9 长列表按需构建、进度刷新隔离、向当前歌单本地多选/在线定向添加、分类现场恢复和轻量歌单过渡，见 [滚动及选歌验收](docs/ACCEPTANCE-2026-10-17-SCROLL.md)。
 - 0.1.8 封面持久复用、下载歌词补全、B 站 CC/AI 字幕与已有内嵌歌词读取，支持系统选择位置导出带封面、元数据、内嵌 LRC 的 M4A；不转码、不修改原下载。覆盖边界见 [离线与导出验收](docs/ACCEPTANCE-2026-10-17-OFFLINE-EXPORT.md)。
 - 0.1.7 队列当前标记/定位、本地列表搜索、主题首次切换稳定性、四字歌单编辑与紧凑简介输入，见 [交互验收](docs/ACCEPTANCE-2026-10-17-INTERACTIONS.md)。
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.8 ABI 拆分 Release：ARM64 约 22.4 MB，仍为开发签名；并非全量验收完成的正式发布。
+- Android 0.1.9 ABI 拆分 Release：具体大小见下方包清单，仍为开发签名；并非全量验收完成的正式发布。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
@@ -85,15 +86,15 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ```sh
 python3 tool/run_acceptance.py
-python3 tool/run_acceptance.py --device emulator-5554
+python3 tool/run_acceptance.py --device emulator-5558 --live
 ```
 
 日志与带源码指纹的结果保存在 `artifacts/acceptance/`。第二条会运行真实 Android 原生应用，验证连续切换、搜索输入保留、滚动位置和主题切换。它不代表全功能或真机验收完成。未执行项不算通过。
 
-紧凑布局使用横向胶囊导航，go_router 的持久分支保存各 tab 状态；切换无整页转场并收起键盘。Android 使用原生 WindowInsetsController 隐藏系统栏，边缘滑动仍可临时呼出。桌面保留系统窗口行为。
+紧凑布局使用无填充的图标与文字导航，go_router 的持久分支保存各 tab 状态；切换无整页转场并收起键盘。Android 使用原生 WindowInsetsController 隐藏系统栏，边缘滑动仍可临时呼出。桌面保留系统窗口行为。
 
 
-本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。然后运行 `sh tool/flutterw.sh run -d emulator-5556`。首次全屏会出现 Android 自带操作提示，确认后可从屏幕边缘临时呼出系统栏。
+本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。开发运行使用独立回归设备 `sh tool/flutterw.sh run -d emulator-5558`；人工验收设备 5556 仅使用同签名 Release 覆盖更新。首次全屏会出现 Android 自带操作提示，确认后可从屏幕边缘临时呼出系统栏。
 
 Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，先选择再导入；导入入口固定在底部。桌面账号窗口使用限制宽高的对话框。专项验收结果见 `docs/ACCEPTANCE-2026-10-16.md`。
 

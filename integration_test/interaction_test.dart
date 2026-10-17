@@ -12,6 +12,7 @@ import 'package:tingyu/services/downloads.dart';
 import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/ui/app.dart';
 import 'package:tingyu/ui/theme.dart';
+import 'package:tingyu/ui/playing_indicator.dart';
 import '../test/support/fakes.dart';
 import '../test/support/export_fixture.dart' show testCover;
 
@@ -99,8 +100,18 @@ void main() {
       Future<void> tap(String label) async {
         final target = find.byKey(ValueKey(label)).last;
         await tester.ensureVisible(target);
+        await tester
+            .pump(); // Lazy slivers need layout after scrolling before hit testing.
         await tester.tap(target);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        if (find.byType(PlayingIndicator).evaluate().isNotEmpty) {
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+        } else {
+          await tester.pumpAndSettle();
+        }
       }
 
       try {
@@ -156,6 +167,21 @@ void main() {
         await binding.takeScreenshot('playlist-edit-description');
         await tap('保存');
         expect(p.playlists.single.description, '夜晚听的歌');
+        await tap('歌单更多');
+        await tap('添加歌曲');
+        expect(find.byType(PlaylistAddScreen), findsOneWidget);
+        expect(find.byType(CompactNavigation), findsNothing);
+        await binding.takeScreenshot('playlist-add-songs');
+        await tap('select-add-${secondTrack.id}');
+        await tap('在线搜索');
+        expect(find.byKey(const ValueKey('返回选歌')), findsOneWidget);
+        expect(find.byType(CompactNavigation), findsNothing);
+        await binding.takeScreenshot('playlist-add-online');
+        await tap('返回选歌');
+        expect(find.text('添加 1 首'), findsOneWidget);
+        await tap('commit-add-tracks');
+        expect(p.playlists.single.trackIds, [firstTrack.id, secondTrack.id]);
+        await p.editPlaylist(p.playlists.single, remove: secondTrack.id);
         await tap('返回音乐库');
         await tap('打开设置');
         await binding.takeScreenshot('settings-page');
@@ -315,10 +341,41 @@ void main() {
         final currentRow = find.byKey(ValueKey('queue-track-${p.current!.id}'));
         expect(currentRow, findsOneWidget);
         expect(tester.widget<Pressable>(currentRow).selected, isTrue);
+        expect(find.byType(PlayingIndicator), findsOneWidget);
+        final indicatorRect = tester.getRect(find.byType(PlayingIndicator));
+        binding.reportData ??= <String, dynamic>{};
+        binding.reportData!['playingIndicator'] = {
+          'rect': [
+            indicatorRect.left,
+            indicatorRect.top,
+            indicatorRect.right,
+            indicatorRect.bottom,
+          ],
+          'dpr': tester.view.devicePixelRatio,
+        };
         await binding.takeScreenshot('shuffle-51-track-queue');
+        await tester.pump(const Duration(milliseconds: 200));
+        await binding.takeScreenshot('queue-playing-indicator-next-frame');
+        await p.toggle();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(PlayingIndicator), findsNothing);
+        await p.toggle();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(PlayingIndicator), findsOneWidget);
         await tap('关闭队列');
         await tap('返回');
         await tap('tab-library');
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('搜索本地歌曲')),
+          -400,
+          scrollable: find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is Scrollable &&
+                    widget.axisDirection == AxisDirection.down,
+              )
+              .first,
+        );
         await tap('搜索本地歌曲');
         await tester.enterText(
           find.byKey(const ValueKey('local-search')),

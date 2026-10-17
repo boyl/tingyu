@@ -8,6 +8,7 @@ import 'package:tingyu/main.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/ui/app.dart';
 import 'package:tingyu/ui/theme.dart';
+import 'package:tingyu/ui/playing_indicator.dart';
 import 'support/fakes.dart';
 
 void main() {
@@ -25,17 +26,28 @@ void main() {
     router.dispose();
     await fixture.close(disposeController: !mountedController);
   });
+  Future<void> settleFrames(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump();
+    if (find.byType(QueuePanel).evaluate().isNotEmpty) {
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+    } else {
+      await tester.pumpAndSettle();
+    }
+  }
+
   Future<void> settle(WidgetTester tester) async {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 25)),
     );
     for (var i = 0; i < 10; i++) {
-      await tester.pumpAndSettle();
+      await settleFrames(tester);
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 15)),
       );
     }
-    await tester.pumpAndSettle();
+    await settleFrames(tester);
     expect(tester.takeException(), isNull);
   }
 
@@ -68,6 +80,262 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await settle(tester);
   }
+
+  test(
+    'batch adding existing songs commits once, deduplicates and recovers after save failure',
+    () async {
+      final p = fixture.controller;
+      await p.addPlaylist('批量添加', track: firstTrack);
+      final id = p.playlists.last.id;
+      await fixture.db.customStatement('DROP TABLE app_state');
+      try {
+        await expectLater(
+          p.addLibraryTracks(id, [secondTrack.id]),
+          throwsA(isA<Exception>()),
+        );
+        expect(p.playlists.last.trackIds, [firstTrack.id]);
+      } finally {
+        await fixture.db.customStatement(
+          'CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+        );
+      }
+      await p.addLibraryTracks(id, [
+        secondTrack.id,
+        secondTrack.id,
+        firstTrack.id,
+      ]);
+      expect(p.playlists.last.trackIds, [firstTrack.id, secondTrack.id]);
+      await expectLater(p.addLibraryTracks(id, ['removed']), throwsException);
+      expect(p.playlists.last.trackIds, [firstTrack.id, secondTrack.id]);
+      final stored = await fixture.db.readState('library');
+      expect((stored!['playlists'] as List).last['tracks'], [
+        firstTrack.id,
+        secondTrack.id,
+      ]);
+    },
+  );
+
+  testWidgets('collection transitions are brief and respect reduced motion', (
+    tester,
+  ) async {
+    await fixture.controller.addPlaylist('过渡歌单', track: firstTrack);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await mount(tester);
+    router.go('/playlist/${fixture.controller.playlists.last.id}');
+    await settle(tester);
+    final route = ModalRoute.of(tester.element(find.byType(AppShell).last))!;
+    expect(route.transitionDuration, Duration.zero);
+    expect(route.reverseTransitionDuration, Duration.zero);
+    await unmount(tester);
+  });
+
+  testWidgets(
+    '500-song library is virtualized and playhead ticks do not rebuild rows',
+    (tester) async {
+      final p = fixture.controller;
+      for (var i = 0; i < 498; i++) {
+        await p.remember(
+          Track(
+            bvid: 'BVperf$i',
+            cid: 5000 + i,
+            title: '滚动歌曲 $i',
+            artist: 'UP',
+            cover: '',
+            duration: 30,
+          ),
+        );
+      }
+      await mount(tester);
+      expect(find.byType(TrackRow).evaluate().length, lessThan(30));
+      await p.play(firstTrack);
+      await settle(tester);
+      final row = tester.element(find.byType(TrackRow).first);
+      final oldWidget = row.widget;
+      var globalNotifications = 0;
+      void count() => globalNotifications++;
+      p.addListener(count);
+      for (var i = 1; i <= 100; i++) {
+        fixture.playback.player.positions.add(Duration(milliseconds: i * 20));
+        await tester.pump();
+      }
+      expect(p.position, const Duration(seconds: 2));
+      expect(globalNotifications, 0, reason: '进度变化只刷新进度和歌词，不能刷新曲库');
+      expect(identical(row.widget, oldWidget), isTrue);
+      p.removeListener(count);
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -2000),
+      );
+      await settle(tester);
+      expect(find.byType(TrackRow).evaluate().length, lessThan(30));
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'lazy rows retain their snapshot while canonical track replacement awaits notification',
+    (tester) async {
+      final p = fixture.controller;
+      final originals = <Track>[];
+      for (var i = 0; i < 80; i++) {
+        final track = Track(
+          bvid: 'BVsnapshot$i',
+          cid: 0,
+          title: '快照歌曲 $i',
+          artist: 'UP',
+          cover: '',
+          duration: 30,
+        );
+        p.library[track.id] = track;
+        originals.add(track);
+      }
+      await mount(tester);
+      // Reproduce the interval after canonical() replaces IDs and before save()
+      // completes and the controller publishes its next notification.
+      for (final old in originals.skip(15).take(30)) {
+        p.library.remove(old.id);
+        final resolved = Track(
+          bvid: old.bvid,
+          cid: 7000,
+          title: old.title,
+          artist: old.artist,
+          cover: '',
+          duration: 30,
+        );
+        p.library[resolved.id] = resolved;
+      }
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -1900),
+      );
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      p.clearError();
+      await settle(tester);
+      expect(find.byType(TrackRow).evaluate().length, lessThan(30));
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'add songs is scoped, supports cancel/local commit/online add, and tabs do not flash old playlist',
+    (tester) async {
+      final p = fixture.controller;
+      await p.addPlaylist('导航歌单', track: firstTrack);
+      final list = p.playlists.last;
+      Future<void> openPicker() async {
+        await tap(tester, '歌单更多');
+        await tester.tap(find.text('添加歌曲').last);
+        await settle(tester);
+        expect(find.byType(PlaylistAddScreen), findsOneWidget);
+        expect(find.byType(CompactNavigation), findsNothing);
+      }
+
+      await mount(tester);
+      router.go('/playlist/${list.id}');
+      await settle(tester);
+      await openPicker();
+      expect(
+        tester
+            .widget<Pressable>(find.byKey(const ValueKey('commit-add-tracks')))
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<Pressable>(
+              find.byKey(ValueKey('select-add-${firstTrack.id}')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tap(tester, 'select-add-${secondTrack.id}');
+      await tap(tester, '取消添加歌曲');
+      expect(p.playlists.last.trackIds, [firstTrack.id]);
+      await openPicker();
+      expect(find.text('添加 0 首'), findsOneWidget);
+      await tap(tester, 'select-add-${secondTrack.id}');
+      await tap(tester, '在线搜索');
+      expect(
+        GoRouterState.of(tester.element(find.byType(AppShell).last)).uri.path,
+        '/playlist/${list.id}/add/search',
+      );
+      expect(find.byType(CompactNavigation), findsNothing);
+      final remote = Track(
+        bvid: 'BVremote',
+        cid: 333,
+        title: '新歌',
+        artist: '新 UP',
+        cover: '',
+        duration: 30,
+      );
+      final placeholder = Track(
+        bvid: firstTrack.bvid,
+        cid: 0,
+        title: '已有歌曲',
+        artist: firstTrack.artist,
+        cover: '',
+        duration: 30,
+      );
+      fixture.api.searchAnswer = (_, _) async => [placeholder, remote];
+      await tester.enterText(find.byType(TextField).last, '新歌');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump(const Duration(milliseconds: 400));
+      await settle(tester);
+      expect(
+        tester
+            .widget<Pressable>(find.byKey(ValueKey('已添加 ${placeholder.title}')))
+            .onPressed,
+        isNull,
+      );
+      await tap(tester, '添加到歌单 ${remote.title}');
+      expect(p.playlists.last.trackIds, [firstTrack.id, remote.id]);
+      expect(find.byKey(ValueKey('已添加 ${remote.title}')), findsOneWidget);
+      await tap(tester, '返回选歌');
+      expect(find.text('添加 1 首'), findsOneWidget, reason: '在线搜索返回保留本地待选');
+      await tap(tester, 'commit-add-tracks');
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/playlist/${list.id}',
+      );
+      expect(p.playlists.last.trackIds, [
+        firstTrack.id,
+        remote.id,
+        secondTrack.id,
+      ]);
+      await openPicker();
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/playlist/${list.id}',
+      );
+      await tap(tester, 'tab-search');
+      await tester.tap(find.byKey(const ValueKey('tab-library')));
+      for (final time in [
+        Duration.zero,
+        const Duration(milliseconds: 16),
+        const Duration(milliseconds: 80),
+      ]) {
+        await tester.pump(time);
+        expect(
+          find.byKey(const ValueKey('返回音乐库')),
+          findsOneWidget,
+          reason: '跨分类返回应直接恢复歌单，不能闪成首页',
+        );
+      }
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/playlist/${list.id}',
+      );
+      await tap(tester, 'tab-library');
+      expect(find.byKey(const ValueKey('返回音乐库')), findsNothing);
+      expect(router.routeInformationProvider.value.uri.path, '/');
+      await unmount(tester);
+    },
+  );
 
   testWidgets(
     'clicking a row queues its entire 51-track library and respects the likes scope',
@@ -123,6 +391,13 @@ void main() {
       final row = find.byKey(ValueKey('queue-track-${current.id}'));
       expect(row, findsOneWidget);
       expect(tester.widget<Pressable>(row).selected, isTrue);
+      expect(find.byType(PlayingIndicator), findsOneWidget);
+      await p.toggle();
+      await settle(tester);
+      expect(find.byType(PlayingIndicator), findsNothing);
+      await p.toggle();
+      await settle(tester);
+      expect(find.byType(PlayingIndicator), findsOneWidget);
       final queue = find.byKey(const ValueKey('queue-list'));
       final scrollable = find.descendant(
         of: queue,
@@ -131,7 +406,7 @@ void main() {
       final state = tester.state<ScrollableState>(scrollable);
       expect(state.position.pixels, greaterThan(3000));
       state.position.jumpTo(0);
-      await tester.pumpAndSettle();
+      await settleFrames(tester);
       await tap(tester, '定位当前歌曲');
       expect(state.position.pixels, greaterThan(3000));
       await tap(tester, '上移第 66 首');
@@ -458,9 +733,9 @@ void main() {
       await tester.pump();
       expect(count, 1);
       done.complete();
-      await tester.pumpAndSettle();
+      await settleFrames(tester);
       await tester.tap(find.byKey(const ValueKey('pending')));
-      await tester.pumpAndSettle();
+      await settleFrames(tester);
       expect(count, 2);
       await unmount(tester);
     },

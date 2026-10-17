@@ -36,6 +36,7 @@ class DownloadManager extends ChangeNotifier {
   final Directory directory;
   final Dio _http;
   final List<DownloadTask> tasks = [];
+  final _localCovers = <String, File>{};
   final _coverJobs = <DownloadTask, Future<void>>{};
   final _coverWrites = <DownloadTask, Future<File>>{};
   final _lyricQueue = <DownloadTask>[];
@@ -163,6 +164,7 @@ class DownloadManager extends ChangeNotifier {
       final f = File('$stem$ext');
       if (await f.exists()) await f.delete();
     }
+    _localCovers.remove(t.track.id);
     await _save();
     notifyListeners();
   }
@@ -297,7 +299,8 @@ class DownloadManager extends ChangeNotifier {
         );
         _coverWrites[task] = write;
         try {
-          await write;
+          final file = await write;
+          if (tasks.contains(task)) _localCovers[task.track.id] = file;
         } finally {
           if (identical(_coverWrites[task], write)) _coverWrites.remove(task);
         }
@@ -456,6 +459,17 @@ class DownloadManager extends ChangeNotifier {
 
   Future<String?> lyrics(Track t) async =>
       (await lyricDocument(t))?['lrc'] as String?;
+
+  File? cachedArtwork(Track track) =>
+      _localCovers[track.id] ?? covers.peek(track.cover);
+
+  Future<File?> artworkFile(Track track) async {
+    final cached = cachedArtwork(track);
+    if (cached != null) return cached;
+    final local = coverFile(track);
+    if (await local.exists()) return _localCovers[track.id] = local;
+    return covers.get(track.cover);
+  }
 
   File coverFile(Track t) =>
       File(path.join(directory.path, '${_stem(t)}.cover'));
