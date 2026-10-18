@@ -72,11 +72,13 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       tabIndicatorHeight = 3.0,
       playerRadius = 28.0,
       playingPeriod = Duration(milliseconds: 900),
+      recordTurn = Duration(seconds: 8),
       scrollReturn = Duration(milliseconds: 320),
       pressDuration = Duration(milliseconds: 100),
       transition = Duration(milliseconds: 180);
   // Editorial category artwork has its own palette, like album cover imagery.
   static const onArtwork = Color(0xffffffff);
+  static const vinyl = Color(0xff171513);
   static const discoveryPalettes = [
     [Color(0xff182847), Color(0xff526387), Color(0xff171d35)],
     [Color(0xffaa6986), Color(0xffe3ab93), Color(0xff514563)],

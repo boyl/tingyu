@@ -60,6 +60,42 @@ void main() {
     expect(parsed.map((l) => l.time.inMilliseconds), [1250, 3500, 60000]);
     expect(parsed.map((l) => l.text), ['你好', '你好', '结束']);
   });
+  test('focused lyric holds the last readable line through gaps and edges', () {
+    final lines = parseLrc(
+      '[00:00.00]第一句\n[00:02.00] \n[00:04.00]第二句\n[00:06.00] \n[00:08.00]第三句',
+    );
+    expect(lines.map((line) => line.text), ['第一句', '', '第二句', '', '第三句']);
+    expect(focusedLyricLine(const [], 0), 0);
+    expect(focusedLyricLine([const LyricLine(Duration.zero, '')], 1000), 0);
+    expect(focusedLyricLine(lines, -1), 0);
+    expect(focusedLyricLine(lines, 0), 0);
+    expect(focusedLyricLine(lines, 1999), 0);
+    expect(focusedLyricLine(lines, 2000), 0);
+    expect(focusedLyricLine(lines, 3999), 0);
+    expect(focusedLyricLine(lines, 4000), 2);
+    expect(focusedLyricLine(lines, 7000), 2);
+    expect(focusedLyricLine(lines, 8000), 4);
+    expect(focusedLyricLine(lines, 999999), 4);
+  });
+  test('centered lyric offset stays inside the viewport', () {
+    expect(
+      centeredLyricOffset(index: 0, viewport: 150, maxScroll: 400),
+      0,
+    );
+    expect(
+      centeredLyricOffset(index: 4, viewport: 150, maxScroll: 514),
+      225,
+    );
+    expect(
+      centeredLyricOffset(index: 9, viewport: 150, maxScroll: 514),
+      514,
+    );
+    expect(centeredLyricOffset(index: 3, viewport: 150, maxScroll: 0), 0);
+    expect(
+      centeredLyricOffset(index: 3, viewport: 150, maxScroll: double.nan),
+      0,
+    );
+  });
   test('WBI signer known reference vector', () {
     final signed = WbiSigner.sign(
       {'foo': '114', 'bar': '514', 'zab': '1919810'},

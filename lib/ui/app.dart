@@ -223,6 +223,116 @@ class _ArtworkState extends ConsumerState<Artwork> {
   }
 }
 
+class RecordDisc extends StatefulWidget {
+  const RecordDisc(
+    this.track, {
+    super.key,
+    required this.size,
+    required this.playing,
+  });
+  final Track track;
+  final double size;
+  final bool playing;
+  @override
+  State<RecordDisc> createState() => _RecordDiscState();
+}
+
+class _RecordDiscState extends State<RecordDisc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController spin = AnimationController(
+    vsync: this,
+    duration: TingyuTokens.recordTurn,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    sync();
+  }
+
+  @override
+  void didUpdateWidget(covariant RecordDisc oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.playing != widget.playing) sync();
+  }
+
+  void sync() {
+    final still =
+        !widget.playing ||
+        MediaQuery.disableAnimationsOf(context) ||
+        !TickerMode.valuesOf(context).enabled;
+    if (still) {
+      spin.stop();
+    } else if (!spin.isAnimating) {
+      spin.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    spin.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    final label = size * .62;
+    final hole = size * .075;
+    return RepaintBoundary(
+      child: RotationTransition(
+        turns: spin,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: TingyuTokens.vinyl,
+                  border: Border.all(
+                    color: TingyuTokens.onArtwork.withValues(alpha: .16),
+                  ),
+                ),
+              ),
+              ClipOval(
+                child: SizedBox(
+                  width: label,
+                  height: label,
+                  child: Artwork(widget.track, size: label),
+                ),
+              ),
+              Container(
+                width: size * .86,
+                height: size * .86,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: TingyuTokens.onArtwork.withValues(alpha: .2),
+                    width: size * .01,
+                  ),
+                ),
+              ),
+              Container(
+                width: hole,
+                height: hole,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.tokens.background,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class EmptyView extends StatelessWidget {
   const EmptyView(this.title, this.description, {super.key, this.child});
   final String title, description;
@@ -379,6 +489,22 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.dispose();
   }
 
+  Widget localSearchField() => TextField(
+    key: const ValueKey('local-search'),
+    controller: localSearch,
+    decoration: InputDecoration(
+      hintText: '搜索当前列表的歌名、UP 主',
+      prefixIcon: const TingyuIcon(Icons.search),
+      suffixIcon: action(
+        Icons.clear_all,
+        '清除本地搜索',
+        () => setState(localSearch.clear),
+      ),
+      border: const OutlineInputBorder(),
+    ),
+    onChanged: (_) => setState(() {}),
+  );
+
   void navigate(String page) {
     FocusManager.instance.primaryFocus?.unfocus();
     final index = ['library', 'search', 'downloads', 'likes'].indexOf(page);
@@ -484,22 +610,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
         const SizedBox(height: 24),
-        if (localSearchOpen && widget.page != 'search') ...[
-          TextField(
-            key: const ValueKey('local-search'),
-            controller: localSearch,
-            decoration: InputDecoration(
-              hintText: '搜索当前列表的歌名、UP 主',
-              prefixIcon: const TingyuIcon(Icons.search),
-              suffixIcon: action(
-                Icons.clear_all,
-                '清除本地搜索',
-                () => setState(localSearch.clear),
-              ),
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
+        if (localSearchOpen &&
+            !['search', 'library'].contains(widget.page)) ...[
+          localSearchField(),
           const SizedBox(height: 16),
         ],
         if (p.error.isNotEmpty) errorBox(context, p.error, p.clearError),
@@ -582,6 +695,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               ],
             ),
+          if (localSearchOpen && widget.page == 'library') ...[
+            const SizedBox(height: 12),
+            localSearchField(),
+          ],
           if (list != null) PlaylistSummary(list),
           CollectionToolbar(
             ids: visibleIds(p, list),
@@ -1581,17 +1698,11 @@ class PlayerScreen extends ConsumerWidget {
       );
     }
     final width = MediaQuery.sizeOf(context).width, desktop = width >= 960;
-    final art = Column(
+    final phoneArtMax = (width - 64).clamp(180.0, 340.0);
+    final meta = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Artwork(
-            track,
-            size: desktop ? 360 : (width - 64).clamp(180, 340),
-          ),
-        ),
-        const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
@@ -1646,7 +1757,24 @@ class PlayerScreen extends ConsumerWidget {
           ),
       ],
     );
-    final lyrics = SizedBox(height: desktop ? 280 : 150, child: LyricPanel(p));
+    final art = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: RecordDisc(
+            track,
+            size: desktop ? 360 : phoneArtMax,
+            playing: p.playing,
+          ),
+        ),
+        const SizedBox(height: 24),
+        meta,
+      ],
+    );
+    final lyrics = desktop
+        ? SizedBox(height: 280, child: LyricPanel(p))
+        : null;
     return Scaffold(
       appBar: PlayerHeader(
         onBack: goBack,
@@ -1688,33 +1816,88 @@ class PlayerScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          key: const ValueKey('player-content'),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              if (p.error.isNotEmpty)
-                errorBox(context, p.error, () => p.play(track, at: p.position)),
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
-                  child: desktop
-                      ? Row(
+        child: desktop
+            ? SingleChildScrollView(
+                key: const ValueKey('player-content'),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    if (p.error.isNotEmpty)
+                      errorBox(
+                        context,
+                        p.error,
+                        () => p.play(track, at: p.position),
+                      ),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(child: art),
                             const SizedBox(width: 80),
-                            Expanded(child: lyrics),
+                            Expanded(child: lyrics!),
                           ],
-                        )
-                      : Column(
-                          children: [art, const SizedBox(height: 16), lyrics],
                         ),
+                      ),
+                    ),
+                  ],
                 ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    key: const ValueKey('player-content'),
+                    child: SizedBox(
+                      height: constraints.maxHeight,
+                      width: constraints.maxWidth,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (p.error.isNotEmpty)
+                              errorBox(
+                                context,
+                                p.error,
+                                () => p.play(track, at: p.position),
+                              ),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Expanded(
+                                    child: LayoutBuilder(
+                                      builder: (context, box) {
+                                        final side = box.maxHeight.clamp(
+                                          0.0,
+                                          phoneArtMax,
+                                        );
+                                return Center(
+                                  child: side < 48
+                                      ? const SizedBox.shrink()
+                                      : RecordDisc(
+                                          track,
+                                          size: side,
+                                          playing: p.playing,
+                                        ),
+                                );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  meta,
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(height: 112, child: LyricPanel(p)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1775,6 +1958,7 @@ class LyricPanel extends StatefulWidget {
 class _LyricPanelState extends State<LyricPanel> {
   final scroll = ScrollController();
   int last = -1;
+  int? pending;
   @override
   void dispose() {
     scroll.dispose();
@@ -1786,6 +1970,41 @@ class _LyricPanelState extends State<LyricPanel> {
     valueListenable: widget.p.playhead,
     builder: (context, _, _) => buildLyrics(context),
   );
+
+  void alignLyric(int index, {bool retried = false}) {
+    final previous = last;
+    pending = index;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !scroll.hasClients || pending != index) return;
+      final metrics = scroll.position;
+      if (metrics.viewportDimension == 0 && !retried) {
+        alignLyric(index, retried: true);
+        return;
+      }
+      last = index;
+      final target = centeredLyricOffset(
+        index: index,
+        viewport: metrics.viewportDimension,
+        maxScroll: metrics.maxScrollExtent,
+      );
+      if ((metrics.pixels - target).abs() < 1) return;
+      final jump =
+          previous < 0 ||
+          (index - previous).abs() > 1 ||
+          MediaQuery.disableAnimationsOf(context);
+      if (jump) {
+        metrics.jumpTo(target);
+      } else {
+        unawaited(
+          metrics.animateTo(
+            target,
+            duration: TingyuTokens.transition,
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+    });
+  }
 
   Widget buildLyrics(BuildContext context) {
     final p = widget.p, lines = p.lines;
@@ -1803,31 +2022,11 @@ class _LyricPanelState extends State<LyricPanel> {
         ),
       );
     }
-    var index = lines.lastIndexWhere(
-      (l) => l.time.inMilliseconds <= p.position.inMilliseconds + p.lyricOffset,
+    final index = focusedLyricLine(
+      lines,
+      p.position.inMilliseconds + p.lyricOffset,
     );
-    if (index < 0) index = 0;
-    if (index != last) {
-      last = index;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (scroll.hasClients) {
-          final target = (index * 64.0)
-              .clamp(0.0, scroll.position.maxScrollExtent)
-              .toDouble();
-          if (MediaQuery.disableAnimationsOf(context)) {
-            scroll.jumpTo(target);
-          } else {
-            unawaited(
-              scroll.animateTo(
-                target,
-                duration: TingyuTokens.transition,
-                curve: Curves.easeOut,
-              ),
-            );
-          }
-        }
-      });
-    }
+    if (index != last) alignLyric(index);
     return Column(
       children: [
         if (p.lyricSource.startsWith('bilibili-'))
@@ -1842,22 +2041,20 @@ class _LyricPanelState extends State<LyricPanel> {
           child: ListView.builder(
             controller: scroll,
             itemCount: lines.length,
+            itemExtent: 64,
             padding: const EdgeInsets.symmetric(vertical: 12),
-            itemBuilder: (ctx, i) => SizedBox(
-              height: 64,
-              child: Center(
-                child: Text(
-                  lines[i].text,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: i == index
-                        ? context.tokens.accent
-                        : context.tokens.muted,
-                    fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
-                    fontSize: 16,
-                  ),
+            itemBuilder: (ctx, i) => Center(
+              child: Text(
+                lines[i].text,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: i == index
+                      ? context.tokens.accent
+                      : context.tokens.muted,
+                  fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 16,
                 ),
               ),
             ),

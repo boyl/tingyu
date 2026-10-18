@@ -145,5 +145,30 @@ List<LyricLine> parseLrc(String text) {
   return lines;
 }
 
+/// Latest non-empty line that has already started. Blank gap markers stay in
+/// the list but do not replace the readable lyric.
+int focusedLyricLine(List<LyricLine> lines, int positionMillis) {
+  var index = -1;
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].time.inMilliseconds > positionMillis) break;
+    if (lines[i].text.isNotEmpty) index = i;
+  }
+  if (index >= 0) return index;
+  final first = lines.indexWhere((line) => line.text.isNotEmpty);
+  return first < 0 ? 0 : first;
+}
+
+double centeredLyricOffset({
+  required int index,
+  required double viewport,
+  required double maxScroll,
+  double padding = 12,
+  double lineExtent = 64,
+}) {
+  final raw = padding + index * lineExtent - (viewport - lineExtent) / 2;
+  if (maxScroll.isNaN || maxScroll <= 0) return 0;
+  return raw.clamp(0.0, maxScroll);
+}
+
 String clock(Duration d) =>
     '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';

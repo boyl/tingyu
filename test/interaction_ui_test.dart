@@ -474,10 +474,14 @@ void main() {
       fixture.api.offline = true;
       await mount(tester);
       await tap(tester, '搜索本地歌曲');
-      await tester.enterText(
-        find.byKey(const ValueKey('local-search')),
-        firstTrack.title,
+      final field = find.byKey(const ValueKey('local-search'));
+      final heading = find.text('歌曲');
+      expect(tester.getTopLeft(field).dy, greaterThan(tester.getTopLeft(heading).dy));
+      expect(
+        tester.getTopLeft(field).dy - tester.getBottomLeft(heading).dy,
+        lessThan(80),
       );
+      await tester.enterText(field, firstTrack.title);
       await settle(tester);
       expect(find.byKey(ValueKey('play-${firstTrack.id}')), findsOneWidget);
       expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsNothing);
@@ -496,10 +500,17 @@ void main() {
       router.go('/likes');
       await settle(tester);
       await tap(tester, '搜索本地歌曲');
-      await tester.enterText(
-        find.byKey(const ValueKey('local-search')),
-        firstTrack.title,
+      final likesField = find.byKey(const ValueKey('local-search'));
+      final likesTitle = find.text('心动收藏');
+      expect(
+        tester.getTopLeft(likesField).dy,
+        greaterThan(tester.getTopLeft(likesTitle).dy),
       );
+      expect(
+        tester.getTopLeft(likesField).dy - tester.getBottomLeft(likesTitle).dy,
+        lessThan(80),
+      );
+      await tester.enterText(likesField, firstTrack.title);
       await settle(tester);
       expect(find.text('没有匹配的歌曲'), findsOneWidget);
       await unmount(tester);
@@ -1030,41 +1041,41 @@ void main() {
         lessThan(y('download-row-${firstTrack.id}')),
       );
       await tap(tester, '搜索本地歌曲');
-      await tester.enterText(
-        find.byKey(const ValueKey('downloads-search-0')),
-        firstTrack.title,
-      );
+      final search = find.byKey(const ValueKey('downloads-search'));
+      await tester.enterText(search, firstTrack.title);
       await settle(tester);
       expect(
         find.byKey(ValueKey('download-row-${secondTrack.id}')),
         findsNothing,
       );
+      final tabY = tester
+          .getTopLeft(find.byKey(const ValueKey('downloads-tab-completed')))
+          .dy;
       await tap(tester, 'downloads-tab-tasks');
+      expect(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('downloads-tab-completed')))
+            .dy,
+        tabY,
+      );
       expect(
         find.byKey(ValueKey('download-row-${pendingTrack.id}')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('downloads-search-0')), findsNothing);
-      await tap(tester, '搜索本地歌曲');
-      await tester.enterText(
-        find.byKey(const ValueKey('downloads-search-1')),
-        pendingTrack.title,
-      );
+      expect(tester.widget<TextField>(search).controller!.text, isEmpty);
+      await tester.enterText(search, pendingTrack.title);
       await settle(tester);
       await tap(tester, 'downloads-tab-completed');
       expect(
         tester
-            .widget<TextField>(find.byKey(const ValueKey('downloads-search-0')))
-            .controller!
-            .text,
-        firstTrack.title,
+            .getTopLeft(find.byKey(const ValueKey('downloads-tab-completed')))
+            .dy,
+        tabY,
       );
+      expect(tester.widget<TextField>(search).controller!.text, firstTrack.title);
       await tap(tester, 'downloads-tab-tasks');
       expect(
-        tester
-            .widget<TextField>(find.byKey(const ValueKey('downloads-search-1')))
-            .controller!
-            .text,
+        tester.widget<TextField>(search).controller!.text,
         pendingTrack.title,
       );
       pending.status = DownloadStatus.completed;

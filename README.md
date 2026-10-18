@@ -75,7 +75,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.14 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.14)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
+- Android 0.1.15 只发布 arm64 安装包，附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.15)。不再附带 x86_64 与 armeabi-v7a。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
@@ -105,4 +105,5 @@ Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，
 
 - 0.1.12 视觉修订：继续收听大幅封面、可露出下一张的横向歌单与外观预览、连续下载区域、统一线性图标、静态/动态音柱及队列拖动。四主题覆盖页面、卡片、弹层与播放器；详情见 [修订验收](docs/ACCEPTANCE-2026-10-18-REVISION.md)。
 
+- 0.1.15 更换应用图标；播放页歌词停在当前句并完整显示在进度条上方，封面改为播放时转动的唱片。音乐库搜索框与「歌曲」标题放在一起，下载页切换「已下载 / 下载任务」时搜索框不再上下移动。模拟器人工确认通过。
 - 0.1.14 统一四主题玻璃播放栏与导航、列表和弹层层次；封面放大并统一小圆角，保留横向侧露。区分下一首、入队、加入歌单等图标，移除与关闭不再使用 X；喜欢显示实心红心，Android 系统栏常显。验收见 [玻璃与系统栏](docs/ACCEPTANCE-2026-10-18-GLASS.md) 和 [图标与封面](docs/ACCEPTANCE-2026-10-18-ICONS-COVERS.md)。

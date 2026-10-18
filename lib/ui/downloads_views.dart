@@ -19,7 +19,7 @@ class DownloadsWorkspace extends StatefulWidget {
 class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
   final scrolls = [ScrollController(), ScrollController()];
   final searches = [TextEditingController(), TextEditingController()];
-  final searchOpen = [false, false];
+  bool searchOpen = false;
   int get index => widget.tasks ? 1 : 0;
   @override
   void dispose() {
@@ -44,7 +44,6 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
       padding: EdgeInsets.zero,
       onPressed: () {
         if (selected) return;
-        FocusManager.instance.primaryFocus?.unfocus();
         context.go('/downloads?section=${tasks ? 'tasks' : 'completed'}');
       },
       child: SizedBox(
@@ -116,17 +115,17 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                 Icons.search,
                 '搜索本地歌曲',
                 () => setState(() {
-                  searchOpen[index] = !searchOpen[index];
-                  if (!searchOpen[index]) searches[index].clear();
+                  searchOpen = !searchOpen;
+                  if (!searchOpen) searches[index].clear();
                 }),
               ),
             ],
           ),
           if (p.error.isNotEmpty) errorBox(context, p.error, p.clearError),
-          if (searchOpen[index]) ...[
+          if (searchOpen) ...[
             const SizedBox(height: TingyuTokens.space * 2),
             TextField(
-              key: ValueKey('downloads-search-$index'),
+              key: const ValueKey('downloads-search'),
               controller: searches[index],
               decoration: InputDecoration(
                 hintText: widget.tasks ? '搜索下载任务' : '搜索已下载歌曲',
