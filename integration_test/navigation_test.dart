@@ -16,8 +16,16 @@ void main() {
   testWidgets(
     'Android tabs preserve input, dismiss keyboard and survive repeated switching',
     (tester) async {
+      Future<void> settleAnimations() async {
+        // Route entry can schedule the disc after the first frame. Continuous
+        // rotation intentionally never settles, so advance bounded real frames.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
       await app.main();
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.text('音乐库'), findsWidgets);
       final topInset = tester.view.padding.top / tester.view.devicePixelRatio;
       expect(
@@ -54,10 +62,10 @@ void main() {
         controller.library[track.id] = track;
       }
       controller.clearError();
-      await tester.pumpAndSettle();
+      await settleAnimations();
       final libraryScroll = find.byType(CustomScrollView).first;
       await tester.drag(libraryScroll, const Offset(0, -500));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       final scrollState = tester.state<ScrollableState>(
         find
             .descendant(of: libraryScroll, matching: find.byType(Scrollable))
@@ -67,11 +75,11 @@ void main() {
       expect(offset, greaterThan(0));
 
       await tester.tap(find.byKey(const ValueKey('tab-search')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       await tester.enterText(find.byType(TextField), '验收保留输入');
       await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.byKey(const ValueKey('tab-downloads')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(
         FocusManager.instance.primaryFocus?.context?.widget,
         isNot(isA<EditableText>()),
@@ -91,13 +99,13 @@ void main() {
       );
       for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
         await controller.setTheme(theme);
-        await tester.pumpAndSettle();
+        await settleAnimations();
         expect(tester.takeException(), isNull);
       }
       await binding.convertFlutterSurfaceToImage();
       for (final theme in ['night', 'moon', 'bili', 'sunrise']) {
         await controller.setTheme(theme);
-        await tester.pumpAndSettle();
+        await settleAnimations();
         for (final tab in ['likes', 'library', 'downloads', 'search']) {
           await tester.tap(find.byKey(ValueKey('tab-$tab')));
           for (final milliseconds in [0, 16, 100, 200]) {
@@ -123,7 +131,7 @@ void main() {
       await controller.setTheme('sunrise');
       await tester.enterText(find.byType(TextField), '');
       await tester.tap(find.byKey(const ValueKey('tab-library')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(scrollState.position.pixels, closeTo(offset, 1));
       // Real local WAV decoding verifies that returning never pauses playback.
       final audioDirectory = await Directory.systemTemp.createTemp(
@@ -159,25 +167,25 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(controller.playing, isTrue);
       await tester.tap(find.byKey(const ValueKey('展开播放器')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       final playerScroll = find.byKey(const ValueKey('player-content'));
       await tester.drag(playerScroll, const Offset(0, -650));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.byKey(const ValueKey('返回')).hitTestable(), findsOneWidget);
       expect(
         tester.getTopLeft(find.byKey(const ValueKey('返回'))).dy,
         allOf(greaterThanOrEqualTo(topInset), lessThan(topInset + 80)),
       );
       await tester.tap(find.byKey(const ValueKey('返回')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.byType(PlayerScreen), findsNothing);
       expect(scrollState.position.pixels, closeTo(offset, 1));
       expect(controller.playing, isTrue);
       final lastPosition = controller.position;
       await tester.tap(find.byKey(const ValueKey('展开播放器')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.byType(PlayerScreen), findsNothing);
       expect(controller.playing, isTrue);
       expect(controller.position, greaterThanOrEqualTo(lastPosition));
@@ -195,7 +203,7 @@ void main() {
       scrollState.position.jumpTo(0);
       for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
         await controller.setTheme(theme);
-        await tester.pumpAndSettle();
+        await settleAnimations();
         await binding.takeScreenshot('android-$theme-library');
       }
       await controller.setTheme('sunrise');
@@ -241,9 +249,9 @@ void main() {
       );
       controller.profile = {'mid': 1, 'uname': '本地验收账号'};
       await tester.tap(find.byKey(const ValueKey('打开设置')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       await tester.tap(find.byKey(const ValueKey('settings-account')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.text('请先选择收藏夹'), findsOneWidget);
       final accountScroll = find
           .descendant(
@@ -257,7 +265,7 @@ void main() {
         scrollable: accountScroll,
       );
       await tester.tap(find.byKey(const ValueKey('folder-25')));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(
         tester.widget<FolderChoice>(find.byType(FolderChoice).last).selected,
         isTrue,
@@ -272,14 +280,14 @@ void main() {
       await binding.takeScreenshot('android-account-selected');
       final playlistCount = controller.playlists.length;
       await tester.tap(importButton);
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.text('查看已导入歌单'), findsOneWidget);
       expect(controller.playlists.length, playlistCount + 1);
       final imported = controller.playlists.last;
       expect(imported.trackIds.length, 1);
       await binding.takeScreenshot('android-account-imported');
       await tester.tap(find.text('查看已导入歌单'));
-      await tester.pumpAndSettle();
+      await settleAnimations();
       expect(find.text('本地导入验收示例'), findsOneWidget);
       await controller.editPlaylist(imported, delete: true);
       for (final id in imported.trackIds) {

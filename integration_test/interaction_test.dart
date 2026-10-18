@@ -49,6 +49,14 @@ void main() {
   testWidgets(
     'native search, playlist, queue, modes, download recovery, offline decode and persistent restore',
     (tester) async {
+      Future<void> settleAnimations() async {
+        // Route entry can schedule the disc after the first frame. Continuous
+        // rotation intentionally never settles, so advance bounded real frames.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+
       final directory = await Directory.systemTemp.createTemp('tingyu-flow-');
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final wav = tone();
@@ -86,7 +94,7 @@ void main() {
         dataDirectory: directory,
         lyricsClient: FixtureLyrics(),
       );
-      await tester.pumpAndSettle();
+      await settleAnimations();
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
       ).read(app.libraryProvider);
@@ -159,7 +167,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
           await tester.pump();
         } else {
-          await tester.pumpAndSettle();
+          await settleAnimations();
         }
       }
 
@@ -215,7 +223,7 @@ void main() {
           '夜晚听的歌',
         );
         await tester.testTextInput.receiveAction(TextInputAction.done);
-        await tester.pumpAndSettle();
+        await settleAnimations();
         await binding.takeScreenshot('playlist-edit-description');
         await tap('保存');
         expect(p.playlists.single.description, '夜晚听的歌');
@@ -254,6 +262,10 @@ void main() {
         await tap('返回设置');
         await tap('返回');
         await tap('展开播放器');
+        // Settings/animation checks can outlast the 30-second fixture. Reset
+        // the source explicitly before asserting a manual next-song sequence.
+        await p.play(firstTrack);
+        await waitFor(() => !p.opening && p.playing);
         await tap('cycle-mode');
         expect(p.mode, 'repeat');
         expect(find.byType(SimpleDialog), findsNothing);
@@ -414,13 +426,33 @@ void main() {
         }
         // Publish seeded fixture data before interacting with the cached library branch.
         await p.setMode('shuffle');
-        await tester.pumpAndSettle();
+        await settleAnimations();
         await tap('tab-library');
         await tap('play-${firstTrack.id}');
         expect(p.queue.length, 51);
         await tap('展开播放器');
         await p.setMode('shuffle');
-        await tester.pumpAndSettle();
+        await settleAnimations();
+        final swipeNext = p.adjacentTrack(1)!.id;
+        await tester.drag(
+          find.byKey(const ValueKey('record-carousel')),
+          const Offset(-160, 0),
+        );
+        await waitFor(
+          () => !p.opening && p.playing && p.current?.id == swipeNext,
+        );
+        await settleAnimations();
+        final swipePrevious = p.adjacentTrack(-1)!.id;
+        await tester.drag(
+          find.byKey(const ValueKey('record-carousel')),
+          const Offset(160, 0),
+        );
+        await waitFor(
+          () => !p.opening && p.playing && p.current?.id == swipePrevious,
+        );
+        // Start a fresh shuffle cycle after exercising swipe history.
+        await p.setMode('order');
+        await p.setMode('shuffle');
         final seen = {p.current!.id};
         for (var i = 0; i < 50; i++) {
           await tap('下一首');
@@ -514,7 +546,7 @@ void main() {
           find.byType(Scrollable).first,
         );
         libraryScroll.position.jumpTo(libraryScroll.position.maxScrollExtent);
-        await tester.pumpAndSettle();
+        await settleAnimations();
         expect(find.byKey(const ValueKey('scroll-to-top')), findsOneWidget);
         await tap('scroll-to-top');
         expect(libraryScroll.position.pixels, 0);
@@ -534,7 +566,7 @@ void main() {
           find.byKey(const ValueKey('local-search')),
           '回归曲目17',
         );
-        await tester.pumpAndSettle();
+        await settleAnimations();
         expect(
           find.byKey(const ValueKey('play-BVnative17:1017')),
           findsOneWidget,
@@ -551,7 +583,7 @@ void main() {
         );
         for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
           await p.setTheme(theme);
-          await tester.pumpAndSettle();
+          await settleAnimations();
           await binding.takeScreenshot('depth-library-$theme');
           await tap('tab-search');
           await binding.takeScreenshot('depth-search-$theme');
@@ -591,7 +623,7 @@ void main() {
         await p.playback.pause();
         await p.downloads.prepareForExit();
         await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpAndSettle();
+        await settleAnimations();
         p.downloads.dispose();
         await p.playback.close();
         await p.db.close();

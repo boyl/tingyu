@@ -1,40 +1,22 @@
 {
-  "version": "0.1.14+15",
-  "sourceSha256": "f1fef08643bdc4db3212c30d4ce01a4f790d5488a4d22606effbe90795bda911",
+  "version": "0.1.17+18",
+  "sourceSha256": "b661d4c5f95aa190badb535351338f2950e6fde4b82cafa5fd00cdaee95dfd5a",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
   "validation": "ZIP, exact ABI, package, version and signatures PASS",
   "apks": [
     {
-      "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.14-android-armeabi-v7a-release.apk",
-      "bytes": 20691067,
-      "sha256": "54384353ed657fb098562efa58cc1356d1c54c9106309263325ccf5f8ebf0f17",
-      "zipIntegrity": "PASS",
-      "exactAbi": "PASS",
-      "versionCode": "1015"
-    },
-    {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.14-android-arm64-v8a-release.apk",
-      "bytes": 23036211,
-      "sha256": "22a5c5fb310dad0405fe3ba71257ea0c2f51020d313afa0d1242eac0553a1f64",
+      "path": "artifacts/tingyu-0.1.17-android-arm64-v8a-release.apk",
+      "bytes": 23074595,
+      "sha256": "d3b717e6e01ffba130153299469996da9dca3f2ad3b9a8cd7e5e518a4f2fdae7",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2015"
-    },
-    {
-      "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.14-android-x86_64-release.apk",
-      "bytes": 24553479,
-      "sha256": "abcdf6a1aba2ff47906a668791bfa8145c4af0613b67d2622b09134649ffa850",
-      "zipIntegrity": "PASS",
-      "exactAbi": "PASS",
-      "versionCode": "4015"
+      "versionCode": "2018"
     }
   ],
-  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json",
+  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/launcher-icon.png",
   "limitations": [
     "physical Android lockscreen/Bluetooth/calls/background scenarios pending",
     "screenshot-related audible output on physical Android devices pending",

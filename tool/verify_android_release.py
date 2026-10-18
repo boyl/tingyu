@@ -20,7 +20,8 @@ env = dict(os.environ)
 env['JAVA_HOME'] = str(next(TOOLS.glob('jdk-*/Contents/Home')))
 expected_cert = '27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c'
 items = []
-for abi, offset in [('armeabi-v7a', 1000), ('arm64-v8a', 2000), ('x86_64', 4000)]:
+# Release only the ABI authorized for distribution.
+for abi, offset in [('arm64-v8a', 2000)]:
     source = ROOT / f'build/app/outputs/flutter-apk/app-{abi}-release.apk'
     with zipfile.ZipFile(source) as apk:
         assert apk.testzip() is None, 'ZIP integrity failed'
@@ -41,7 +42,7 @@ for abi, offset in [('armeabi-v7a', 1000), ('arm64-v8a', 2000), ('x86_64', 4000)
 manifest = {'version': f'{version}+{number}', 'sourceSha256': report['sourceSha256'],
             'signing': 'development/debug key', 'signerCertificateSha256': expected_cert,
             'sameDevelopmentSigner': True, 'validation': 'ZIP, exact ABI, package, version and signatures PASS',
-            'apks': items, 'runtimeEvidence': 'artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json',
+            'apks': items, 'runtimeEvidence': 'artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/launcher-icon.png',
             'limitations': ['physical Android lockscreen/Bluetooth/calls/background scenarios pending', 'screenshot-related audible output on physical Android devices pending', 'native desktops pending', 'physical glass scrolling smoothness pending; software emulator raster overhead remains high']}
 (ROOT / 'tool/release-apks.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 print(json.dumps(manifest, ensure_ascii=False, indent=2))

@@ -50,6 +50,12 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
   Color get glassEdge => onArtwork.withValues(alpha: isDark ? .16 : .65);
   Color get glassHighlight => onArtwork.withValues(alpha: isDark ? .06 : .12);
   Color get glassShadow => playerShadow.withValues(alpha: isDark ? .24 : .07);
+  Color get atmosphereCool => isDark ? tint : discoveryPalettes[0][1];
+  Color get atmosphereWarm => isDark ? accent : brandPink;
+  static const detailBlur = 18.0;
+  static const detailRadius = 22.0;
+  static const recordPeek = .79;
+  static const swipeThreshold = 45.0;
   static const brandPink = Color(0xfffb7299);
   static const glassBlur = 5.0;
   static const space = 8.0,
@@ -452,9 +458,10 @@ class GlassSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.radius = TingyuTokens.playerRadius,
+    this.blur = TingyuTokens.glassBlur,
   });
   final Widget child;
-  final double radius;
+  final double radius, blur;
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -473,10 +480,7 @@ class GlassSurface extends StatelessWidget {
       child: ClipRRect(
         borderRadius: border,
         child: BackdropFilter.grouped(
-          filter: ui.ImageFilter.blur(
-            sigmaX: TingyuTokens.glassBlur,
-            sigmaY: TingyuTokens.glassBlur,
-          ),
+          filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: border,
@@ -491,6 +495,52 @@ class GlassSurface extends StatelessWidget {
             child: child,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One continuous atmosphere behind mobile content and glass groups.
+class DetailAtmosphere extends StatelessWidget {
+  const DetailAtmosphere({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: t.background),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-1, -.6),
+                  radius: 1.5,
+                  colors: [
+                    t.atmosphereCool.withValues(alpha: .28),
+                    t.background.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(1, .6),
+                  radius: 1.4,
+                  colors: [
+                    t.atmosphereWarm.withValues(alpha: .20),
+                    t.background.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
       ),
     );
   }

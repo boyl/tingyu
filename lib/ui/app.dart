@@ -299,6 +299,17 @@ class _RecordDiscState extends State<RecordDisc>
                   ),
                 ),
               ),
+              for (var ring = 0; ring < 8; ring++)
+                Container(
+                  width: size * (.68 + ring * .04),
+                  height: size * (.68 + ring * .04),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: TingyuTokens.onArtwork.withValues(alpha: .07),
+                    ),
+                  ),
+                ),
               ClipOval(
                 child: SizedBox(
                   width: label,
@@ -1681,6 +1692,90 @@ class SeekBar extends StatelessWidget {
   }
 }
 
+class RecordCarousel extends StatefulWidget {
+  const RecordCarousel(this.p, {super.key, required this.size});
+  final LibraryController p;
+  final double size;
+  @override
+  State<RecordCarousel> createState() => _RecordCarouselState();
+}
+
+class _RecordCarouselState extends State<RecordCarousel> {
+  double drag = 0;
+  Future<void> change(int delta) async {
+    if (!widget.p.opening && widget.p.adjacentTrack(delta) != null) {
+      await widget.p.next(delta);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.p, size = widget.size;
+    final previous = p.adjacentTrack(-1), next = p.adjacentTrack(1);
+    return Semantics(
+      label: '歌曲封面，左右滑动切歌',
+      onIncrease: next == null ? null : () => change(1),
+      onDecrease: previous == null ? null : () => change(-1),
+      child: GestureDetector(
+        key: const ValueKey('record-carousel'),
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: (_) => drag = 0,
+        onHorizontalDragUpdate: (details) =>
+            setState(() => drag += details.delta.dx),
+        onHorizontalDragCancel: () => setState(() => drag = 0),
+        onHorizontalDragEnd: (details) {
+          final distance = drag;
+          setState(() => drag = 0);
+          if (distance.abs() >= TingyuTokens.swipeThreshold ||
+              details.velocity.pixelsPerSecond.dx.abs() > 400) {
+            change(
+              (distance == 0 ? details.velocity.pixelsPerSecond.dx : distance) <
+                      0
+                  ? 1
+                  : -1,
+            );
+          }
+        },
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final center = (box.maxWidth - size) / 2;
+            final offset = drag.clamp(-size * .2, size * .2);
+            Widget record(Track track, double left, bool active) => Positioned(
+              left: left + offset,
+              top: TingyuTokens.space * 2,
+              child: Opacity(
+                opacity: active ? 1 : .6,
+                child: Transform.scale(
+                  scale: active ? 1 : TingyuTokens.recordPeek,
+                  child: RecordDisc(
+                    track,
+                    size: size,
+                    playing: active && p.playing,
+                  ),
+                ),
+              ),
+            );
+            return ClipRect(
+              child: SizedBox(
+                height: size + TingyuTokens.space * 4,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (previous != null)
+                      record(previous, center - size * 1.15, false),
+                    if (next != null) record(next, center + size * 1.15, false),
+                    record(p.current!, center, true),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
   @override
@@ -1772,13 +1867,17 @@ class PlayerScreen extends ConsumerWidget {
         meta,
       ],
     );
-    final lyrics = desktop
-        ? SizedBox(height: 280, child: LyricPanel(p))
-        : null;
-    return Scaffold(
+    final lyrics = desktop ? SizedBox(height: 280, child: LyricPanel(p)) : null;
+    final screen = Scaffold(
+      backgroundColor: desktop ? null : Colors.transparent,
       appBar: PlayerHeader(
         onBack: goBack,
-        status: p.opening ? '正在加载…' : '',
+        status: p.opening
+            ? '正在加载…'
+            : (desktop
+                  ? ''
+                  : '正在播放 · ${p.queue.indexOf(track.id) + 1} / ${p.queue.length}'),
+        transparent: !desktop,
         onMore: () => showTrackActions(context, p, track, null),
       ),
       bottomNavigationBar: SafeArea(
@@ -1852,7 +1951,7 @@ class PlayerScreen extends ConsumerWidget {
                       height: constraints.maxHeight,
                       width: constraints.maxWidth,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                        padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -1868,29 +1967,38 @@ class PlayerScreen extends ConsumerWidget {
                                   Expanded(
                                     child: LayoutBuilder(
                                       builder: (context, box) {
-                                        final side = box.maxHeight.clamp(
-                                          0.0,
-                                          phoneArtMax,
+                                        final side =
+                                            (box.maxHeight -
+                                                    TingyuTokens.space * 4)
+                                                .clamp(0.0, phoneArtMax);
+                                        return Center(
+                                          child: side < 48
+                                              ? const SizedBox.shrink()
+                                              : RecordCarousel(p, size: side),
                                         );
-                                return Center(
-                                  child: side < 48
-                                      ? const SizedBox.shrink()
-                                      : RecordDisc(
-                                          track,
-                                          size: side,
-                                          playing: p.playing,
-                                        ),
-                                );
                                       },
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  meta,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                    ),
+                                    child: meta,
+                                  ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 8),
-                            SizedBox(height: 112, child: LyricPanel(p)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: SizedBox(
+                                height: 112,
+                                child: LyricPanel(p),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1900,6 +2008,7 @@ class PlayerScreen extends ConsumerWidget {
               ),
       ),
     );
+    return desktop ? screen : DetailAtmosphere(child: screen);
   }
 }
 
@@ -1910,7 +2019,9 @@ class PlayerHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.onBack,
     required this.status,
     this.onMore,
+    this.transparent = false,
   });
+  final bool transparent;
   final VoidCallback onBack;
   final String status;
   final VoidCallback? onMore;
@@ -1918,7 +2029,7 @@ class PlayerHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(64);
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: context.tokens.background,
+    color: transparent ? Colors.transparent : context.tokens.background,
     child: SafeArea(
       bottom: false,
       child: Padding(

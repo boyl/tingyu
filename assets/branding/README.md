@@ -1,11 +1,10 @@
-# 声波小岛
+# 柔角折带图标
 
-用户于 2026-10-18 选定第一版图标：深色岛屿与水面倒影、右上粉色声波、暖白底色。
+用户于 2026-10-18 确认：纯白细线、柔化转角、透明底，无底板、阴影或浮雕。
 
-- `sound-island.png`：imagegen 内置工具按用户确认的第一版展示图提取的透明母版。
-- `app-icon.png`：无文字、无外部阴影的 1024px 平面图标。
-- `tool/generate_app_icons.py`：使用 Pillow 从母版派生 Android legacy / adaptive / Android 13 monochrome、macOS 与 Windows 原生资源。Android 自适应前景位于中央安全圆内，背景交由系统裁切。
+- `ribbon-outline.svg`：确认稿的矢量母版。
+- `ribbon-outline.png`：从矢量母版渲染的透明 PNG。
+- `app-icon.png`：居中归一化后的 Android 图标预览。
+- `tool/generate_app_icons.py`：生成 Android legacy、adaptive foreground、Android 13 monochrome，适配中央安全区，背景透明。需要 Pillow。
 
-最终生成提示：从第一版大图标精确提取岛屿、倒影及两道粉色声波，保留原轮廓；移除底板、文字、阴影及重复小图，输出透明背景。未使用 CLI/API fallback。
-
-重新生成：`python3 tool/generate_app_icons.py`（需 Pillow）。
+本轮仅发布 Android arm64-v8a；macOS、Windows 图标资源保持原样。历史 `sound-island.png` 保留用于追溯。

@@ -30,7 +30,10 @@ void main() {
   Future<void> settleFrames(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
-    if (find.byType(QueuePanel).evaluate().isNotEmpty ||
+    if (tester
+            .widgetList<RecordDisc>(find.byType(RecordDisc))
+            .any((disc) => disc.playing) ||
+        find.byType(QueuePanel).evaluate().isNotEmpty ||
         tester
             .widgetList<PlayingIndicator>(find.byType(PlayingIndicator))
             .any((indicator) => indicator.playing)) {
@@ -476,7 +479,10 @@ void main() {
       await tap(tester, '搜索本地歌曲');
       final field = find.byKey(const ValueKey('local-search'));
       final heading = find.text('歌曲');
-      expect(tester.getTopLeft(field).dy, greaterThan(tester.getTopLeft(heading).dy));
+      expect(
+        tester.getTopLeft(field).dy,
+        greaterThan(tester.getTopLeft(heading).dy),
+      );
       expect(
         tester.getTopLeft(field).dy - tester.getBottomLeft(heading).dy,
         lessThan(80),
@@ -1072,7 +1078,10 @@ void main() {
             .dy,
         tabY,
       );
-      expect(tester.widget<TextField>(search).controller!.text, firstTrack.title);
+      expect(
+        tester.widget<TextField>(search).controller!.text,
+        firstTrack.title,
+      );
       await tap(tester, 'downloads-tab-tasks');
       expect(
         tester.widget<TextField>(search).controller!.text,

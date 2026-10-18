@@ -497,6 +497,25 @@ class LibraryController extends ChangeNotifier {
     });
   }
 
+  Track? adjacentTrack(int delta) {
+    final ids = queue.where(library.containsKey).toSet().toList();
+    if (ids.length < 2) return null;
+    String? id;
+    final priority = _nextPriority.where(ids.contains);
+    if (delta > 0 && priority.isNotEmpty) {
+      id = priority.first;
+    } else if (mode == 'shuffle') {
+      id = _playOrder.peek(ids, current?.id, previous: delta < 0);
+    } else {
+      final index = ids.indexOf(current?.id ?? '');
+      id =
+          ids[index < 0
+              ? (delta < 0 ? ids.length - 1 : 0)
+              : (index + delta) % ids.length];
+    }
+    return id == current?.id ? null : library[id];
+  }
+
   Future<void> _advance(int delta, bool automatic) async {
     final ids = queue.where(library.containsKey).toSet().toList();
     if (ids.isEmpty || (automatic && opening)) return;

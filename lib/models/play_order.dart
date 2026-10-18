@@ -99,6 +99,26 @@ class PlayOrder {
       return id;
     }
     if (_cursor + 1 < _trail.length) return _trail[++_cursor];
+    _prepareRemaining(queue, current);
+    final id = _remaining.removeAt(0);
+    _record(id);
+    return id;
+  }
+
+  // Preview prepares the next cycle once, but never consumes history or a track.
+  String? peek(List<String> queue, String? current, {bool previous = false}) {
+    sync(queue);
+    if (queue.isEmpty) return null;
+    if (previous) {
+      return _cursor > 0 ? _trail[_cursor - 1] : current ?? queue.first;
+    }
+    if (_priority.isNotEmpty) return _priority.first;
+    if (_cursor + 1 < _trail.length) return _trail[_cursor + 1];
+    _prepareRemaining(queue, current);
+    return _remaining.first;
+  }
+
+  void _prepareRemaining(List<String> queue, String? current) {
     if (_remaining.isEmpty) {
       _remaining.addAll(queue.toSet().toList()..shuffle(_random));
       if (_remaining.length > 1 && _remaining.first == current) {
@@ -108,9 +128,6 @@ class PlayOrder {
       }
       if (_remaining.isEmpty) _remaining.add(queue.first);
     }
-    final id = _remaining.removeAt(0);
-    _record(id);
-    return id;
   }
 
   void arrive(String id) {
