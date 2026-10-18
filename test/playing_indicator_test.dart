@@ -8,7 +8,7 @@ void main() {
     'playing indicator schedules paint animation and reduced motion stops it',
     (tester) async {
       Widget view(bool reduced, {bool playing = true}) => MaterialApp(
-        theme: tingyuTheme('a'),
+        theme: tingyuTheme('sunrise'),
         home: MediaQuery(
           data: MediaQueryData(disableAnimations: reduced),
           child: Center(child: PlayingIndicator(playing: playing)),

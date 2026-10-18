@@ -58,7 +58,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                   Text(
                     tasks ? '下载任务' : '已下载',
                     style: TextStyle(
-                      color: selected ? t.text : t.muted,
+                      color: selected ? t.accent : t.muted,
                       fontSize: 16,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -80,7 +80,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                 width: TingyuTokens.space * 3,
                 height: TingyuTokens.tabIndicatorHeight,
                 decoration: BoxDecoration(
-                  color: selected ? t.text : Colors.transparent,
+                  color: selected ? t.accent : Colors.transparent,
                   borderRadius: BorderRadius.circular(
                     TingyuTokens.tabIndicatorHeight,
                   ),
@@ -106,7 +106,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
             children: [
               Expanded(
                 child: Text(
-                  '下载',
+                  '离线随行',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -128,7 +128,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
               controller: searches[index],
               decoration: InputDecoration(
                 hintText: widget.tasks ? '搜索下载任务' : '搜索已下载歌曲',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const TingyuIcon(Icons.search),
                 suffixIcon: action(
                   Icons.close,
                   '清除本地搜索',
@@ -140,62 +140,36 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
             ),
           ],
           const SizedBox(height: TingyuTokens.space * 3),
+          Row(children: [tab(false), tab(true)]),
+          Divider(height: 1, color: t.line),
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: t.surface,
-                borderRadius: BorderRadius.circular(
-                  TingyuTokens.collectionRadius,
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: TingyuTokens.space * 2,
-                    ),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: t.line)),
-                      ),
-                      child: Row(children: [tab(false), tab(true)]),
-                    ),
-                  ),
-                  Expanded(
-                    child: IndexedStack(
-                      index: index,
-                      children: [
-                        for (var i = 0; i < 2; i++)
-                          ScrollToTop(
-                            key: ValueKey('downloads-scroll-$i'),
-                            controller: scrolls[i],
-                            builder: (scroll) => CustomScrollView(
-                              key: PageStorageKey('downloads-list-$i'),
-                              controller: scroll,
-                              slivers: [
-                                SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    TingyuTokens.space * 2,
-                                    TingyuTokens.space * 2,
-                                    TingyuTokens.space * 2,
-                                    TingyuTokens.space * 10,
-                                  ),
-                                  sliver: DownloadsPanel(
-                                    p,
-                                    sliver: true,
-                                    showTasks: i == 1,
-                                    query: searches[i].text,
-                                  ),
-                                ),
-                              ],
-                            ),
+            child: IndexedStack(
+              index: index,
+              children: [
+                for (var i = 0; i < 2; i++)
+                  ScrollToTop(
+                    key: ValueKey('downloads-scroll-$i'),
+                    controller: scrolls[i],
+                    builder: (scroll) => CustomScrollView(
+                      key: PageStorageKey('downloads-list-$i'),
+                      controller: scroll,
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.only(
+                            top: TingyuTokens.space * 2,
+                            bottom: TingyuTokens.space * 10,
                           ),
+                          sliver: DownloadsPanel(
+                            p,
+                            sliver: true,
+                            showTasks: i == 1,
+                            query: searches[i].text,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
         ],

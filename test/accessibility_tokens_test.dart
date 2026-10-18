@@ -6,9 +6,10 @@ import 'package:tingyu/ui/theme.dart';
 void main() {
   test('all theme text and selected states meet 4.5 contrast', () {
     for (final tokens in [
-      TingyuTokens.light,
-      TingyuTokens.dark,
-      TingyuTokens.pink,
+      TingyuTokens.sunrise,
+      TingyuTokens.night,
+      TingyuTokens.moon,
+      TingyuTokens.bilibili,
     ]) {
       for (final background in [
         tokens.background,

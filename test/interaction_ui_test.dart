@@ -30,7 +30,10 @@ void main() {
   Future<void> settleFrames(WidgetTester tester) async {
     await tester.pump();
     await tester.pump();
-    if (find.byType(QueuePanel).evaluate().isNotEmpty) {
+    if (find.byType(QueuePanel).evaluate().isNotEmpty ||
+        tester
+            .widgetList<PlayingIndicator>(find.byType(PlayingIndicator))
+            .any((indicator) => indicator.playing)) {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
     } else {
@@ -71,8 +74,34 @@ void main() {
   }
 
   Future<void> tap(WidgetTester tester, String label) async {
+    if (find.byKey(ValueKey(label)).evaluate().isEmpty) {
+      if (label.startsWith('上移第 ') ||
+          label.startsWith('下移第 ') ||
+          label.startsWith('移除第 ')) {
+        final number = int.parse(RegExp(r'\d+').firstMatch(label)!.group(0)!);
+        final id = fixture.controller.queue[number - 1];
+        final more = find.byKey(ValueKey('队列选项 $id'));
+        await tester.ensureVisible(more);
+        await tester.pump();
+        await tester.tap(more);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      } else if (label == '清空') {
+        await tester.tap(find.byKey(const ValueKey('队列更多')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      } else if (['播放全部', '歌曲排序', '批量选择'].contains(label) &&
+          find.byKey(const ValueKey('曲库操作')).evaluate().isNotEmpty) {
+        await tester.ensureVisible(find.byKey(const ValueKey('曲库操作')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('曲库操作')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      }
+    }
     final target = find.byKey(ValueKey(label)).last;
     await tester.ensureVisible(target);
+    await tester.pump(); // Apply lazy sliver layout before hit testing.
     await tester.tap(target);
     await settle(tester);
   }
@@ -479,7 +508,7 @@ void main() {
     'first visits after theme changes use new colors on every frame and retain branch state',
     (tester) async {
       await mount(tester);
-      for (final theme in ['b', 'c', 'a']) {
+      for (final theme in ['night', 'moon', 'bili', 'sunrise']) {
         await tester.runAsync(() => fixture.controller.setTheme(theme));
         for (final tab in ['search', 'downloads', 'likes', 'library']) {
           await tester.tap(find.byKey(ValueKey('tab-$tab')));
@@ -508,18 +537,22 @@ void main() {
   );
 
   testWidgets(
-    'search empty hint about importing favorites disappears after login',
+    'search discovery and external handoff remain available across login changes',
     (tester) async {
       await mount(tester);
       router.go('/search');
       await settle(tester);
-      expect(find.textContaining('登录后可导入收藏夹'), findsOneWidget);
+      expect(find.byType(SearchDiscovery), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('open-bilibili-external')),
+        findsOneWidget,
+      );
       fixture.api.loggedIn = true;
       fixture.controller.profile = {'uname': '测试账号', 'mid': 1};
       fixture.controller.notifyListeners();
       await settle(tester);
       expect(find.textContaining('登录后可导入收藏夹'), findsNothing);
-      expect(find.text('搜索歌曲、UP 主或视频链接。'), findsOneWidget);
+      expect(find.byType(SearchDiscovery), findsOneWidget);
       expect(find.text('前往哔哩哔哩'), findsOneWidget);
       await unmount(tester);
     },
@@ -750,7 +783,7 @@ void main() {
       var count = 0;
       await tester.pumpWidget(
         MaterialApp(
-          theme: tingyuTheme('a'),
+          theme: tingyuTheme('sunrise'),
           home: Scaffold(
             body: Pressable(
               key: const ValueKey('pending'),
@@ -846,6 +879,36 @@ void main() {
       await unmount(tester);
     },
   );
+  testWidgets('appearance shelf reveals the next theme and scrolls to night', (
+    tester,
+  ) async {
+    await mount(tester);
+    router.push('/settings');
+    await settle(tester);
+    final shelf = find.byKey(const ValueKey('theme-shelf'));
+    await tester.ensureVisible(shelf);
+    await settle(tester);
+    final viewport = tester.getRect(shelf);
+    final first = tester.getRect(find.byKey(const ValueKey('theme-bili')));
+    final second = tester.getRect(find.byKey(const ValueKey('theme-sunrise')));
+    final third = tester.getRect(find.byKey(const ValueKey('theme-moon')));
+    expect(first.left, greaterThanOrEqualTo(viewport.left));
+    expect(second.right, lessThan(viewport.right));
+    expect(third.left, lessThan(viewport.right));
+    expect(third.right, greaterThan(viewport.right));
+    await tester.drag(shelf, const Offset(-280, 0));
+    await settle(tester);
+    await tap(tester, 'theme-night');
+    expect(fixture.controller.theme, 'night');
+    expect(
+      tester
+          .widget<Pressable>(find.byKey(const ValueKey('theme-night')))
+          .selected,
+      isTrue,
+    );
+    await unmount(tester);
+  });
+
   testWidgets(
     'standalone settings consolidates account and preferences without drawer or player chrome',
     (tester) async {
@@ -862,7 +925,7 @@ void main() {
       await settle(tester);
       await tap(tester, '打开设置');
       expect(find.byType(SettingsPanel), findsOneWidget);
-      expect(find.text('暖白'), findsOneWidget);
+      expect(find.text('哔哩粉'), findsOneWidget);
       expect(find.byType(SettingsScreen), findsOneWidget);
       expect(find.byType(CompactNavigation), findsNothing);
       expect(find.byType(MiniPlayer), findsNothing);
@@ -871,11 +934,11 @@ void main() {
         find.byKey(const ValueKey('settings-import')),
       );
       expect(disabledImport.onPressed, isNull);
-      await tap(tester, 'theme-b');
-      expect(fixture.controller.theme, 'b');
-      await tap(tester, 'theme-c');
-      expect(fixture.controller.theme, 'c');
-      await tap(tester, 'theme-a');
+      await tap(tester, 'theme-night');
+      expect(fixture.controller.theme, 'night');
+      await tap(tester, 'theme-moon');
+      expect(fixture.controller.theme, 'moon');
+      await tap(tester, 'theme-sunrise');
       await tap(tester, 'settings-quality');
       await tap(tester, 'quality-true');
       expect(fixture.controller.standard, isTrue);
@@ -1120,6 +1183,77 @@ void main() {
     },
   );
   testWidgets(
+    'approved library entry points, topic search and Bilibili theme remain connected',
+    (tester) async {
+      await mount(tester);
+      expect(fixture.controller.theme, 'bili');
+      expect(find.byKey(const ValueKey('新建歌单')), findsOneWidget);
+      final avatar = tester.getRect(find.byType(AccountAvatar).first);
+      expect(avatar.width, avatar.height);
+      final profileButton = tester.getRect(find.byKey(const ValueKey('打开设置')));
+      expect(profileButton.center.dx, avatar.center.dx);
+      expect(profileButton.center.dy, avatar.center.dy);
+      await tap(tester, 'tab-search');
+      expect(find.byType(SearchDiscovery), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('open-bilibili-external')),
+        findsOneWidget,
+      );
+      await tap(tester, 'search-topic-0');
+      expect(fixture.controller.query, '晚风');
+      expect(find.byType(SearchDiscovery), findsNothing);
+      expect(
+        find.byKey(const ValueKey('open-bilibili-external')),
+        findsOneWidget,
+      );
+      await tap(tester, '清除在线搜索');
+      expect(find.byType(SearchDiscovery), findsOneWidget);
+      await tap(tester, 'tab-library');
+      await tap(tester, '打开设置');
+      await tap(tester, 'theme-sunrise');
+      await tap(tester, 'theme-bili');
+      expect(fixture.controller.theme, 'bili');
+      expect(find.byType(ThemePreview), findsNWidgets(4));
+      final chevrons = find.byType(SettingsChevron);
+      final rightEdge = tester.getCenter(chevrons.first).dx;
+      for (var i = 1; i < chevrons.evaluate().length; i++) {
+        expect(tester.getCenter(chevrons.at(i)).dx, closeTo(rightEdge, .01));
+      }
+      await tap(tester, '返回');
+      expect(fixture.controller.theme, 'bili');
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'pink design fits narrow screens and large text with reduced motion',
+    (tester) async {
+      final p = fixture.controller;
+      await p.addPlaylist('很长的歌单名称，慢慢听', track: firstTrack);
+      await mount(tester, size: const Size(320, 780));
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      for (final page in [
+        '/',
+        '/search',
+        '/likes',
+        '/downloads',
+        '/settings',
+        '/playlist/${p.playlists.single.id}',
+      ]) {
+        router.go(page);
+        await settle(tester);
+      }
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'all themes render full shared pages at four target sizes without exceptions',
     (tester) async {
       final p = fixture.controller;
@@ -1134,7 +1268,7 @@ void main() {
         const Size(1440, 900),
       ]) {
         tester.view.physicalSize = size;
-        for (final theme in ['a', 'b', 'c']) {
+        for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
           await p.setTheme(theme);
           for (final page in [
             '/',

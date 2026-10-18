@@ -8,6 +8,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:tingyu/main.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/playing_indicator.dart';
 import '../test/support/fakes.dart';
 
 void main() {
@@ -15,6 +16,19 @@ void main() {
   testWidgets('500 tracks with covers: scroll while playhead advances', (
     tester,
   ) async {
+    var playbackClock = false;
+    Future<void> settle() async {
+      await tester.pump();
+      if (playbackClock ||
+          tester
+              .widgetList<PlayingIndicator>(find.byType(PlayingIndicator))
+              .any((indicator) => indicator.playing)) {
+        await tester.pump(const Duration(milliseconds: 350));
+      } else {
+        await tester.pumpAndSettle();
+      }
+    }
+
     final fixture = await TestLibrary.create();
     final p = fixture.controller;
     final router = createRouter();
@@ -57,10 +71,11 @@ void main() {
         child: TingyuApp(router: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await settle();
     await p.play(p.library.values.first);
-    await tester.pumpAndSettle();
+    await settle();
     var ticks = 0;
+    playbackClock = true;
     final timer = Timer.periodic(
       const Duration(milliseconds: 50),
       (_) => fixture.playback.player.positions.add(
@@ -77,7 +92,7 @@ void main() {
               ? '/playlist/scroll'
               : '/downloads',
         );
-        await tester.pumpAndSettle();
+        await settle();
         final scrollable = find
             .byWidgetPredicate(
               (widget) =>
@@ -90,7 +105,7 @@ void main() {
           const Offset(0, -600),
           const Duration(milliseconds: 500),
         );
-        await tester.pumpAndSettle();
+        await settle();
         final frames = <FrameTiming>[];
         void timings(List<FrameTiming> batch) => frames.addAll(batch);
         await Future<void>.delayed(const Duration(seconds: 2));
@@ -102,7 +117,7 @@ void main() {
               Offset(0, i < 4 ? -500 : 500),
               const Duration(milliseconds: 500),
             );
-            await tester.pumpAndSettle();
+            await settle();
           }
           await Future<void>.delayed(const Duration(seconds: 2));
         } finally {

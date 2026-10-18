@@ -48,25 +48,33 @@ class _PlayingIndicatorState extends State<PlayingIndicator>
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: widget.playing ? '正在播放' : '当前歌曲，未播放',
+    label: widget.playing ? '正在播放' : '当前歌曲，已暂停',
     child: RepaintBoundary(
       child: CustomPaint(
         size: const Size(18, 18),
-        painter: _PlayingBars(phase, context.tokens.accent),
+        painter: _PlayingBars(
+          phase,
+          context.tokens.accent,
+          playing: widget.playing,
+        ),
       ),
     ),
   );
 }
 
 class _PlayingBars extends CustomPainter {
-  _PlayingBars(this.phase, this.color) : super(repaint: phase);
+  _PlayingBars(this.phase, this.color, {required this.playing})
+    : super(repaint: phase);
+  final bool playing;
   final Animation<double> phase;
   final Color color;
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
     for (var i = 0; i < 3; i++) {
-      final height = 5 + (math.sin(phase.value * math.pi * 2 + i * 2) + 1) * 6;
+      final height = playing
+          ? 5 + (math.sin(phase.value * math.pi * 2 + i * 2) + 1) * 6
+          : [4.0, 8.0, 5.0][i];
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(1 + i * 6, (size.height - height) / 2, 3, height),
@@ -79,5 +87,5 @@ class _PlayingBars extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PlayingBars old) =>
-      old.color != color || old.phase != phase;
+      old.color != color || old.phase != phase || old.playing != playing;
 }

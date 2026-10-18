@@ -1,6 +1,6 @@
 {
-  "version": "0.1.10+11",
-  "sourceSha256": "a03ea984adf6c0f8e54ce9d8dccb847ece3b47dcca83ef20837a7e8bb4f1ff8c",
+  "version": "0.1.12+13",
+  "sourceSha256": "c4ace975685208734b93e7f6960b979b5c75784bee2572e8d9bbcf7ab8a59223",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,37 +8,36 @@
   "apks": [
     {
       "abi": "armeabi-v7a",
-      "path": "artifacts/tingyu-0.1.10-android-armeabi-v7a-release.apk",
-      "bytes": 20509855,
-      "sha256": "4ea8410ac46ae3b478916f5097d3923ac97a1f6bbd7f1015c3875ae5a8902ade",
+      "path": "artifacts/tingyu-0.1.12-android-armeabi-v7a-release.apk",
+      "bytes": 20674463,
+      "sha256": "70ac533fe8da2a4e9cb5d92b86a96f1ebef7647df2e9ef998a582cff2d57313f",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "1011"
+      "versionCode": "1013"
     },
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.10-android-arm64-v8a-release.apk",
-      "bytes": 22838615,
-      "sha256": "b847967088ae8d6d4833d1a261b0f749f14397f0d8d0972bae033f6dea210f8d",
+      "path": "artifacts/tingyu-0.1.12-android-arm64-v8a-release.apk",
+      "bytes": 23035991,
+      "sha256": "dc7d154ac4177437c8a83d28a24492bb36c5fd76b77b2a9e98aeb62b9c04c5be",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2011"
+      "versionCode": "2013"
     },
     {
       "abi": "x86_64",
-      "path": "artifacts/tingyu-0.1.10-android-x86_64-release.apk",
-      "bytes": 24355883,
-      "sha256": "beb6e3df3a5ce946c76c60bcc32a023c43c4f85430a5ba4662b3104c02dbdde8",
+      "path": "artifacts/tingyu-0.1.12-android-x86_64-release.apk",
+      "bytes": 24487723,
+      "sha256": "c481de473b371161b88bac889b9bc56164ba0b3904cbc34fe8b4a8ece9216bae",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "4011"
+      "versionCode": "4013"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json",
   "limitations": [
     "physical Android lockscreen/Bluetooth/calls/background scenarios pending",
     "emulator audible issue deferred by user",
-    "native desktops pending",
-    "published packages include the post-gate search hint; fullscreen and cutout captures used the previous source fingerprint"
+    "native desktops pending"
   ]
 }

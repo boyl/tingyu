@@ -19,7 +19,7 @@ void main() {
       await app.main();
       await tester.pumpAndSettle();
       expect(find.text('音乐库'), findsWidgets);
-      expect(tester.getTopLeft(find.text('音乐库').first).dy, lessThan(80));
+      expect(tester.getTopLeft(find.text('随心听').first).dy, lessThan(80));
 
       final controller = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
@@ -85,13 +85,13 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         '验收保留输入',
       );
-      for (final theme in ['a', 'b', 'c']) {
+      for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
         await controller.setTheme(theme);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
       await binding.convertFlutterSurfaceToImage();
-      for (final theme in ['b', 'c', 'a']) {
+      for (final theme in ['night', 'moon', 'bili', 'sunrise']) {
         await controller.setTheme(theme);
         await tester.pumpAndSettle();
         for (final tab in ['likes', 'library', 'downloads', 'search']) {
@@ -116,7 +116,7 @@ void main() {
           await binding.takeScreenshot('theme-first-visit-$theme-$tab');
         }
       }
-      await controller.setTheme('a');
+      await controller.setTheme('sunrise');
       await tester.enterText(find.byType(TextField), '');
       await tester.tap(find.byKey(const ValueKey('tab-library')));
       await tester.pumpAndSettle();
@@ -189,12 +189,12 @@ void main() {
       expect(find.text('音乐库'), findsWidgets);
       controller.clearError();
       scrollState.position.jumpTo(0);
-      for (final theme in ['a', 'b', 'c']) {
+      for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
         await controller.setTheme(theme);
         await tester.pumpAndSettle();
         await binding.takeScreenshot('android-$theme-library');
       }
-      await controller.setTheme('a');
+      await controller.setTheme('sunrise');
       // Logged-in layout fixture; never logs into or reads a real account.
       controller.api.http.interceptors.clear();
       controller.api.http.interceptors.add(

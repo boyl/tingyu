@@ -5,7 +5,7 @@ import 'package:tingyu/ui/theme.dart';
 import 'package:tingyu/ui/app.dart';
 
 void main() {
-  for (final theme in ['a', 'b', 'c']) {
+  for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
     testWidgets(
       '$theme theme supports keyboard activation and all target sizes',
       (tester) async {
@@ -59,9 +59,10 @@ void main() {
     }
 
     for (final t in [
-      TingyuTokens.light,
-      TingyuTokens.dark,
-      TingyuTokens.pink,
+      TingyuTokens.sunrise,
+      TingyuTokens.night,
+      TingyuTokens.moon,
+      TingyuTokens.bilibili,
     ]) {
       expect(contrast(t.onPlayer, t.playerSurface), greaterThanOrEqualTo(4.5));
       expect(
@@ -86,7 +87,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
-        theme: tingyuTheme('a'),
+        theme: tingyuTheme('sunrise'),
         home: Scaffold(
           body: SizedBox(
             width: 200,
@@ -104,7 +105,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       tester.view.devicePixelRatio = 1;
-      for (final theme in ['a', 'b', 'c']) {
+      for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
         for (final width in [360.0, 412.0]) {
           tester.view.physicalSize = Size(width, 800);
           var selected = 'library';

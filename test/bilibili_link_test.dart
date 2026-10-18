@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/bilibili_link.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/icons.dart';
 import 'package:tingyu/ui/theme.dart';
 
 void main() {
@@ -71,7 +72,7 @@ void main() {
       var launches = 0;
       await tester.pumpWidget(
         MaterialApp(
-          theme: tingyuTheme('a'),
+          theme: tingyuTheme('sunrise'),
           home: Scaffold(
             body: Center(
               child: BilibiliExternalLink(
@@ -89,13 +90,22 @@ void main() {
       );
       final button = find.byKey(const ValueKey('open-bilibili-external'));
       expect(find.text('前往哔哩哔哩'), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is TingyuIcon && w.icon == Icons.open_in_new,
+        ),
+        findsOneWidget,
+      );
       expect(find.text('优先打开 App，未安装时使用浏览器'), findsOneWidget);
       expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
       final center = tester.getCenter(button).dx;
       final helper = tester.getCenter(find.text('优先打开 App，未安装时使用浏览器')).dx;
       final label = tester.getRect(find.text('前往哔哩哔哩'));
-      final icon = tester.getRect(find.byIcon(Icons.open_in_new));
+      final icon = tester.getRect(
+        find.byWidgetPredicate(
+          (w) => w is TingyuIcon && w.icon == Icons.open_in_new,
+        ),
+      );
       expect(helper, closeTo(center, .5));
       expect((label.left + icon.right) / 2, closeTo(center, .5));
       await tester.tap(button);

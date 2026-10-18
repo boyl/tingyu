@@ -99,7 +99,7 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                         enabled: !saving,
                         decoration: InputDecoration(
                           hintText: '搜索音乐库',
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: const TingyuIcon(Icons.search),
                           suffixIcon: action(
                             Icons.close,
                             '清除选歌搜索',
@@ -191,7 +191,7 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                                         ),
                                       )
                                     else
-                                      Icon(
+                                      TingyuIcon(
                                         checked
                                             ? Icons.check_circle
                                             : Icons.radio_button_unchecked,

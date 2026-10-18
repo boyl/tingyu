@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.10';
+const tingyuVersion = '0.1.12';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -57,9 +57,11 @@ class SettingsPageFrame extends StatelessWidget {
                       children: [
                         action(Icons.arrow_back, backLabel, back),
                         const SizedBox(width: 8),
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                         ),
                       ],
                     ),
@@ -94,207 +96,158 @@ class SettingsPanel extends StatelessWidget {
     final usage = bytes >= 1024 * 1024 * 1024
         ? '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB'
         : '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    Widget heading(String label) => Padding(
-      padding: const EdgeInsets.only(left: 4, top: 32, bottom: 16),
-      child: Text(label, style: TextStyle(color: t.muted, fontSize: 13)),
+    Widget heading(String title) => Padding(
+      padding: const EdgeInsets.only(
+        top: TingyuTokens.space * 3,
+        bottom: TingyuTokens.space * 2,
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: t.text,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SettingsSurface(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        Pressable(
+          key: const ValueKey('settings-account'),
+          label: '账号',
+          onPressed: () => showAccount(context, p),
+          padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 2),
+          child: Row(
             children: [
-              Pressable(
-                key: const ValueKey('settings-account'),
-                label: '账号',
-                onPressed: () => showAccount(context, p),
-                child: Row(
+              AccountAvatar(
+                profile: p.profile,
+                size: TingyuTokens.profileAvatarSize,
+              ),
+              const SizedBox(width: TingyuTokens.space * 2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: t.tint,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.person_outline, color: t.accent),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${p.profile?['uname'] ?? (connected ? '已连接' : '未登录')}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            connected ? '管理 B 站账号' : '连接 B 站账号',
-                            style: TextStyle(color: t.muted, fontSize: 13),
-                          ),
-                        ],
+                    Text(
+                      '${p.profile?['uname'] ?? (connected ? '已连接' : '登录听屿')}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: t.text,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(Icons.chevron_right, color: t.muted),
+                    const SizedBox(height: TingyuTokens.space),
+                    Text(
+                      connected ? 'B 站账号已连接' : '连接 B 站，收藏喜欢的声音',
+                      style: TextStyle(color: t.muted, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: t.line),
-              Pressable(
-                key: const ValueKey('settings-import'),
-                label: connected ? '导入收藏夹' : '登录后可导入收藏夹',
-                onPressed: connected ? () => showAccount(context, p) : null,
-                child: Row(
-                  children: [
-                    Icon(Icons.playlist_add, size: 20, color: t.muted),
-                    const SizedBox(width: 12),
-                    const Expanded(child: Text('导入收藏夹')),
-                    if (!connected)
-                      Text(
-                        '登录后',
-                        style: TextStyle(color: t.muted, fontSize: 11),
-                      ),
-                  ],
-                ),
-              ),
+              const SettingsChevron(),
             ],
           ),
         ),
-        heading('外观'),
-        SettingsSurface(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('主题'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    for (final item in [
-                      ('a', '暖白', TingyuTokens.light),
-                      ('b', '深色', TingyuTokens.dark),
-                      ('c', '冷白', TingyuTokens.pink),
-                    ]) ...[
-                      if (item.$1 != 'a') const SizedBox(width: 12),
-                      Expanded(
-                        child: Tooltip(
-                          message: item.$2,
-                          child: Pressable(
-                            key: ValueKey('theme-${item.$1}'),
-                            label: '${item.$2}主题',
-                            selected: p.theme == item.$1,
-                            onPressed: () =>
-                                report(context, () => p.setTheme(item.$1)),
-                            padding: EdgeInsets.zero,
-                            child: Container(
-                              height: 56,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: item.$3.background,
-                                borderRadius: BorderRadius.circular(
-                                  TingyuTokens.radius,
-                                ),
-                                border: Border.all(
-                                  color: p.theme == item.$1 ? t.accent : t.line,
-                                  width: p.theme == item.$1 ? 2 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (p.theme == item.$1) ...[
-                                    Icon(
-                                      Icons.check,
-                                      size: 16,
-                                      color: item.$3.accent,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    item.$2,
-                                    style: TextStyle(
-                                      color: item.$3.text,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
+        SettingsRow(
+          icon: Icons.folder_copy_outlined,
+          title: '导入 B 站收藏夹',
+          keyName: 'settings-import',
+          value: connected ? null : '登录后',
+          onPressed: connected ? () => showAccount(context, p) : null,
         ),
-        heading('播放'),
-        SettingsSurface(
-          child: SettingsRow(
-            icon: Icons.graphic_eq,
-            title: '音质',
-            value: p.standard ? '标准' : '高音质',
-            keyName: 'settings-quality',
-            onPressed: () => showContentActions(
-              context,
-              (ctx) => SimpleDialog(
-                title: const Text('音质'),
+        Divider(height: TingyuTokens.space * 2, color: t.line),
+        heading('外观'),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = shelfCardWidth(
+              constraints.maxWidth,
+            ).clamp(110.0, 184.0);
+            return SingleChildScrollView(
+              key: const ValueKey('theme-shelf'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final item in [(false, '高音质'), (true, '标准')])
-                    Pressable(
-                      key: ValueKey('quality-${item.$1}'),
-                      selected: p.standard == item.$1,
-                      onPressed: () => report(ctx, () async {
-                        await p.setStandard(item.$1);
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      }),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(item.$2)),
-                          if (p.standard == item.$1)
-                            Icon(Icons.check, color: t.accent),
-                        ],
+                  for (final item in TingyuTokens.themes)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        right: TingyuTokens.space * 1.5,
+                      ),
+                      child: SizedBox(
+                        width: width,
+                        child: ThemePreview(
+                          name: item.$2,
+                          tokens: item.$3,
+                          selected: p.theme == item.$1,
+                          themeId: item.$1,
+                          onPressed: () =>
+                              report(context, () => p.setTheme(item.$1)),
+                        ),
                       ),
                     ),
                 ],
               ),
+            );
+          },
+        ),
+        const SizedBox(height: TingyuTokens.space * 3),
+        Divider(height: 1, color: t.line),
+        heading('播放与存储'),
+        SettingsRow(
+          icon: Icons.graphic_eq,
+          title: '音质偏好',
+          value: p.standard ? '标准' : '高音质',
+          keyName: 'settings-quality',
+          onPressed: () => showContentActions(
+            context,
+            (ctx) => SimpleDialog(
+              title: const Text('音质'),
+              children: [
+                for (final item in [(false, '高音质'), (true, '标准')])
+                  Pressable(
+                    key: ValueKey('quality-${item.$1}'),
+                    selected: p.standard == item.$1,
+                    onPressed: () => report(ctx, () async {
+                      await p.setStandard(item.$1);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    }),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(item.$2)),
+                        if (p.standard == item.$1)
+                          TingyuIcon(Icons.check, color: t.accent),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
-        heading('存储'),
-        SettingsSurface(
-          child: SettingsRow(
-            icon: Icons.download_outlined,
-            title: '下载管理',
-            value: usage,
-            keyName: 'settings-storage',
-            onPressed: () => context.push('/settings/downloads'),
-          ),
+        Divider(height: 1, color: t.line),
+        SettingsRow(
+          icon: Icons.download_outlined,
+          title: '下载管理',
+          value: usage,
+          keyName: 'settings-storage',
+          onPressed: () => context.push('/settings/downloads'),
         ),
-        const SizedBox(height: 40),
-        SettingsSurface(
-          child: SettingsRow(
-            icon: Icons.info_outline,
-            title: '关于听屿',
-            keyName: 'settings-about',
-            onPressed: () => showAboutTingyu(context),
-          ),
+        Divider(height: TingyuTokens.space * 3, color: t.line),
+        SettingsRow(
+          icon: Icons.info_outline,
+          title: '关于听屿',
+          keyName: 'settings-about',
+          onPressed: () => showAboutTingyu(context),
         ),
-        const SizedBox(height: 48),
-        Center(
-          child: Text(
-            '听屿  $tingyuVersion',
-            style: TextStyle(color: t.muted, fontSize: 11),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 4),
+          child: Center(
+            child: Text(
+              '听屿  $tingyuVersion',
+              style: TextStyle(color: t.muted, fontSize: 12),
+            ),
           ),
         ),
       ],
@@ -302,17 +255,18 @@ class SettingsPanel extends StatelessWidget {
   }
 }
 
-class SettingsSurface extends StatelessWidget {
-  const SettingsSurface({super.key, required this.child});
-  final Widget child;
+class SettingsChevron extends StatelessWidget {
+  const SettingsChevron({super.key});
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: context.tokens.surface,
-      borderRadius: BorderRadius.circular(TingyuTokens.radius),
-      border: Border.all(color: context.tokens.line),
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: TingyuTokens.iconSize,
+    child: Center(
+      child: TingyuIcon(
+        Icons.chevron_right,
+        size: 18,
+        color: context.tokens.muted,
+      ),
     ),
-    child: child,
   );
 }
 
@@ -328,26 +282,182 @@ class SettingsRow extends StatelessWidget {
   final IconData icon;
   final String title, keyName;
   final String? value;
+  final FutureOr<void> Function()? onPressed;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Pressable(
+      key: ValueKey(keyName),
+      label: value == null ? title : '$title，$value',
+      onPressed: onPressed == null ? null : () => report(context, onPressed!),
+      padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 1.5),
+      child: Row(
+        children: [
+          Container(
+            width: TingyuTokens.space * 4,
+            height: TingyuTokens.space * 4,
+            decoration: BoxDecoration(
+              color: t.tint,
+              borderRadius: BorderRadius.circular(TingyuTokens.radius),
+            ),
+            alignment: Alignment.center,
+            child: TingyuIcon(icon, size: 18, color: t.accent),
+          ),
+          const SizedBox(width: TingyuTokens.space * 1.5),
+          Expanded(
+            child: Text(title, style: TextStyle(color: t.text, fontSize: 14)),
+          ),
+          if (value != null) ...[
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width / 3,
+              ),
+              child: Text(
+                value!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(color: t.muted, fontSize: 12),
+              ),
+            ),
+            const SizedBox(width: TingyuTokens.space),
+          ],
+          const SettingsChevron(),
+        ],
+      ),
+    );
+  }
+}
+
+class ThemePreview extends StatelessWidget {
+  const ThemePreview({
+    super.key,
+    required this.name,
+    required this.tokens,
+    required this.selected,
+    required this.themeId,
+    required this.onPressed,
+  });
+  final String name, themeId;
+  final TingyuTokens tokens;
+  final bool selected;
   final FutureOr<void> Function() onPressed;
   @override
-  Widget build(BuildContext context) => Pressable(
-    key: ValueKey(keyName),
-    onPressed: () => report(context, onPressed),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-    child: Row(
-      children: [
-        Icon(icon, size: 22, color: context.tokens.muted),
-        const SizedBox(width: 16),
-        Expanded(child: Text(title)),
-        if (value != null) ...[
-          Text(
-            value!,
-            style: TextStyle(color: context.tokens.muted, fontSize: 13),
-          ),
-          const SizedBox(width: 8),
-        ],
-        Icon(Icons.chevron_right, size: 22, color: context.tokens.muted),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Tooltip(
+      message: name,
+      child: Pressable(
+        key: ValueKey('theme-$themeId'),
+        label: '$name主题',
+        selected: selected,
+        selectionFill: false,
+        onPressed: onPressed,
+        padding: const EdgeInsets.all(TingyuTokens.space / 2),
+        child: Column(
+          children: [
+            Container(
+              height: TingyuTokens.themePreviewHeight,
+              padding: const EdgeInsets.all(TingyuTokens.space),
+              decoration: BoxDecoration(
+                color: tokens.background,
+                borderRadius: BorderRadius.circular(TingyuTokens.radius),
+                border: Border.all(
+                  color: selected ? t.playerButton : t.line,
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: TingyuTokens.space * 2,
+                    height: 3,
+                    color: tokens.text,
+                  ),
+                  const SizedBox(height: TingyuTokens.space),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          TingyuTokens.space / 2,
+                        ),
+                        gradient: LinearGradient(
+                          colors: [tokens.tint, tokens.playerButton],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: TingyuTokens.space / 2),
+                  SizedBox(
+                    height: TingyuTokens.space * 2,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 3),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: i == 1 ? tokens.tint : tokens.surface,
+                                  border: Border.all(color: tokens.line),
+                                  borderRadius: BorderRadius.circular(
+                                    TingyuTokens.space / 2,
+                                  ),
+                                ),
+                                child: const SizedBox.expand(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: TingyuTokens.space / 2),
+                  Container(
+                    height: TingyuTokens.space * 1.5,
+                    decoration: BoxDecoration(
+                      color: tokens.playerSurface,
+                      borderRadius: BorderRadius.circular(
+                        TingyuTokens.space / 2,
+                      ),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.all(3),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: tokens.playerButton,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: TingyuTokens.space),
+            Text(
+              name,
+              style: TextStyle(
+                color: selected ? t.accent : t.muted,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: TingyuTokens.space / 2),
+            SizedBox(
+              height: TingyuTokens.space * 2,
+              child: selected
+                  ? TingyuIcon(
+                      Icons.check_circle_outline,
+                      size: TingyuTokens.space * 2,
+                      color: t.accent,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

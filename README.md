@@ -1,12 +1,12 @@
 # 听屿 · Flutter 三端应用
 
-正式工程，与 `../music-player-prototype` 的 React 交互原型相互独立。目标为 Windows、macOS 和 Android，本地优先，无自建后端。默认 A 暖白，内置 B 深色、C 粉色。
+正式工程，与 `../music-player-prototype` 的 React 交互原型相互独立。目标为 Windows、macOS 和 Android，本地优先，无自建后端。主题为哔哩粉、日出橙、月影蓝、夜间暗，默认哔哩粉；未发布阶段不做旧主题兼容映射。
 
 ## 当前阶段
 
 已经建立可静态分析、可运行自动化测试的原生项目源码，接入真实 B 站接口；Android ABI 拆分 Release 已构建并在本地 Android 16 模拟器完成导航、账号布局和全屏专项验收；尚未完成全部功能及三端验收，不能视作已发布应用。
 
-已实现的源码包括搜索/BV/AV/短链解析、多 P、独立音频流解析、播放与系统媒体控制适配、队列/喜欢/歌单/历史、SQLite 恢复、安全存储扫码凭据、收藏夹导入、逐行歌词匹配和手动 LRC、单曲/整歌单下载及三主题界面。桌面托盘可控制播放，关闭窗口隐藏，托盘退出会保存状态。
+已实现的源码包括搜索/BV/AV/短链解析、多 P、独立音频流解析、播放与系统媒体控制适配、队列/喜欢/歌单/历史、SQLite 恢复、安全存储扫码凭据、收藏夹导入、逐行歌词匹配和手动 LRC、单曲/整歌单下载及四主题界面。桌面托盘可控制播放，关闭窗口隐藏，托盘退出会保存状态。
 
 ## 工具链与运行
 
@@ -56,7 +56,7 @@ sh tool/flutterw.sh test --reporter expanded
 sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 ```
 
-普通测试不访问 B 站、不读取真实登录凭据。覆盖 WBI 标准参考向量、分 P、音质选择、Cookie/CDN 隔离、搜索验证挑战、LRC、SQLite 重开、下载缺失/截断/原子完成/删除保留数据，以及 A/B/C 的文字对比度、48px 目标和四种尺寸的基础按钮操作。
+普通测试不访问 B 站、不读取真实登录凭据。覆盖 WBI 标准参考向量、分 P、音质选择、Cookie/CDN 隔离、搜索验证挑战、LRC、SQLite 重开、下载缺失/截断/原子完成/删除保留数据，以及四主题的文字对比度、48px 目标和四种尺寸的基础按钮操作。
 
 历史主机探测报告在 `tool/live-probe.json`。当前可用 `python3 tool/run_acceptance.py --device emulator-5558 --live` 在隔离 Android 模拟器运行匿名公共 BV 搜索、真实音频解码、下载和强制断网回放；不保存签名 URL 或凭据。这仍不证明听感、物理设备后台服务或真实账号流程已验收。
 
@@ -66,6 +66,8 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 ## 本轮交付
 
+- 0.1.11 视觉更新开发版：按已确认交互稿重做搜索、设置、封面歌单、迷你播放器与导航；音乐库手机顶部为左侧头像、右侧“随心听”，搜索和新建歌单各保留对应内容区的唯一入口。新增 D 哔哩粉作为首次启动/未设置主题时的默认值，已有主题保留；登录恢复后异步刷新 B 站头像。队列使用动态音柱与暂停图标。验收状态见 [本轮视觉验收](docs/ACCEPTANCE-2026-10-18-VISUAL.md)，并包含在 0.1.12 发布中。
+
 - 0.1.10 队列统一动态/静态音柱，长列表增加按需出现的回顶入口，下载任务与已下载分页、已下载按完成时间倒序，并明确外部 B 站入口。已登录时搜索空态不再提示导入收藏夹。见 [音柱与回顶验收](docs/ACCEPTANCE-2026-10-17-QUEUE-INDICATOR.md)。
 - 0.1.9 长列表按需构建、进度刷新隔离、向当前歌单本地多选/在线定向添加、分类现场恢复和轻量歌单过渡，见 [滚动及选歌验收](docs/ACCEPTANCE-2026-10-17-SCROLL.md)。
 - 0.1.8 封面持久复用、下载歌词补全、B 站 CC/AI 字幕与已有内嵌歌词读取，支持系统选择位置导出带封面、元数据、内嵌 LRC 的 M4A；不转码、不修改原下载。覆盖边界见 [离线与导出验收](docs/ACCEPTANCE-2026-10-17-OFFLINE-EXPORT.md)。
@@ -73,7 +75,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.10 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.10)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
+- Android 0.1.12 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.12)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
@@ -100,3 +102,5 @@ python3 tool/run_acceptance.py --device emulator-5558 --live
 Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，先选择再导入；导入入口固定在底部。桌面账号窗口使用限制宽高的对话框。专项验收结果见 `docs/ACCEPTANCE-2026-10-16.md`。
 
 自动测试请使用 `TINGYU_EMULATOR_TEST=1 TINGYU_EMULATOR_HEADLESS=1 sh tool/android_emulator.sh` 启动独立的 `emulator-5558`。人工验收设备 `emulator-5556` 保留真实登录和歌单，不允许测试脚本降级安装或注入测试数据。播放器顶部返回导航固定显示，不随封面与歌词滚动。
+
+- 0.1.12 视觉修订：继续收听大幅封面、可露出下一张的横向歌单与外观预览、连续下载区域、统一线性图标、静态/动态音柱及队列拖动。四主题覆盖页面、卡片、弹层与播放器；详情见 [修订验收](docs/ACCEPTANCE-2026-10-18-REVISION.md)。

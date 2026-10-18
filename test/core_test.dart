@@ -148,14 +148,14 @@ void main() {
     var db = AppDatabase(NativeDatabase(file));
     await db.saveTrack(track);
     await db.writeState('library', {
-      'theme': 'b',
+      'theme': 'night',
       'queue': [track.id],
       'position': 4000,
     });
     await db.close();
     db = AppDatabase(NativeDatabase(file));
     expect((await db.loadTracks()).single.cid, track.cid);
-    expect((await db.readState('library'))!['theme'], 'b');
+    expect((await db.readState('library'))!['theme'], 'night');
     expect((await db.readState('library'))!.containsKey('cookie'), isFalse);
     await db.close();
     await dir.delete(recursive: true);

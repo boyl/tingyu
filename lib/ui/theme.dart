@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../models/appearance.dart';
 
 @immutable
 class TingyuTokens extends ThemeExtension<TingyuTokens> {
@@ -43,75 +44,120 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       danger;
   static const space = 8.0,
       radius = 12.0,
+      iconSize = 22.0,
+      controlSize = 48.0,
+      avatarSize = 40.0,
+      profileAvatarSize = 56.0,
+      themePreviewHeight = 112.0,
+      coverSize = 144.0,
+      sheetRadius = 24.0,
+      iconStroke = 1.7,
+      heroRatio = 1.65,
+      shelfVisibleCards = 2.35,
+      playControlSize = 68.0,
       collectionRadius = 16.0,
       downloadTabWidth = 116.0,
       downloadTabHeight = 56.0,
       tabIndicatorHeight = 3.0,
-      playerRadius = 20.0,
+      playerRadius = 28.0,
       playingPeriod = Duration(milliseconds: 900),
       scrollReturn = Duration(milliseconds: 320),
       pressDuration = Duration(milliseconds: 100),
       transition = Duration(milliseconds: 180);
-  static const light = TingyuTokens(
-    background: Color(0xffeeeae4),
-    surface: Color(0xfffcfaf7),
-    sidebar: Color(0xfff0efeb),
-    text: Color(0xff272c30),
-    muted: Color(0xff62676c),
-    accent: Color(0xff4a687d),
+  // Editorial category artwork has its own palette, like album cover imagery.
+  static const onArtwork = Color(0xffffffff);
+  static const discoveryPalettes = [
+    [Color(0xff182847), Color(0xff526387), Color(0xff171d35)],
+    [Color(0xffaa6986), Color(0xffe3ab93), Color(0xff514563)],
+    [Color(0xff526e64), Color(0xffa4b5a0), Color(0xff293e40)],
+    [Color(0xff946583), Color(0xffd2a3b5), Color(0xff554161)],
+  ];
+  static const sunrise = TingyuTokens(
+    background: Color(0xfffff9f3),
+    surface: Color(0xfffffdfa),
+    sidebar: Color(0xfffcf1e7),
+    text: Color(0xff33281f),
+    muted: Color(0xff746453),
+    accent: Color(0xffa54b0a),
     onAccent: Color(0xffffffff),
-    tint: Color(0xffe5ebed),
-    line: Color(0xffdedfdb),
-    danger: Color(0xffb53b42),
-    playerSurface: Color(0xff484640),
-    playerBorder: Color(0xff57544c),
-    onPlayer: Color(0xfffaf5e9),
-    playerMuted: Color(0xffc8c1b3),
-    playerButton: Color(0xfff5edda),
-    onPlayerButton: Color(0xff484640),
-    playerTrack: Color(0xff787267),
-    playerShadow: Color(0x12000000),
+    tint: Color(0xfffff0df),
+    line: Color(0xffefdfcd),
+    danger: Color(0xffa43835),
+    playerSurface: Color(0xffffead5),
+    playerBorder: Color(0xffefd4b5),
+    onPlayer: Color(0xff3d2b1e),
+    playerMuted: Color(0xff7a5437),
+    playerButton: Color(0xffeea15c),
+    onPlayerButton: Color(0xff452708),
+    playerTrack: Color(0xffdcb68f),
+    playerShadow: Color(0x182d1808),
   );
-  static const dark = TingyuTokens(
-    background: Color(0xff14181d),
-    surface: Color(0xff20262e),
-    sidebar: Color(0xff1c1f23),
-    text: Color(0xffeef0f2),
-    muted: Color(0xffacb2bc),
-    accent: Color(0xffb1c8e8),
-    onAccent: Color(0xff152238),
-    tint: Color(0xff2b3743),
-    line: Color(0xff383d45),
-    danger: Color(0xffff9ba1),
-    playerSurface: Color(0xff344251),
-    playerBorder: Color(0xff495a6b),
-    onPlayer: Color(0xfff5f7fa),
-    playerMuted: Color(0xffbcc8d4),
-    playerButton: Color(0xffb1c8e8),
-    onPlayerButton: Color(0xff182638),
-    playerTrack: Color(0xff596b7e),
-    playerShadow: Color(0x2d000000),
+  static const moon = TingyuTokens(
+    background: Color(0xfff5f8fd),
+    surface: Color(0xfffbfdff),
+    sidebar: Color(0xffedf3fb),
+    text: Color(0xff202c3e),
+    muted: Color(0xff596a81),
+    accent: Color(0xff355d98),
+    onAccent: Color(0xffffffff),
+    tint: Color(0xffe8effa),
+    line: Color(0xffdce5f1),
+    danger: Color(0xffa52f49),
+    playerSurface: Color(0xffe4edfb),
+    playerBorder: Color(0xffccd9ed),
+    onPlayer: Color(0xff203149),
+    playerMuted: Color(0xff536a87),
+    playerButton: Color(0xff8daee0),
+    onPlayerButton: Color(0xff162e50),
+    playerTrack: Color(0xffb5c9e5),
+    playerShadow: Color(0x14213a5b),
   );
-  static const pink = TingyuTokens(
-    background: Color(0xffedf0f5),
+  static const night = TingyuTokens(
+    background: Color(0xff15151b),
+    surface: Color(0xff202128),
+    sidebar: Color(0xff1a1b22),
+    text: Color(0xfff1f0f6),
+    muted: Color(0xffaaa8b8),
+    accent: Color(0xffc8b4ef),
+    onAccent: Color(0xff271a3e),
+    tint: Color(0xff2d2a38),
+    line: Color(0xff3a3745),
+    danger: Color(0xffff9ca9),
+    playerSurface: Color(0xff282633),
+    playerBorder: Color(0xff454050),
+    onPlayer: Color(0xfff4efff),
+    playerMuted: Color(0xffb9b0cb),
+    playerButton: Color(0xffc8b4ef),
+    onPlayerButton: Color(0xff271a3e),
+    playerTrack: Color(0xff635a74),
+    playerShadow: Color(0x3d000000),
+  );
+  static const bilibili = TingyuTokens(
+    background: Color(0xfffffafb),
     surface: Color(0xffffffff),
-    sidebar: Color(0xfff3f5f8),
-    text: Color(0xff282c35),
-    muted: Color(0xff646b78),
-    accent: Color(0xffa94368),
+    sidebar: Color(0xfffcf3f6),
+    text: Color(0xff29232a),
+    muted: Color(0xff766b73),
+    accent: Color(0xffbf3565),
     onAccent: Color(0xffffffff),
-    tint: Color(0xfff6eaf0),
-    line: Color(0xffe0e3e9),
-    danger: Color(0xffb13b40),
-    playerSurface: Color(0xfff0dfe8),
-    playerBorder: Color(0xffe2ccd8),
-    onPlayer: Color(0xff4d3041),
-    playerMuted: Color(0xff765b6c),
-    playerButton: Color(0xffa94368),
-    onPlayerButton: Color(0xffffffff),
-    playerTrack: Color(0xffd7bdcb),
-    playerShadow: Color(0x1c000000),
+    tint: Color(0xfffff0f5),
+    line: Color(0xfff1e5e9),
+    danger: Color(0xffad334c),
+    playerSurface: Color(0xffffedf3),
+    playerBorder: Color(0xfff5d5e1),
+    onPlayer: Color(0xff38242d),
+    playerMuted: Color(0xff795665),
+    playerButton: Color(0xfffb7299),
+    onPlayerButton: Color(0xff46172a),
+    playerTrack: Color(0xffe5bbca),
+    playerShadow: Color(0x125e2440),
   );
+  static const themes = [
+    ('bili', '哔哩粉', bilibili),
+    ('sunrise', '日出橙', sunrise),
+    ('moon', '月影蓝', moon),
+    ('night', '夜间暗', night),
+  ];
   @override
   TingyuTokens copyWith({
     Color? background,
@@ -183,18 +229,16 @@ extension TingyuContext on BuildContext {
 }
 
 ThemeData tingyuTheme(String name) {
-  final t = name == 'b'
-      ? TingyuTokens.dark
-      : name == 'c'
-      ? TingyuTokens.pink
-      : TingyuTokens.light;
+  final t =
+      TingyuTokens.themes.where((item) => item.$1 == name).firstOrNull?.$3 ??
+      TingyuTokens.themes.firstWhere((item) => item.$1 == defaultTheme).$3;
   return ThemeData(
-    brightness: name == 'b' ? Brightness.dark : Brightness.light,
+    brightness: name == 'night' ? Brightness.dark : Brightness.light,
     scaffoldBackgroundColor: t.background,
     colorScheme:
         ColorScheme.fromSeed(
           seedColor: t.accent,
-          brightness: name == 'b' ? Brightness.dark : Brightness.light,
+          brightness: name == 'night' ? Brightness.dark : Brightness.light,
         ).copyWith(
           primary: t.accent,
           onPrimary: t.onAccent,
@@ -212,8 +256,9 @@ ThemeData tingyuTheme(String name) {
       bodySmall: TextStyle(color: t.muted, fontSize: 12),
       titleLarge: TextStyle(
         color: t.text,
-        fontSize: 26,
-        fontWeight: FontWeight.w600,
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.8,
       ),
       titleMedium: TextStyle(
         color: t.text,
@@ -221,11 +266,42 @@ ThemeData tingyuTheme(String name) {
         fontWeight: FontWeight.w600,
       ),
     ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: t.tint,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: TingyuTokens.space * 2,
+        vertical: TingyuTokens.space * 2,
+      ),
+      prefixIconColor: t.muted,
+      hintStyle: TextStyle(color: t.muted, fontSize: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(TingyuTokens.collectionRadius),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(TingyuTokens.collectionRadius),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(TingyuTokens.collectionRadius),
+        borderSide: BorderSide(color: t.accent),
+      ),
+    ),
     sliderTheme: SliderThemeData(
       activeTrackColor: t.accent,
       thumbColor: t.accent,
       inactiveTrackColor: t.line,
       trackHeight: 3,
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: t.background,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(TingyuTokens.sheetRadius),
+        ),
+      ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: t.surface,
@@ -339,7 +415,7 @@ class _PressableState extends State<Pressable> {
                 child: IconTheme(
                   data: IconThemeData(
                     color: widget.selected ? t.accent : t.text,
-                    size: 20,
+                    size: TingyuTokens.iconSize,
                   ),
                   child: widget.child,
                 ),

@@ -77,7 +77,7 @@ class PlaylistSummary extends ConsumerWidget {
                 color: context.tokens.tint,
                 borderRadius: BorderRadius.circular(TingyuTokens.radius),
               ),
-              child: Icon(
+              child: TingyuIcon(
                 Icons.library_music_outlined,
                 size: 32,
                 color: context.tokens.accent,
@@ -118,16 +118,72 @@ class CollectionToolbar extends ConsumerWidget {
     required this.collectionKey,
     required this.selecting,
     required this.onSelect,
+    this.compact = false,
   });
   final List<String> ids;
   final Playlist? list;
   final String collectionKey;
   final bool selecting;
+  final bool compact;
   final VoidCallback onSelect;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(libraryProvider);
     if (selecting) return const SizedBox.shrink();
+    if (compact) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${ids.length} 首歌曲',
+              style: TextStyle(color: context.tokens.muted, fontSize: 12),
+            ),
+          ),
+          action(
+            Icons.more_horiz,
+            '曲库操作',
+            () => showContentActions(
+              context,
+              (ctx) => SimpleDialog(
+                title: const Text('曲库操作'),
+                children: [
+                  labelButton(
+                    '播放全部',
+                    ids.isEmpty
+                        ? null
+                        : () async {
+                            Navigator.pop(ctx);
+                            await p.playCollection(ids);
+                          },
+                    icon: Icons.play_arrow,
+                  ),
+                  labelButton(
+                    '歌曲排序',
+                    ids.isEmpty
+                        ? null
+                        : () {
+                            Navigator.pop(ctx);
+                            showCollectionSort(context, p, collectionKey);
+                          },
+                    icon: Icons.swap_vert,
+                  ),
+                  labelButton(
+                    '批量选择',
+                    ids.isEmpty
+                        ? null
+                        : () {
+                            Navigator.pop(ctx);
+                            onSelect();
+                          },
+                    icon: Icons.checklist,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Row(
       children: [
         action(
@@ -147,44 +203,48 @@ class CollectionToolbar extends ConsumerWidget {
           '歌曲排序',
           ids.isEmpty
               ? null
-              : () => showContentActions(
-                  context,
-                  (ctx) => SimpleDialog(
-                    title: const Text('歌曲排序'),
-                    children: [
-                      for (final option in [
-                        ('default', '默认顺序', Icons.drag_handle),
-                        ('recent', '最近添加', Icons.schedule),
-                        ('title', '歌曲名称', Icons.sort_by_alpha),
-                        ('artist', 'UP 主', Icons.person_outline),
-                      ])
-                        Pressable(
-                          key: ValueKey('sort-${option.$1}'),
-                          onPressed: () async {
-                            await p.setCollectionSort(collectionKey, option.$1);
-                            if (ctx.mounted) Navigator.pop(ctx);
-                          },
-                          child: Row(
-                            children: [
-                              Icon(option.$3),
-                              const SizedBox(width: 16),
-                              Expanded(child: Text(option.$2)),
-                              if ((p.collectionSort[collectionKey] ??
-                                      'default') ==
-                                  option.$1)
-                                Icon(Icons.check, color: context.tokens.accent),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              : () => showCollectionSort(context, p, collectionKey),
         ),
         action(Icons.checklist, '批量选择', ids.isEmpty ? null : onSelect),
       ],
     );
   }
 }
+
+Future<void> showCollectionSort(
+  BuildContext context,
+  LibraryController p,
+  String collectionKey,
+) => showContentActions(
+  context,
+  (ctx) => SimpleDialog(
+    title: const Text('歌曲排序'),
+    children: [
+      for (final option in [
+        ('default', '默认顺序', Icons.drag_handle),
+        ('recent', '最近添加', Icons.schedule),
+        ('title', '歌曲名称', Icons.sort_by_alpha),
+        ('artist', 'UP 主', Icons.person_outline),
+      ])
+        Pressable(
+          key: ValueKey('sort-${option.$1}'),
+          onPressed: () async {
+            await p.setCollectionSort(collectionKey, option.$1);
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          child: Row(
+            children: [
+              TingyuIcon(option.$3),
+              const SizedBox(width: 16),
+              Expanded(child: Text(option.$2)),
+              if ((p.collectionSort[collectionKey] ?? 'default') == option.$1)
+                TingyuIcon(Icons.check, color: context.tokens.accent),
+            ],
+          ),
+        ),
+    ],
+  ),
+);
 
 class SelectionTrackRow extends StatelessWidget {
   const SelectionTrackRow(
@@ -205,7 +265,7 @@ class SelectionTrackRow extends StatelessWidget {
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Row(
       children: [
-        Icon(
+        TingyuIcon(
           selected ? Icons.check_box : Icons.check_box_outline_blank,
           color: selected ? context.tokens.accent : context.tokens.muted,
         ),

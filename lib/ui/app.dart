@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart' show ProcessingState;
@@ -13,12 +14,15 @@ import '../models/music.dart';
 import '../services/media_export.dart';
 import '../services/bilibili_link.dart';
 import 'theme.dart';
+import 'icons.dart';
 import 'playing_indicator.dart';
 import 'scroll_to_top.dart';
 part 'library_views.dart';
+part 'home_views.dart';
 part 'settings_views.dart';
 part 'playlist_add_views.dart';
 part 'downloads_views.dart';
+part 'search_views.dart';
 
 bool matchesLocal(Track? track, String query) {
   if (track == null) return false;
@@ -40,7 +44,10 @@ Widget action(
       onPressed: call == null ? null : () => report(context, call),
       selected: selected,
       padding: const EdgeInsets.all(10),
-      child: Icon(icon),
+      child: SizedBox.square(
+        dimension: TingyuTokens.iconSize,
+        child: Center(child: TingyuIcon(icon, size: TingyuTokens.iconSize)),
+      ),
     ),
   ),
 );
@@ -57,7 +64,10 @@ Widget labelButton(
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
+        if (icon != null) ...[
+          TingyuIcon(icon, size: 18),
+          const SizedBox(width: 8),
+        ],
         Flexible(
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
@@ -180,7 +190,7 @@ class _ArtworkState extends ConsumerState<Artwork> {
     Widget fallback() => ColoredBox(
       color: context.tokens.tint,
       child: Center(
-        child: Icon(
+        child: TingyuIcon(
           Icons.graphic_eq,
           size: widget.size / 3,
           color: context.tokens.accent,
@@ -197,7 +207,9 @@ class _ArtworkState extends ConsumerState<Artwork> {
             errorBuilder: (_, _, _) => fallback(),
           );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(TingyuTokens.radius),
+      borderRadius: BorderRadius.circular(
+        widget.size >= 88 ? TingyuTokens.collectionRadius : TingyuTokens.radius,
+      ),
       child: SizedBox(
         width: widget.size,
         height: widget.size,
@@ -222,7 +234,11 @@ class EmptyView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.album_outlined, size: 42, color: context.tokens.accent),
+          TingyuIcon(
+            Icons.album_outlined,
+            size: 42,
+            color: context.tokens.accent,
+          ),
           const SizedBox(height: 20),
           Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
@@ -239,47 +255,74 @@ class EmptyView extends StatelessWidget {
 }
 
 class BilibiliExternalLink extends StatelessWidget {
-  const BilibiliExternalLink({super.key, this.launcher});
+  const BilibiliExternalLink({super.key, this.launcher, this.compact = false});
+  final bool compact;
   final BilibiliLinkLauncher? launcher;
   @override
-  Widget build(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.tokens.surface,
-          border: Border.all(color: context.tokens.line),
-          borderRadius: BorderRadius.circular(TingyuTokens.radius),
+  Widget build(BuildContext context) {
+    if (compact) {
+      return Pressable(
+        key: const ValueKey('open-bilibili-external'),
+        label: '前往哔哩哔哩，打开外部 App 或浏览器',
+        onPressed: () =>
+            report(context, (launcher ?? BilibiliLinkLauncher()).open),
+        padding: const EdgeInsets.symmetric(horizontal: TingyuTokens.space / 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '前往哔哩哔哩',
+              style: TextStyle(color: context.tokens.muted, fontSize: 12),
+            ),
+            const SizedBox(width: TingyuTokens.space / 2),
+            TingyuIcon(Icons.north_east, size: 16, color: context.tokens.muted),
+          ],
         ),
-        child: Pressable(
-          key: const ValueKey('open-bilibili-external'),
-          label: '前往哔哩哔哩，打开外部 App 或浏览器',
-          onPressed: () =>
-              report(context, (launcher ?? BilibiliLinkLauncher()).open),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '前往哔哩哔哩',
-                style: TextStyle(
-                  color: context.tokens.accent,
-                  fontWeight: FontWeight.w600,
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.tokens.surface,
+            border: Border.all(color: context.tokens.line),
+            borderRadius: BorderRadius.circular(TingyuTokens.radius),
+          ),
+          child: Pressable(
+            key: const ValueKey('open-bilibili-external'),
+            label: '前往哔哩哔哩，打开外部 App 或浏览器',
+            onPressed: () =>
+                report(context, (launcher ?? BilibiliLinkLauncher()).open),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '前往哔哩哔哩',
+                  style: TextStyle(
+                    color: context.tokens.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(width: TingyuTokens.space),
-              Icon(Icons.open_in_new, size: 18, color: context.tokens.accent),
-            ],
+                const SizedBox(width: TingyuTokens.space),
+                TingyuIcon(
+                  Icons.open_in_new,
+                  size: 18,
+                  color: context.tokens.accent,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      const SizedBox(height: TingyuTokens.space),
-      Text(
-        '优先打开 App，未安装时使用浏览器',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 11, color: context.tokens.muted),
-      ),
-    ],
-  );
+        const SizedBox(height: TingyuTokens.space),
+        Text(
+          '优先打开 App，未安装时使用浏览器',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: context.tokens.muted),
+        ),
+      ],
+    );
+  }
 }
 
 class AppShell extends ConsumerStatefulWidget {
@@ -351,11 +394,11 @@ class _AppShellState extends ConsumerState<AppShell> {
         .where((l) => l.id == widget.playlistId)
         .firstOrNull;
     final title = switch (widget.page) {
-      'search' => widget.playlistId == null ? '搜索' : '在线搜索',
+      'search' => widget.playlistId == null ? '听点新鲜的' : '在线搜索',
       'downloads' => '下载',
-      'likes' => '我喜欢的',
+      'likes' => '心动收藏',
       'playlist' => list?.name ?? '歌单不存在',
-      _ => '音乐库',
+      _ => '随心听',
     };
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,20 +423,38 @@ class _AppShellState extends ConsumerState<AppShell> {
                     : context.go('/playlist/${widget.playlistId}/add'),
               )
             else if (widget.page == 'playlist')
-              action(Icons.arrow_back, '返回音乐库', () => navigate('library'))
-            else if (!desktop && widget.page == 'library')
-              action(
-                Icons.settings_outlined,
-                '打开设置',
-                () => context.push('/settings'),
+              action(Icons.arrow_back, '返回音乐库', () => navigate('library')),
+            if (!desktop && !selecting && widget.page == 'library')
+              Tooltip(
+                message: '打开设置',
+                child: Pressable(
+                  key: const ValueKey('打开设置'),
+                  label: '打开设置',
+                  padding: const EdgeInsets.all(TingyuTokens.space / 2),
+                  radius: TingyuTokens.playerRadius,
+                  onPressed: () => context.push('/settings'),
+                  child: AccountAvatar(
+                    profile: p.profile,
+                    size: TingyuTokens.avatarSize,
+                  ),
+                ),
               ),
+            if (!desktop && !selecting && widget.page == 'library')
+              const SizedBox(width: TingyuTokens.space),
             Expanded(
               child: Text(
                 selecting ? '已选 ${selection.length} 首' : title,
-                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: !desktop && !selecting && widget.page == 'library'
+                    ? TextAlign.right
+                    : TextAlign.left,
+                style: widget.page == 'library'
+                    ? Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontSize: 24)
+                    : Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            if (!selecting && widget.page != 'search')
+            if (!selecting && !['search', 'library'].contains(widget.page))
               action(
                 Icons.search,
                 '搜索本地歌曲',
@@ -414,11 +475,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                   }
                 }),
               )
-            else if (widget.page == 'library')
-              action(Icons.playlist_add, '新建歌单', () async {
-                final name = await nameDialog(context);
-                if (name != null && context.mounted) await p.addPlaylist(name);
-              })
             else if (widget.page == 'playlist' && list != null)
               action(
                 Icons.more_horiz,
@@ -434,7 +490,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             controller: localSearch,
             decoration: InputDecoration(
               hintText: '搜索当前列表的歌名、UP 主',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const TingyuIcon(Icons.search),
               suffixIcon: action(
                 Icons.close,
                 '清除本地搜索',
@@ -450,12 +506,20 @@ class _AppShellState extends ConsumerState<AppShell> {
         if (widget.page == 'search') ...[
           TextField(
             controller: search,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
+            decoration: InputDecoration(
+              prefixIcon: const TingyuIcon(Icons.search),
+              suffixIcon: search.text.isEmpty
+                  ? null
+                  : action(Icons.cancel_outlined, '清除在线搜索', () {
+                      debounce?.cancel();
+                      search.clear();
+                      unawaited(p.search(''));
+                      setState(() {});
+                    }),
               hintText: '歌曲、UP 主、BV / AV 号或链接',
-              border: OutlineInputBorder(),
             ),
             onChanged: (v) {
+              setState(() {});
               debounce?.cancel();
               debounce = Timer(const Duration(milliseconds: 450), () {
                 unawaited(p.search(v));
@@ -471,13 +535,18 @@ class _AppShellState extends ConsumerState<AppShell> {
               p.searchError,
               () => p.search(search.text, page: p.searchAttemptPage),
             ),
-          if (search.text.isEmpty)
-            EmptyView(
-              '从一首歌开始',
-              p.profile != null || p.api.hasSession
-                  ? '搜索歌曲、UP 主或视频链接。'
-                  : '搜索歌曲、UP 主或视频链接。\n登录后可导入收藏夹。',
-              child: const BilibiliExternalLink(),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: BilibiliExternalLink(compact: true),
+          ),
+          if (search.text.isEmpty && widget.playlistId == null)
+            SearchDiscovery(
+              p,
+              onSearch: (value) {
+                search.text = value;
+                unawaited(p.search(value));
+                setState(() {});
+              },
             ),
           if (!p.searching &&
               search.text.isNotEmpty &&
@@ -486,75 +555,39 @@ class _AppShellState extends ConsumerState<AppShell> {
             const EmptyView('没有找到相关内容', '换个关键词，或直接粘贴 BV 号。'),
         ],
         if (['library', 'likes', 'playlist'].contains(widget.page)) ...[
-          if (widget.page == 'library' && localSearch.text.trim().isEmpty) ...[
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+          if (widget.page == 'library' && localSearch.text.trim().isEmpty)
+            HomeShelves(
+              p,
+              onCreate: () async {
+                final name = await nameDialog(context);
+                if (name != null && context.mounted) await p.addPlaylist(name);
+              },
+            ),
+          if (!selecting && widget.page == 'library')
+            Row(
               children: [
-                ...p.playlists.map(
-                  (l) => labelButton(
-                    l.name,
-                    () => context.go('/playlist/${l.id}'),
-                    icon: Icons.library_music_outlined,
+                Expanded(
+                  child: Text(
+                    '歌曲',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                ),
+                action(
+                  Icons.search,
+                  '搜索本地歌曲',
+                  () => setState(() {
+                    localSearchOpen = !localSearchOpen;
+                    if (!localSearchOpen) localSearch.clear();
+                  }),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            if (p.history.isNotEmpty) ...[
-              const Text(
-                '最近播放',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                height: desktop ? 220 : 200,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: p.history.take(8).length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 20),
-                  itemBuilder: (ctx, i) {
-                    final track = p.library[p.history[i]]!;
-                    return Pressable(
-                      onPressed: () => p.playFromCollection(
-                        track,
-                        p.collectionIds('library', p.library.keys),
-                      ),
-                      color: t.surface,
-                      padding: const EdgeInsets.all(8),
-                      child: SizedBox(
-                        width: desktop ? 144 : 124,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Artwork(track, size: desktop ? 144 : 124),
-                            const SizedBox(height: 10),
-                            Text(
-                              track.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              track.artist,
-                              style: TextStyle(fontSize: 11, color: t.muted),
-                              maxLines: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ],
           if (list != null) PlaylistSummary(list),
           CollectionToolbar(
             ids: visibleIds(p, list),
             list: list,
             collectionKey: collectionKey,
+            compact: widget.page == 'library',
             selecting: selecting,
             onSelect: () => setState(() {
               selecting = true;
@@ -734,7 +767,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       return [
         (_) => EmptyView(
           list == null ? '这里还很安静' : '歌单还没有歌曲',
-          '去搜索喜欢的声音，加入你的音乐收藏。',
+          '搜索喜欢的声音，开始你的收藏。',
           child: labelButton(
             list == null ? '去搜索' : '添加歌曲',
             () => list == null
@@ -772,7 +805,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
           child: Row(
             children: [
-              Icon(Icons.graphic_eq),
+              TingyuIcon(Icons.graphic_eq),
               SizedBox(width: 12),
               Text(
                 '听屿',
@@ -808,10 +841,17 @@ class _AppShellState extends ConsumerState<AppShell> {
                 .toList(),
           ),
         ),
-        labelButton(
-          '设置',
-          () => context.push('/settings'),
-          icon: Icons.settings_outlined,
+        Pressable(
+          key: const ValueKey('打开设置'),
+          label: '设置',
+          onPressed: () => context.push('/settings'),
+          child: Row(
+            children: [
+              AccountAvatar(profile: p.profile, size: TingyuTokens.avatarSize),
+              const SizedBox(width: TingyuTokens.space * 1.5),
+              const Expanded(child: Text('设置')),
+            ],
+          ),
         ),
       ],
     ),
@@ -892,7 +932,7 @@ Widget downloadProgress(BuildContext context, double? progress) => SizedBox(
           color: context.tokens.accent,
         ),
       ),
-      Icon(Icons.arrow_downward, size: 14, color: context.tokens.accent),
+      TingyuIcon(Icons.arrow_downward, size: 14, color: context.tokens.accent),
     ],
   ),
 );
@@ -963,9 +1003,9 @@ class PlaylistDownloadAction extends ConsumerWidget {
               }),
         child: active
             ? downloadProgress(context, progress)
-            : Icon(
+            : TingyuIcon(
                 allDone
-                    ? Icons.download_done
+                    ? Icons.check_circle_outline
                     : failed
                     ? Icons.error_outline
                     : Icons.download_outlined,
@@ -1041,7 +1081,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
     }
 
     final icon = switch (task?.status) {
-      DownloadStatus.completed => Icons.download_done,
+      DownloadStatus.completed => Icons.check_circle_outline,
       DownloadStatus.paused => Icons.pause_circle_outline,
       DownloadStatus.failed => Icons.error_outline,
       DownloadStatus.waiting => Icons.schedule,
@@ -1057,7 +1097,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
         onPressed: preparing ? null : () => report(context, activate),
         child: transferring
             ? downloadProgress(context, preparing ? null : task?.progress)
-            : Icon(
+            : TingyuIcon(
                 icon,
                 color: task?.status == DownloadStatus.failed
                     ? context.tokens.danger
@@ -1135,7 +1175,7 @@ class TrackRow extends ConsumerWidget {
           if (!desktop && liked)
             Semantics(
               label: '已喜欢',
-              child: Icon(
+              child: TingyuIcon(
                 Icons.favorite,
                 size: 16,
                 color: context.tokens.accent,
@@ -1270,8 +1310,8 @@ class MiniPlayer extends StatelessWidget {
       data: Theme.of(context).copyWith(extensions: [dockTokens]),
       child: Builder(
         builder: (context) => Container(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: tokens.playerSurface,
             borderRadius: BorderRadius.circular(TingyuTokens.playerRadius),
@@ -1305,7 +1345,8 @@ class MiniPlayer extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
                                 color: tokens.onPlayer,
                               ),
                             ),
@@ -1319,7 +1360,7 @@ class MiniPlayer extends StatelessWidget {
                               maxLines: 1,
                               style: TextStyle(
                                 color: context.tokens.muted,
-                                fontSize: 10,
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -1347,7 +1388,7 @@ class MiniPlayer extends StatelessWidget {
                   onPressed: p.opening ? null : () => p.toggle(),
                   color: tokens.playerButton,
                   radius: 48,
-                  child: Icon(
+                  child: TingyuIcon(
                     p.playing ? Icons.pause : Icons.play_arrow,
                     color: tokens.onPlayerButton,
                   ),
@@ -1398,7 +1439,7 @@ class ModeButton extends StatelessWidget {
         const modes = ['order', 'repeat', 'shuffle'];
         return p.setMode(modes[(modes.indexOf(p.mode) + 1) % modes.length]);
       }),
-      child: Icon(modeIcon(p.mode), color: context.tokens.accent),
+      child: TingyuIcon(modeIcon(p.mode), color: context.tokens.accent),
     ),
   );
 }
@@ -1416,11 +1457,13 @@ Widget transport(
       label: p.playing ? '暂停' : '播放',
       key: const ValueKey('toggle-playback'),
       onPressed: p.opening ? null : () => p.toggle(),
-      minSize: 56,
-      color: context.tokens.accent,
-      child: Icon(
+      minSize: TingyuTokens.playControlSize,
+      radius: TingyuTokens.playControlSize / 2,
+      color: context.tokens.playerButton,
+      child: TingyuIcon(
         p.playing ? Icons.pause : Icons.play_arrow,
-        color: context.tokens.onAccent,
+        color: context.tokens.onPlayerButton,
+        size: TingyuTokens.space * 4,
       ),
     ),
     action(Icons.skip_next, '下一首', p.opening ? null : () => p.next()),
@@ -1780,7 +1823,12 @@ class _LyricPanelState extends State<LyricPanel> {
 Future<void> showQueue(BuildContext context) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
-  backgroundColor: context.tokens.surface,
+  backgroundColor: context.tokens.background,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(
+      top: Radius.circular(TingyuTokens.sheetRadius),
+    ),
+  ),
   builder: (_) => const QueuePanel(),
 );
 
@@ -1847,11 +1895,24 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                     '定位当前歌曲',
                     p.queue.contains(p.current?.id) ? () => locate(p) : null,
                   ),
-                  labelButton('清空', () async {
-                    if (await confirm(context, '清空队列并停止播放？')) {
-                      await p.clearQueue();
-                    }
-                  }),
+                  action(
+                    Icons.more_horiz,
+                    '队列更多',
+                    () => showContentActions(
+                      context,
+                      (ctx) => SimpleDialog(
+                        title: const Text('队列操作'),
+                        children: [
+                          labelButton('清空', () async {
+                            Navigator.pop(ctx);
+                            if (await confirm(context, '清空队列并停止播放？')) {
+                              await p.clearQueue();
+                            }
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
                   action(Icons.close, '关闭队列', () => Navigator.pop(context)),
                 ],
               ),
@@ -1861,19 +1922,31 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                   ? const EmptyView('队列是空的', '从搜索结果添加下一首声音。')
                   : ScrollToTop(
                       controller: scroll,
-                      builder: (controller) => ListView.builder(
+                      builder: (controller) => ReorderableListView.builder(
                         key: const ValueKey('queue-list'),
+                        scrollController: controller,
+                        buildDefaultDragHandles: false,
+                        itemExtent: rowHeight,
                         padding: const EdgeInsets.only(
                           bottom: TingyuTokens.space * 10,
                         ),
-                        controller: scroll,
-                        itemExtent: rowHeight,
                         itemCount: p.queue.length,
+                        onReorderItem: (oldIndex, newIndex) {
+                          unawaited(p.moveQueue(oldIndex, newIndex - oldIndex));
+                        },
+                        proxyDecorator: (child, _, animation) => Material(
+                          color: t.tint,
+                          borderRadius: BorderRadius.circular(
+                            TingyuTokens.radius,
+                          ),
+                          child: child,
+                        ),
                         itemBuilder: (context, i) {
-                          final track = p.library[p.queue[i]]!;
-                          final current = track.id == p.current?.id;
+                          final track = p.library[p.queue[i]]!,
+                              current = track.id == p.current?.id;
                           return ColoredBox(
-                            color: current ? t.tint : t.surface,
+                            key: ValueKey('queue-row-${track.id}'),
+                            color: current ? t.tint : t.background,
                             child: Row(
                               children: [
                                 SizedBox(
@@ -1886,23 +1959,11 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                                                 p
                                                         .playback
                                                         .player
-                                                        .processingState !=
-                                                    ProcessingState.idle &&
-                                                p
-                                                        .playback
-                                                        .player
-                                                        .processingState !=
-                                                    ProcessingState.completed,
+                                                        .processingState ==
+                                                    ProcessingState.ready,
                                           ),
                                         )
-                                      : Text(
-                                          '${i + 1}',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: t.muted,
-                                            fontSize: 11,
-                                          ),
-                                        ),
+                                      : null,
                                 ),
                                 Expanded(
                                   child: Pressable(
@@ -1911,33 +1972,52 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                                         '${current ? '当前歌曲，' : ''}${track.title}',
                                     selected: current,
                                     selectionFill: false,
-                                    onPressed: () =>
-                                        report(context, () => p.play(track)),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 8,
+                                    onPressed: () => report(
+                                      context,
+                                      () =>
+                                          current ? p.toggle() : p.play(track),
                                     ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: TingyuTokens.space / 2,
+                                      vertical: TingyuTokens.space,
+                                    ),
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          track.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: current ? t.accent : t.text,
-                                          ),
+                                        Artwork(track, size: 40),
+                                        const SizedBox(
+                                          width: TingyuTokens.space * 1.5,
                                         ),
-                                        Text(
-                                          track.artist,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: t.muted,
-                                            fontSize: 11,
+                                        Expanded(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                track.title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  color: current
+                                                      ? t.accent
+                                                      : t.text,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                height: TingyuTokens.space / 2,
+                                              ),
+                                              Text(
+                                                track.artist,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  color: t.muted,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -1945,29 +2025,47 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                                   ),
                                 ),
                                 action(
-                                  Icons.arrow_upward,
-                                  '上移第 ${i + 1} 首',
-                                  i == 0
-                                      ? null
-                                      : () async {
-                                          await p.moveQueue(i, -1);
-                                          if (current && mounted) locate(p);
-                                        },
+                                  Icons.more_horiz,
+                                  '队列选项 ${track.id}',
+                                  () async {
+                                    await showQueueTrackActions(
+                                      context,
+                                      p,
+                                      track.id,
+                                    );
+                                    if (mounted && p.current?.id == track.id) {
+                                      locate(p);
+                                    }
+                                  },
                                 ),
-                                action(
-                                  Icons.arrow_downward,
-                                  '下移第 ${i + 1} 首',
-                                  i == p.queue.length - 1
-                                      ? null
-                                      : () async {
-                                          await p.moveQueue(i, 1);
-                                          if (current && mounted) locate(p);
-                                        },
-                                ),
-                                action(
-                                  Icons.close,
-                                  '移除第 ${i + 1} 首',
-                                  () => p.removeQueue(track.id),
+                                Semantics(
+                                  label: '拖动调整 ${track.title}',
+                                  customSemanticsActions: {
+                                    if (i > 0)
+                                      const CustomSemanticsAction(
+                                        label: '上移',
+                                      ): () =>
+                                          unawaited(p.moveQueue(i, -1)),
+                                    if (i < p.queue.length - 1)
+                                      const CustomSemanticsAction(
+                                        label: '下移',
+                                      ): () =>
+                                          unawaited(p.moveQueue(i, 1)),
+                                  },
+                                  child: ReorderableDragStartListener(
+                                    index: i,
+                                    child: SizedBox.square(
+                                      key: ValueKey('queue-drag-${track.id}'),
+                                      dimension: TingyuTokens.controlSize,
+                                      child: Center(
+                                        child: TingyuIcon(
+                                          Icons.drag_indicator,
+                                          color: t.muted,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1976,6 +2074,44 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                       ),
                     ),
             ),
+            if (p.current != null)
+              Padding(
+                padding: const EdgeInsets.all(TingyuTokens.space * 1.5),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: t.playerSurface,
+                    borderRadius: BorderRadius.circular(
+                      TingyuTokens.collectionRadius,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(TingyuTokens.space),
+                    child: Row(
+                      children: [
+                        Artwork(p.current!, size: 40),
+                        const SizedBox(width: TingyuTokens.space * 1.5),
+                        Expanded(
+                          child: Text(
+                            p.current!.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: t.onPlayer, fontSize: 13),
+                          ),
+                        ),
+                        Pressable(
+                          key: const ValueKey('queue-toggle'),
+                          label: p.playing ? '暂停队列播放' : '继续队列播放',
+                          onPressed: () => p.toggle(),
+                          child: TingyuIcon(
+                            p.playing ? Icons.pause : Icons.play_arrow,
+                            color: t.onPlayer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -2022,71 +2158,111 @@ class DownloadsPanel extends StatelessWidget {
           ),
         ),
       for (final d in tasks)
-        (_) => Padding(
+        (_) => Container(
           key: ValueKey('download-row-${d.track.id}'),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: context.tokens.line)),
+          ),
           child: Row(
             children: [
-              Artwork(d.track),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      d.track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      d.error ??
-                          switch (d.status) {
-                            DownloadStatus.waiting => '等待下载',
-                            DownloadStatus.downloading =>
-                              '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
-                            DownloadStatus.completed => switch (d.lyricStatus) {
-                              DownloadLyricStatus.waiting ||
-                              DownloadLyricStatus.fetching => '正在匹配歌词',
-                              DownloadLyricStatus.available => '歌词已保存',
-                              DownloadLyricStatus.missing => '未匹配到歌词',
-                              DownloadLyricStatus.failed => '歌词获取失败',
-                            },
-                            DownloadStatus.failed => '下载失败',
-                            DownloadStatus.paused => '下载已中断，点击重试',
-                          },
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.tokens.muted,
+                child: Pressable(
+                  key: ValueKey('play-downloaded-${d.track.id}'),
+                  label: '播放已下载歌曲 ${d.track.title}',
+                  onPressed: d.status == DownloadStatus.completed
+                      ? () => p.playDownloaded(d.track)
+                      : () => showDownloadActions(context, p, d),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: TingyuTokens.space * 1.5,
+                  ),
+                  child: Row(
+                    children: [
+                      Stack(
+                        children: [
+                          Artwork(d.track),
+                          if (p.current?.id == d.track.id)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: context.tokens.background,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: PlayingIndicator(
+                                  playing:
+                                      p.playing &&
+                                      p.playback.player.processingState ==
+                                          ProcessingState.ready,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    if (d.status == DownloadStatus.downloading)
-                      LinearProgressIndicator(value: d.progress),
-                  ],
+                      const SizedBox(width: TingyuTokens.space * 1.5),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d.track.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.tokens.text,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: TingyuTokens.space / 2),
+                            Text(
+                              d.error ??
+                                  switch (d.status) {
+                                    DownloadStatus.completed => d.track.artist,
+                                    DownloadStatus.waiting => '等待下载',
+                                    DownloadStatus.downloading =>
+                                      '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
+                                    DownloadStatus.failed => '下载失败',
+                                    DownloadStatus.paused => '下载已中断，点击重试',
+                                  },
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.tokens.muted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (d.status == DownloadStatus.downloading)
+                              LinearProgressIndicator(value: d.progress),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              if (d.status == DownloadStatus.completed)
-                action(
-                  Icons.play_arrow,
-                  '播放已下载歌曲',
-                  () => p.playDownloaded(d.track),
-                )
-              else if (d.status == DownloadStatus.downloading ||
-                  d.status == DownloadStatus.waiting)
-                action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
-              else if ([
-                DownloadStatus.failed,
-                DownloadStatus.paused,
-              ].contains(d.status))
-                action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
-              if (d.status == DownloadStatus.completed)
+              if (d.status == DownloadStatus.completed) ...[
+                Tooltip(
+                  message: '已下载，可离线播放',
+                  child: TingyuIcon(
+                    Icons.check_circle_outline,
+                    size: 20,
+                    color: context.tokens.accent,
+                  ),
+                ),
                 action(
                   Icons.more_horiz,
                   '下载选项 ${d.track.title}',
                   () => showDownloadActions(context, p, d),
-                )
-              else
+                ),
+              ] else ...[
+                if (d.status == DownloadStatus.downloading ||
+                    d.status == DownloadStatus.waiting)
+                  action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
+                else
+                  action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
                 action(Icons.close, '移除下载', () => p.removeDownload(d)),
+              ],
             ],
           ),
         ),
@@ -2202,14 +2378,116 @@ Future<void> exportTrack(
   }
 }
 
-void showAboutTingyu(BuildContext context) => showDialog<void>(
-  context: context,
-  builder: (ctx) => AlertDialog(
-    title: const Text('听屿'),
-    content: const Text('听屿 $tingyuVersion\n\n歌单与下载保存在本机，账号凭据保存在系统安全存储。'),
-    actions: [labelButton('关闭', () => Navigator.pop(ctx))],
-  ),
-);
+Future<void> showAboutTingyu(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.tokens.background,
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(TingyuTokens.space * 3),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    action(Icons.close, '关闭', () => Navigator.pop(ctx)),
+                  ],
+                ),
+                Container(
+                  width: 64,
+                  height: 64,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: ctx.tokens.tint,
+                    borderRadius: BorderRadius.circular(
+                      TingyuTokens.collectionRadius,
+                    ),
+                  ),
+                  child: TingyuIcon(
+                    Icons.graphic_eq,
+                    size: 36,
+                    color: ctx.tokens.accent,
+                  ),
+                ),
+                const SizedBox(height: TingyuTokens.space * 2),
+                Text('听屿', style: Theme.of(ctx).textTheme.titleLarge),
+                const SizedBox(height: TingyuTokens.space),
+                Text(
+                  '版本 $tingyuVersion',
+                  style: TextStyle(color: ctx.tokens.muted, fontSize: 12),
+                ),
+                const SizedBox(height: TingyuTokens.space * 3),
+                Text(
+                  '歌单与下载保存在本机，账号凭据由系统安全存储。',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: ctx.tokens.muted, height: 1.7),
+                ),
+                const SizedBox(height: TingyuTokens.space * 3),
+                Pressable(
+                  key: const ValueKey('about-dismiss'),
+                  label: '知道了',
+                  color: ctx.tokens.tint,
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Center(
+                    child: Text(
+                      '知道了',
+                      style: TextStyle(
+                        color: ctx.tokens.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+Future<void> showQueueTrackActions(
+  BuildContext context,
+  LibraryController p,
+  String id,
+) => showContentActions(context, (ctx) {
+  final i = p.queue.indexOf(id);
+  return SimpleDialog(
+    title: const Text('队列操作'),
+    children: [
+      labelButton(
+        '上移第 ${i + 1} 首',
+        i > 0
+            ? () async {
+                Navigator.pop(ctx);
+                final index = p.queue.indexOf(id);
+                if (index > 0) await p.moveQueue(index, -1);
+              }
+            : null,
+        icon: Icons.arrow_upward,
+      ),
+      labelButton(
+        '下移第 ${i + 1} 首',
+        i >= 0 && i < p.queue.length - 1
+            ? () async {
+                Navigator.pop(ctx);
+                final index = p.queue.indexOf(id);
+                if (index >= 0) await p.moveQueue(index, 1);
+              }
+            : null,
+        icon: Icons.arrow_downward,
+      ),
+      labelButton('移除第 ${i + 1} 首', () async {
+        Navigator.pop(ctx);
+        await p.removeQueue(id);
+      }, icon: Icons.close),
+    ],
+  );
+});
 
 Future<void> showAccount(BuildContext context, LibraryController p) async {
   final size = MediaQuery.sizeOf(context);
@@ -2513,7 +2791,9 @@ class FolderChoice extends StatelessWidget {
     onPressed: onSelect,
     child: Row(
       children: [
-        Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off),
+        TingyuIcon(
+          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -2660,10 +2940,12 @@ class CompactNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return DecoratedBox(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         color: t.surface,
-        border: Border(top: BorderSide(color: t.line)),
+        borderRadius: BorderRadius.circular(TingyuTokens.playerRadius),
+        border: Border.all(color: t.line),
       ),
       child: SafeArea(
         top: false,
@@ -2691,16 +2973,30 @@ class CompactNavigation extends StatelessWidget {
                           horizontal: 4,
                           vertical: 10,
                         ),
-                        child: Row(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(item.$2, size: 20),
-                            const SizedBox(width: 4),
+                            TingyuIcon(
+                              selected == item.$1
+                                  ? switch (item.$1) {
+                                      'library' => Icons.library_music,
+                                      'downloads' => Icons.download_rounded,
+                                      'likes' => Icons.favorite_rounded,
+                                      _ => item.$2,
+                                    }
+                                  : item.$2,
+                              size: 24,
+                              color: selected == item.$1 ? t.accent : t.muted,
+                            ),
+                            const SizedBox(height: 4),
                             Text(
                               item.$3,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
+                                fontWeight: selected == item.$1
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                                 color: selected == item.$1 ? t.accent : t.muted,
                               ),
                             ),
@@ -2712,6 +3008,49 @@ class CompactNavigation extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class AccountAvatar extends StatelessWidget {
+  const AccountAvatar({super.key, required this.profile, this.size = 48});
+  final Map<String, dynamic>? profile;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final raw = profile?['face'];
+    final url = raw is String ? raw.trim() : '';
+    final uri = Uri.tryParse(url.startsWith('//') ? 'https:$url' : url);
+    final valid =
+        uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+    final fallback = ColoredBox(
+      color: context.tokens.tint,
+      child: Center(
+        child: TingyuIcon(
+          Icons.person_rounded,
+          color: context.tokens.accent,
+          size: size * .6,
+        ),
+      ),
+    );
+    return ExcludeSemantics(
+      child: ClipOval(
+        child: SizedBox.square(
+          dimension: size,
+          child: valid
+              ? Image.network(
+                  uri.toString(),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => fallback,
+                  loadingBuilder: (_, child, progress) =>
+                      progress == null ? child : fallback,
+                )
+              : fallback,
         ),
       ),
     );

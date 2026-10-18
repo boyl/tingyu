@@ -114,7 +114,44 @@ void main() {
       }
 
       Future<void> tap(String label) async {
-        final target = find.byKey(ValueKey(label)).last;
+        if (find.byKey(ValueKey(label)).evaluate().isEmpty) {
+          if (label.startsWith('上移第 ') ||
+              label.startsWith('下移第 ') ||
+              label.startsWith('移除第 ')) {
+            final number = int.parse(
+              RegExp(r'\d+').firstMatch(label)!.group(0)!,
+            );
+            final id = p.queue[number - 1];
+            final more = find.byKey(ValueKey('队列选项 $id'));
+            await tester.ensureVisible(more);
+            await tester.pump();
+            await tester.tap(more);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
+          } else if (label == '清空') {
+            await tester.tap(find.byKey(const ValueKey('队列更多')));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
+          } else if (['播放全部', '歌曲排序', '批量选择'].contains(label) &&
+              find.byKey(const ValueKey('曲库操作')).evaluate().isNotEmpty) {
+            await tester.ensureVisible(find.byKey(const ValueKey('曲库操作')));
+            await tester.pump();
+            await tester.tap(find.byKey(const ValueKey('曲库操作')));
+            await tester.pump(const Duration(milliseconds: 350));
+          }
+        }
+        final candidate = find.byKey(ValueKey(label));
+        if (candidate.evaluate().isEmpty && label.startsWith('download-')) {
+          final workspace = find.byType(CustomScrollView).first;
+          await tester.scrollUntilVisible(
+            candidate,
+            200,
+            scrollable: find
+                .descendant(of: workspace, matching: find.byType(Scrollable))
+                .first,
+          );
+        }
+        final target = candidate.last;
         await tester.ensureVisible(target);
         await tester
             .pump(); // Lazy slivers need layout after scrolling before hit testing.
@@ -206,11 +243,13 @@ void main() {
         expect(find.byType(CompactNavigation), findsNothing);
         expect(find.byType(MiniPlayer), findsNothing);
         expect(p.playing, isTrue);
-        await tap('theme-b');
+        await tap('theme-night');
         await binding.takeScreenshot('settings-page-dark');
-        await tap('theme-c');
+        await tap('theme-moon');
         await binding.takeScreenshot('settings-page-pink');
-        await tap('theme-a');
+        await tap('theme-bili');
+        await binding.takeScreenshot('settings-page-bilibili');
+        await tap('theme-sunrise');
         await tap('settings-quality');
         await tap('quality-true');
         expect(p.standard, isTrue);
@@ -294,7 +333,7 @@ void main() {
 
         final beforeOffline = requests;
         api.offline = true;
-        await tap('播放已下载歌曲');
+        await tap('play-downloaded-${firstTrack.id}');
         await waitFor(() => p.playing && p.quality == '离线文件');
         await p.playback.seek(const Duration(seconds: 7));
         await tester.pump(const Duration(milliseconds: 500));
@@ -436,7 +475,11 @@ void main() {
         expect(
           tester
               .getRect(find.byKey(const ValueKey('scroll-to-top')))
-              .overlaps(tester.getRect(find.byKey(const ValueKey('移除第 51 首')))),
+              .overlaps(
+                tester.getRect(
+                  find.byKey(ValueKey('queue-drag-${p.queue[50]}')),
+                ),
+              ),
           isFalse,
           reason: '列表末尾操作不能被回顶按钮遮挡',
         );
@@ -482,11 +525,11 @@ void main() {
         await tap('搜索本地歌曲');
         final scroll = find.byType(Scrollable).first;
         await tester.scrollUntilVisible(
-          find.text('最近播放'),
+          find.text('继续收听'),
           -400,
           scrollable: scroll,
         );
-        for (final theme in ['a', 'b', 'c']) {
+        for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
           await p.setTheme(theme);
           await tester.pumpAndSettle();
           await binding.takeScreenshot('depth-library-$theme');
@@ -499,7 +542,7 @@ void main() {
           await tap('downloads-tab-completed');
           await tap('tab-library');
         }
-        await p.setTheme('a');
+        await p.setTheme('sunrise');
         final covered = Track(
           bvid: 'BVcover',
           cid: 9001,

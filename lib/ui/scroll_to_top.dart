@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
+import 'icons.dart';
 
 /// Only the small overlay rebuilds as the scroll threshold changes.
 class ScrollToTop extends StatefulWidget {
@@ -88,7 +89,7 @@ class _ScrollToTopState extends State<ScrollToTop> {
                                 );
                               }
                             },
-                            child: Icon(
+                            child: TingyuIcon(
                               Icons.vertical_align_top,
                               color: context.tokens.accent,
                               size: 20,

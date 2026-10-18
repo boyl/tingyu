@@ -11,7 +11,7 @@ void main() {
       final controller = ScrollController();
       await tester.pumpWidget(
         MaterialApp(
-          theme: tingyuTheme('a'),
+          theme: tingyuTheme('sunrise'),
           home: MediaQuery(
             data: MediaQueryData(disableAnimations: reduced),
             child: ScrollToTop(

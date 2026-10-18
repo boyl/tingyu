@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/music.dart';
+import '../models/appearance.dart';
 import '../models/play_order.dart';
 import '../services/bilibili.dart';
 import '../services/downloads.dart';
@@ -87,7 +88,7 @@ class LibraryController extends ChangeNotifier {
 
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _saveTimer;
-  String theme = 'a',
+  String theme = defaultTheme,
       mode = 'order',
       quality = '',
       error = '',
@@ -123,7 +124,7 @@ class LibraryController extends ChangeNotifier {
     }
     final s = await db.readState('library');
     if (s != null) {
-      theme = ['a', 'b', 'c'].contains(s['theme']) ? s['theme'] : 'a';
+      theme = supportedThemes.contains(s['theme']) ? s['theme'] : defaultTheme;
       mode = ['order', 'shuffle', 'repeat'].contains(s['mode'])
           ? s['mode']
           : 'order';
@@ -166,6 +167,7 @@ class LibraryController extends ChangeNotifier {
       position = Duration(milliseconds: s['position'] ?? 0);
     }
     await downloads.initialize();
+    if (api.hasSession) unawaited(refreshProfile(silent: true));
     notifyListeners();
   }
 
@@ -236,6 +238,7 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> setTheme(String value) async {
+    if (!supportedThemes.contains(value)) return;
     theme = value;
     notifyListeners();
     await save();
@@ -851,15 +854,20 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshProfile() async {
+  Future<void> refreshProfile({bool silent = false}) async {
     try {
-      profile = await api.profile();
-      error = '';
+      final found = await api.profile();
+      if (_disposed) return;
+      profile = found;
+      if (!silent) error = '';
     } on AppFailure catch (e) {
-      error = e.message;
-      profile = null;
+      if (_disposed) return;
+      if (!silent) {
+        error = e.message;
+        profile = null;
+      }
     }
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   Future<Playlist> importFolder(Map<String, dynamic> folder) async {
