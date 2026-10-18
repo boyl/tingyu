@@ -34,13 +34,13 @@ def start():
     shell('am', 'start', '-W', '-n', 'app.tingyu.tingyu/.MainActivity')
     time.sleep(1.5)
 
-def capture(name, hidden=True):
+def capture(name):
     display = shell('dumpsys', 'window', 'displays')
     (out / f'{name}-display.txt').write_text(display)
     (out / f'{name}.png').write_bytes(run('exec-out', 'screencap', '-p'))
     bars = {kind: re.findall(r'InsetsSource id=\w+ type=' + kind + r' .*?visible=(true|false)', display)
             for kind in ['statusBars', 'navigationBars']}
-    visible = 'false' if hidden else 'true'
+    visible = 'true'
     passed = all(values and set(values) == {visible} for values in bars.values())
     passed = passed and 'app.tingyu.tingyu/app.tingyu.tingyu.MainActivity' in display
     results[name] = {'status': 'PASS' if passed else 'FAIL', 'bars': bars}
@@ -72,10 +72,9 @@ try:
     time.sleep(.5)
     start()
     capture('resume')
-    shell('input', 'swipe', '200', '1', '200', '300', '300')
-    capture('transient-bars', hidden=False)
+    # Bars must remain present rather than only appearing transiently.
     time.sleep(4)
-    capture('transient-dismiss')
+    capture('bars-remain-visible')
 finally:
     report = {'apkSha256': hashlib.sha256(args.apk.read_bytes()).hexdigest(), 'device': args.device, 'checks': results}
     (out / 'fullscreen.json').write_text(json.dumps(report, indent=2) + '\n')

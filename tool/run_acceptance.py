@@ -21,6 +21,8 @@ if args.device:
     identity = subprocess.check_output([adb_command, '-s', args.device, 'emu', 'avd', 'name'], text=True, timeout=10)
     if identity.splitlines()[0].strip() != 'tingyu-regression':
         parser.error('Native acceptance requires the isolated tingyu-regression AVD; never use the human acceptance device.')
+if args.device:
+    os.environ['TINGYU_ACCEPTANCE_DEVICE'] = args.device
 output = ROOT / 'artifacts' / 'acceptance'
 output.mkdir(parents=True, exist_ok=True)
 flutter = ['flutter'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']
@@ -46,7 +48,7 @@ for name, command in commands:
 fingerprint_after = source_fingerprint(ROOT)
 results['source-stability'] = {'status': 'PASS' if fingerprint_before == fingerprint_after else 'FAIL'}
 report = {'checkedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sourceSha256': fingerprint_after,
-          'checks': results, 'notExecutedByThisCommand': ([] if args.device and results.get('android-navigation', {}).get('status') == 'PASS' else ['G02 Android tab navigation']) + ['G03 Release full screen lifecycle', 'G04 native desktop / large-font / screen-reader review', 'G05 real account import and keyword search',
+          'checks': results, 'notExecutedByThisCommand': ([] if args.device and results.get('android-navigation', {}).get('status') == 'PASS' else ['G02 Android tab navigation']) + ['G03 Release visible system bars lifecycle', 'G04 native desktop / large-font / screen-reader review', 'G05 real account import and keyword search',
           'G06 actual storage exhaustion and real account expiry', 'G07 physical Android device', 'G08 matching release APK', 'D01 native desktops'],
           'humanHandoffReady': False}
 (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')

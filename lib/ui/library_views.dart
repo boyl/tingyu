@@ -17,36 +17,42 @@ Future<void> showContentActions(BuildContext context, WidgetBuilder builder) {
         builder: (ctx) {
           final content = builder(ctx);
           if (content is! SimpleDialog) return content;
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.tokens.line,
-                        borderRadius: BorderRadius.circular(
-                          TingyuTokens.radius,
+          return SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: context.tokens.line,
+                          borderRadius: BorderRadius.circular(
+                            TingyuTokens.radius,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (content.title != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 12, bottom: 16),
-                      child: DefaultTextStyle(
-                        style: Theme.of(ctx).textTheme.titleMedium!,
-                        child: content.title!,
+                    const SizedBox(height: 24),
+                    if (content.title != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, bottom: 16),
+                        child: DefaultTextStyle(
+                          style: Theme.of(ctx).textTheme.titleMedium!,
+                          child: content.title!,
+                        ),
                       ),
-                    ),
-                  ...?content.children,
-                ],
+                    ...?content.children,
+                  ],
+                ),
               ),
             ),
           );
@@ -75,7 +81,7 @@ class PlaylistSummary extends ConsumerWidget {
               height: 88,
               decoration: BoxDecoration(
                 color: context.tokens.tint,
-                borderRadius: BorderRadius.circular(TingyuTokens.radius),
+                borderRadius: BorderRadius.circular(TingyuTokens.artworkRadius),
               ),
               child: TingyuIcon(
                 Icons.library_music_outlined,
@@ -184,19 +190,33 @@ class CollectionToolbar extends ConsumerWidget {
         ],
       );
     }
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: TingyuTokens.space,
+      runSpacing: TingyuTokens.space,
       children: [
-        action(
-          Icons.play_arrow,
-          '播放全部',
-          ids.isEmpty ? null : () => p.playCollection(ids),
-        ),
-        Expanded(
-          child: Text(
-            list == null ? '${ids.length} 首歌曲' : '',
-            style: TextStyle(color: context.tokens.muted, fontSize: 12),
+        Pressable(
+          key: const ValueKey('播放全部'),
+          label: '播放全部',
+          onPressed: ids.isEmpty
+              ? null
+              : () => report(context, () => p.playCollection(ids)),
+          color: context.tokens.accent,
+          radius: TingyuTokens.playerRadius,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TingyuIcon(Icons.play_arrow, color: context.tokens.onAccent),
+              const SizedBox(width: TingyuTokens.space),
+              Text('播放全部', style: TextStyle(color: context.tokens.onAccent)),
+            ],
           ),
         ),
+        if (list == null)
+          Text(
+            '${ids.length} 首歌曲',
+            style: TextStyle(color: context.tokens.muted, fontSize: 12),
+          ),
         if (list != null) PlaylistDownloadAction(list!),
         action(
           Icons.swap_vert,
@@ -453,4 +473,65 @@ class _PlaylistEditDialogState extends ConsumerState<PlaylistEditDialog> {
       }),
     ],
   );
+}
+
+/// The same form hierarchy on phones and desktop, without a stock phone dialog.
+class TingyuFormPanel extends StatelessWidget {
+  const TingyuFormPanel({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.actions,
+  });
+  final Widget title, content;
+  final List<Widget> actions;
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width >= 960) {
+      return AlertDialog(title: title, content: content, actions: actions);
+    }
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight:
+            (MediaQuery.sizeOf(context).height * .85 -
+                    MediaQuery.viewInsetsOf(context).bottom)
+                .clamp(160.0, double.infinity),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(TingyuTokens.space * 3),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: TingyuTokens.space * 5,
+                  height: TingyuTokens.space / 2,
+                  decoration: BoxDecoration(
+                    color: context.tokens.line,
+                    borderRadius: BorderRadius.circular(TingyuTokens.space),
+                  ),
+                ),
+              ),
+              const SizedBox(height: TingyuTokens.space * 3),
+              DefaultTextStyle(
+                style: Theme.of(context).textTheme.titleMedium!,
+                child: title,
+              ),
+              const SizedBox(height: TingyuTokens.space * 3),
+              Flexible(child: content),
+              const SizedBox(height: TingyuTokens.space * 2),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: TingyuTokens.space,
+                children: actions,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

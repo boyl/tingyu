@@ -47,10 +47,10 @@ class SearchDiscovery extends StatelessWidget {
                         label: '搜索${topics[i].$1}',
                         onPressed: () => onSearch(topics[i].$2),
                         padding: EdgeInsets.zero,
-                        radius: TingyuTokens.collectionRadius,
+                        radius: TingyuTokens.artworkRadius,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(
-                            TingyuTokens.collectionRadius,
+                            TingyuTokens.artworkRadius,
                           ),
                           child: Stack(
                             children: [

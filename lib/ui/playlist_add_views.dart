@@ -101,7 +101,7 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                           hintText: '搜索音乐库',
                           prefixIcon: const TingyuIcon(Icons.search),
                           suffixIcon: action(
-                            Icons.close,
+                            Icons.clear_all,
                             '清除选歌搜索',
                             () => setState(query.clear),
                           ),

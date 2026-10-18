@@ -42,6 +42,6 @@ manifest = {'version': f'{version}+{number}', 'sourceSha256': report['sourceSha2
             'signing': 'development/debug key', 'signerCertificateSha256': expected_cert,
             'sameDevelopmentSigner': True, 'validation': 'ZIP, exact ABI, package, version and signatures PASS',
             'apks': items, 'runtimeEvidence': 'artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/cutout/report.json',
-            'limitations': ['physical Android lockscreen/Bluetooth/calls/background scenarios pending', 'emulator audible issue deferred by user', 'native desktops pending']}
+            'limitations': ['physical Android lockscreen/Bluetooth/calls/background scenarios pending', 'screenshot-related audible output on physical Android devices pending', 'native desktops pending', 'physical glass scrolling smoothness pending; software emulator raster overhead remains high']}
 (ROOT / 'tool/release-apks.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 print(json.dumps(manifest, ensure_ascii=False, indent=2))

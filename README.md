@@ -75,7 +75,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.12 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.12)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
+- Android 0.1.14 ABI 拆分 Release 附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.14)。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。
@@ -94,13 +94,15 @@ python3 tool/run_acceptance.py --device emulator-5558 --live
 
 日志与带源码指纹的结果保存在 `artifacts/acceptance/`。第二条会运行真实 Android 原生应用，验证连续切换、搜索输入保留、滚动位置和主题切换。它不代表全功能或真机验收完成。未执行项不算通过。
 
-紧凑布局使用无填充的图标与文字导航，go_router 的持久分支保存各 tab 状态；切换无整页转场并收起键盘。Android 使用原生 WindowInsetsController 隐藏系统栏，边缘滑动仍可临时呼出。桌面保留系统窗口行为。
+紧凑布局使用无填充的图标与文字导航，go_router 的持久分支保存各 tab 状态；切换无整页转场并收起键盘。Android 使用边到边背景，系统状态栏和导航栏保持可见。桌面保留系统窗口行为。
 
 
-本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。开发运行使用独立回归设备 `sh tool/flutterw.sh run -d emulator-5558`；人工验收设备 5556 仅使用同签名 Release 覆盖更新。首次全屏会出现 Android 自带操作提示，确认后可从屏幕边缘临时呼出系统栏。
+本机启动可见模拟器：`sh tool/android_emulator.sh`（Apple Silicon、本工作区 SDK）。开发运行使用独立回归设备 `sh tool/flutterw.sh run -d emulator-5558`；人工验收设备 5556 仅使用同签名 Release 覆盖更新。状态栏时间、信号和电量保持可见。
 
 Android 账号窗口采用大尺寸底部面板，收藏夹列表独立滚动，先选择再导入；导入入口固定在底部。桌面账号窗口使用限制宽高的对话框。专项验收结果见 `docs/ACCEPTANCE-2026-10-16.md`。
 
 自动测试请使用 `TINGYU_EMULATOR_TEST=1 TINGYU_EMULATOR_HEADLESS=1 sh tool/android_emulator.sh` 启动独立的 `emulator-5558`。人工验收设备 `emulator-5556` 保留真实登录和歌单，不允许测试脚本降级安装或注入测试数据。播放器顶部返回导航固定显示，不随封面与歌词滚动。
 
 - 0.1.12 视觉修订：继续收听大幅封面、可露出下一张的横向歌单与外观预览、连续下载区域、统一线性图标、静态/动态音柱及队列拖动。四主题覆盖页面、卡片、弹层与播放器；详情见 [修订验收](docs/ACCEPTANCE-2026-10-18-REVISION.md)。
+
+- 0.1.14 统一四主题玻璃播放栏与导航、列表和弹层层次；封面放大并统一小圆角，保留横向侧露。区分下一首、入队、加入歌单等图标，移除与关闭不再使用 X；喜欢显示实心红心，Android 系统栏常显。验收见 [玻璃与系统栏](docs/ACCEPTANCE-2026-10-18-GLASS.md) 和 [图标与封面](docs/ACCEPTANCE-2026-10-18-ICONS-COVERS.md)。

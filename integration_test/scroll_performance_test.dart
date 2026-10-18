@@ -111,10 +111,12 @@ void main() {
         await Future<void>.delayed(const Duration(seconds: 2));
         SchedulerBinding.instance.addTimingsCallback(timings);
         try {
-          for (var i = 0; i < 8; i++) {
+          // Keep at least 100 samples even on the software-rendered emulator.
+          // A longer sample is not a frame-rate pass; raw timings stay in the report.
+          for (var i = 0; i < 12; i++) {
             await tester.timedDrag(
               scrollable,
-              Offset(0, i < 4 ? -500 : 500),
+              Offset(0, i < 6 ? -500 : 500),
               const Duration(milliseconds: 500),
             );
             await settle();

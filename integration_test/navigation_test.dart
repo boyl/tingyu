@@ -19,7 +19,11 @@ void main() {
       await app.main();
       await tester.pumpAndSettle();
       expect(find.text('音乐库'), findsWidgets);
-      expect(tester.getTopLeft(find.text('随心听').first).dy, lessThan(80));
+      final topInset = tester.view.padding.top / tester.view.devicePixelRatio;
+      expect(
+        tester.getTopLeft(find.text('随心听').first).dy,
+        allOf(greaterThanOrEqualTo(topInset), lessThan(topInset + 80)),
+      );
 
       final controller = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
@@ -162,7 +166,7 @@ void main() {
       expect(find.byKey(const ValueKey('返回')).hitTestable(), findsOneWidget);
       expect(
         tester.getTopLeft(find.byKey(const ValueKey('返回'))).dy,
-        lessThan(80),
+        allOf(greaterThanOrEqualTo(topInset), lessThan(topInset + 80)),
       );
       await tester.tap(find.byKey(const ValueKey('返回')));
       await tester.pumpAndSettle();

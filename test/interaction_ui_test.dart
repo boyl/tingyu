@@ -73,12 +73,14 @@ void main() {
     await settle(tester);
   }
 
-  Future<void> tap(WidgetTester tester, String label) async {
+  Future<void> tap(
+    WidgetTester tester,
+    String label, {
+    int queuePosition = 2,
+  }) async {
     if (find.byKey(ValueKey(label)).evaluate().isEmpty) {
-      if (label.startsWith('上移第 ') ||
-          label.startsWith('下移第 ') ||
-          label.startsWith('移除第 ')) {
-        final number = int.parse(RegExp(r'\d+').firstMatch(label)!.group(0)!);
+      if (label == '上移一位' || label == '下移一位' || label == '从队列移除') {
+        final number = queuePosition;
         final id = fixture.controller.queue[number - 1];
         final more = find.byKey(ValueKey('队列选项 $id'));
         await tester.ensureVisible(more);
@@ -457,7 +459,7 @@ void main() {
       await settleFrames(tester);
       await tap(tester, '定位当前歌曲');
       expect(state.position.pixels, greaterThan(3000));
-      await tap(tester, '上移第 66 首');
+      await tap(tester, '上移一位', queuePosition: 66);
       expect(p.queue[64], current.id);
       expect(tester.widget<Pressable>(row).selected, isTrue);
       await tap(tester, '关闭队列');
@@ -691,9 +693,9 @@ void main() {
       await tap(tester, 'tab-library');
       await tap(tester, 'play-${firstTrack.id}');
       await tap(tester, '更多 ${secondTrack.title}');
-      await tap(tester, '加入队列');
+      await tap(tester, '加入播放队列');
       await tap(tester, '播放队列');
-      await tap(tester, '上移第 2 首');
+      await tap(tester, '上移一位');
       expect(fixture.controller.queue, [secondTrack.id, firstTrack.id]);
       await tap(tester, '清空');
       await tap(tester, '取消');
@@ -725,17 +727,17 @@ void main() {
       await tap(tester, '下一首');
       expect(fixture.controller.current!.id, firstTrack.id);
       await tap(tester, '歌词');
-      await tester.drag(find.byType(Slider).last, const Offset(70, 0));
+      await tap(tester, '歌词延后 0.1 秒');
       await settle(tester);
       expect(fixture.controller.lyricOffset, 0);
       await tap(tester, '取消');
       expect(fixture.controller.lyricOffset, 0);
       await tap(tester, '歌词');
       await tester.enterText(find.byType(TextField).last, '[00:01.00]测试歌词');
-      await tester.drag(find.byType(Slider).last, const Offset(60, 0));
+      await tap(tester, '歌词延后 0.1 秒');
       await tap(tester, '保存歌词');
       expect(fixture.controller.lyricText, '[00:01.00]测试歌词');
-      expect(fixture.controller.lyricOffset, isNot(0));
+      expect(fixture.controller.lyricOffset, 100);
       await tap(tester, '返回');
       expect(find.byType(PlayerScreen), findsNothing);
       await unmount(tester);
@@ -879,6 +881,41 @@ void main() {
       await unmount(tester);
     },
   );
+  testWidgets(
+    'playlist covers grow while two cards and the next peek stay visible',
+    (tester) async {
+      final p = fixture.controller;
+      for (final name in ['封面一', '封面二', '封面三']) {
+        await p.addPlaylist(name, track: firstTrack);
+      }
+      await mount(tester);
+      final shelf = find.byKey(const ValueKey('playlist-shelf'));
+      await tester.ensureVisible(shelf);
+      await settle(tester);
+      final viewport = tester.getRect(shelf);
+      expect(
+        viewport.right,
+        closeTo(
+          tester.view.physicalSize.width / tester.view.devicePixelRatio,
+          .01,
+        ),
+      );
+      final first = tester.getRect(find.byKey(const ValueKey('封面一')));
+      final second = tester.getRect(find.byKey(const ValueKey('封面二')));
+      final third = tester.getRect(find.byKey(const ValueKey('封面三')));
+      final artwork = find.descendant(
+        of: find.byKey(const ValueKey('封面一')),
+        matching: find.byType(Artwork),
+      );
+      expect(tester.getSize(artwork).width, greaterThan(viewport.width * .4));
+      expect(first.left, greaterThanOrEqualTo(viewport.left));
+      expect(second.right, lessThan(viewport.right));
+      expect(third.left, lessThan(viewport.right));
+      expect(third.right, greaterThan(viewport.right));
+      await unmount(tester);
+    },
+  );
+
   testWidgets('appearance shelf reveals the next theme and scrolls to night', (
     tester,
   ) async {

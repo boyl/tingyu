@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.12';
+const tingyuVersion = '0.1.14';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -440,7 +440,7 @@ class ThemePreview extends StatelessWidget {
             Text(
               name,
               style: TextStyle(
-                color: selected ? t.accent : t.muted,
+                color: selected ? t.accentInk : t.muted,
                 fontSize: 12,
               ),
             ),

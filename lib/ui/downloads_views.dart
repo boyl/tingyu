@@ -7,9 +7,11 @@ class DownloadsWorkspace extends StatefulWidget {
     super.key,
     required this.tasks,
     required this.desktop,
+    this.dockInset = 0,
   });
   final LibraryController p;
   final bool tasks, desktop;
+  final double dockInset;
   @override
   State<DownloadsWorkspace> createState() => _DownloadsWorkspaceState();
 }
@@ -58,7 +60,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                   Text(
                     tasks ? '下载任务' : '已下载',
                     style: TextStyle(
-                      color: selected ? t.accent : t.muted,
+                      color: selected ? t.accentInk : t.muted,
                       fontSize: 16,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -130,7 +132,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                 hintText: widget.tasks ? '搜索下载任务' : '搜索已下载歌曲',
                 prefixIcon: const TingyuIcon(Icons.search),
                 suffixIcon: action(
-                  Icons.close,
+                  Icons.clear_all,
                   '清除本地搜索',
                   () => setState(searches[index].clear),
                 ),
@@ -155,9 +157,9 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
                       controller: scroll,
                       slivers: [
                         SliverPadding(
-                          padding: const EdgeInsets.only(
+                          padding: EdgeInsets.only(
                             top: TingyuTokens.space * 2,
-                            bottom: TingyuTokens.space * 10,
+                            bottom: TingyuTokens.space * 10 + widget.dockInset,
                           ),
                           sliver: DownloadsPanel(
                             p,

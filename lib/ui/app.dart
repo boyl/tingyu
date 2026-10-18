@@ -43,6 +43,7 @@ Widget action(
       label: label,
       onPressed: call == null ? null : () => report(context, call),
       selected: selected,
+      selectionFill: false,
       padding: const EdgeInsets.all(10),
       child: SizedBox.square(
         dimension: TingyuTokens.iconSize,
@@ -61,6 +62,7 @@ Widget labelButton(
     key: ValueKey(label),
     onPressed: call == null ? null : () => report(context, call),
     selected: selected,
+    selectionFill: false,
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -207,9 +209,7 @@ class _ArtworkState extends ConsumerState<Artwork> {
             errorBuilder: (_, _, _) => fallback(),
           );
     return ClipRRect(
-      borderRadius: BorderRadius.circular(
-        widget.size >= 88 ? TingyuTokens.collectionRadius : TingyuTokens.radius,
-      ),
+      borderRadius: BorderRadius.circular(TingyuTokens.artworkRadius),
       child: SizedBox(
         width: widget.size,
         height: widget.size,
@@ -300,7 +300,7 @@ class BilibiliExternalLink extends StatelessWidget {
                 Text(
                   '前往哔哩哔哩',
                   style: TextStyle(
-                    color: context.tokens.accent,
+                    color: context.tokens.accentInk,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -388,7 +388,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final p = ref.watch(libraryProvider), t = context.tokens;
+    final p = ref.watch(libraryProvider);
     final desktop = MediaQuery.sizeOf(context).width >= 960;
     final list = p.playlists
         .where((l) => l.id == widget.playlistId)
@@ -407,7 +407,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             if (selecting)
               action(
-                Icons.close,
+                Icons.arrow_back,
                 '退出多选',
                 () => setState(() {
                   selecting = false;
@@ -492,7 +492,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               hintText: '搜索当前列表的歌名、UP 主',
               prefixIcon: const TingyuIcon(Icons.search),
               suffixIcon: action(
-                Icons.close,
+                Icons.clear_all,
                 '清除本地搜索',
                 () => setState(localSearch.clear),
               ),
@@ -510,7 +510,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               prefixIcon: const TingyuIcon(Icons.search),
               suffixIcon: search.text.isEmpty
                   ? null
-                  : action(Icons.cancel_outlined, '清除在线搜索', () {
+                  : action(Icons.clear_all, '清除在线搜索', () {
                       debounce?.cancel();
                       search.clear();
                       unawaited(p.search(''));
@@ -653,99 +653,147 @@ class _AppShellState extends ConsumerState<AppShell> {
               },
             ),
           },
-          child: Scaffold(
-            body: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (desktop &&
-                            !(widget.page == 'search' &&
-                                widget.playlistId != null))
-                          SizedBox(width: 224, child: sidebar(p)),
-                        Expanded(
-                          child: widget.page == 'downloads'
-                              ? DownloadsWorkspace(
-                                  p,
-                                  tasks: widget.downloadSection == 'tasks',
-                                  desktop: desktop,
-                                )
-                              : ScrollToTop(
-                                  builder: (scroll) => CustomScrollView(
-                                    controller: scroll,
-                                    key: PageStorageKey(
-                                      'page-${widget.page}-${widget.playlistId}',
+          child: BackdropGroup(
+            child: Scaffold(
+              extendBody: !desktop,
+              body: Builder(
+                builder: (context) => SafeArea(
+                  bottom: desktop,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (desktop &&
+                                !(widget.page == 'search' &&
+                                    widget.playlistId != null))
+                              SizedBox(width: 224, child: sidebar(p)),
+                            Expanded(
+                              child: widget.page == 'downloads'
+                                  ? DownloadsWorkspace(
+                                      p,
+                                      tasks: widget.downloadSection == 'tasks',
+                                      desktop: desktop,
+                                      dockInset: desktop
+                                          ? 0
+                                          : MediaQuery.paddingOf(
+                                              context,
+                                            ).bottom,
+                                    )
+                                  : ScrollToTop(
+                                      builder: (scroll) => CustomScrollView(
+                                        controller: scroll,
+                                        key: PageStorageKey(
+                                          'page-${widget.page}-${widget.playlistId}',
+                                        ),
+                                        slivers: [
+                                          SliverPadding(
+                                            padding: EdgeInsets.fromLTRB(
+                                              desktop ? 36 : 20,
+                                              desktop ? 36 : 20,
+                                              desktop
+                                                  ? 36
+                                                  : widget.page == 'library'
+                                                  ? 0
+                                                  : 20,
+                                              0,
+                                            ),
+                                            sliver: SliverToBoxAdapter(
+                                              child:
+                                                  !desktop &&
+                                                      widget.page == 'library'
+                                                  ? Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        for (final child
+                                                            in content.children)
+                                                          if (child
+                                                              is HomeShelves)
+                                                            child
+                                                          else
+                                                            Padding(
+                                                              padding:
+                                                                  const EdgeInsets.only(
+                                                                    right: 20,
+                                                                  ),
+                                                              child: child,
+                                                            ),
+                                                      ],
+                                                    )
+                                                  : content,
+                                            ),
+                                          ),
+                                          SliverPadding(
+                                            padding: EdgeInsets.fromLTRB(
+                                              desktop ? 36 : 20,
+                                              0,
+                                              desktop ? 36 : 20,
+                                              TingyuTokens.space * 10 +
+                                                  (desktop
+                                                      ? 0
+                                                      : MediaQuery.paddingOf(
+                                                          context,
+                                                        ).bottom),
+                                            ),
+                                            sliver: rowSliver,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    slivers: [
-                                      SliverPadding(
-                                        padding: EdgeInsets.fromLTRB(
-                                          desktop ? 36 : 20,
-                                          desktop ? 36 : 20,
-                                          desktop ? 36 : 20,
-                                          0,
-                                        ),
-                                        sliver: SliverToBoxAdapter(
-                                          child: content,
-                                        ),
-                                      ),
-                                      SliverPadding(
-                                        padding: EdgeInsets.fromLTRB(
-                                          desktop ? 36 : 20,
-                                          0,
-                                          desktop ? 36 : 20,
-                                          TingyuTokens.space * 10,
-                                        ),
-                                        sliver: collection
-                                            ? DecoratedSliver(
-                                                decoration: BoxDecoration(
-                                                  color: t.surface,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        TingyuTokens.radius,
-                                                      ),
-                                                ),
-                                                sliver: SliverPadding(
-                                                  padding: const EdgeInsets.all(
-                                                    8,
-                                                  ),
-                                                  sliver: rowSliver,
-                                                ),
-                                              )
-                                            : rowSliver,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (desktop && selecting)
+                        SelectionBar(
+                          ids: selection.where(p.library.containsKey).toList(),
+                          list: list,
+                          onDone: () => setState(() {
+                            selecting = false;
+                            selection.clear();
+                          }),
+                        )
+                      else if (desktop)
+                        RepaintBoundary(child: MiniPlayer(p)),
+                    ],
                   ),
-                  if (selecting)
-                    SelectionBar(
-                      ids: selection.where(p.library.containsKey).toList(),
-                      list: list,
-                      onDone: () => setState(() {
-                        selecting = false;
-                        selection.clear();
-                      }),
-                    )
-                  else
-                    RepaintBoundary(child: MiniPlayer(p)),
-                ],
+                ),
               ),
+              bottomNavigationBar:
+                  desktop ||
+                      (widget.page == 'search' && widget.playlistId != null)
+                  ? null
+                  : SafeArea(
+                      top: false,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selecting)
+                            SelectionBar(
+                              ids: selection
+                                  .where(p.library.containsKey)
+                                  .toList(),
+                              list: list,
+                              onDone: () => setState(() {
+                                selecting = false;
+                                selection.clear();
+                              }),
+                            )
+                          else
+                            MiniPlayer(p),
+                          CompactNavigation(
+                            selected: widget.page == 'playlist'
+                                ? 'library'
+                                : widget.page,
+                            onSelect: navigate,
+                          ),
+                        ],
+                      ),
+                    ),
             ),
-            bottomNavigationBar:
-                desktop ||
-                    (widget.page == 'search' && widget.playlistId != null)
-                ? null
-                : CompactNavigation(
-                    selected: widget.page == 'playlist'
-                        ? 'library'
-                        : widget.page,
-                    onSelect: navigate,
-                  ),
           ),
         ),
       ),
@@ -834,7 +882,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   (l) => labelButton(
                     l.name,
                     () => context.go('/playlist/${l.id}'),
-                    icon: Icons.queue_music,
+                    icon: Icons.featured_play_list_outlined,
                     selected: widget.playlistId == l.id,
                   ),
                 )
@@ -898,7 +946,7 @@ Future<void> showPlaylistActions(
       labelButton('添加歌曲', () {
         Navigator.pop(ctx);
         context.push('/playlist/${list.id}/add');
-      }, icon: Icons.playlist_add),
+      }, icon: Icons.library_add_outlined),
       labelButton('下载全部', () async {
         Navigator.pop(ctx);
         for (final id in list.trackIds) {
@@ -982,6 +1030,7 @@ class PlaylistDownloadAction extends ConsumerWidget {
         key: const ValueKey('下载全部'),
         label: label,
         selected: allDone,
+        selectionFill: false,
         onPressed: tracks.isEmpty
             ? null
             : () => report(context, () async {
@@ -1082,7 +1131,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
 
     final icon = switch (task?.status) {
       DownloadStatus.completed => Icons.check_circle_outline,
-      DownloadStatus.paused => Icons.pause_circle_outline,
+      DownloadStatus.paused => Icons.play_arrow,
       DownloadStatus.failed => Icons.error_outline,
       DownloadStatus.waiting => Icons.schedule,
       _ => Icons.download_outlined,
@@ -1231,14 +1280,21 @@ Future<void> showTrackActions(
           await p.enqueue(track, next: true);
           if (ctx.mounted) Navigator.pop(ctx);
         }, icon: Icons.playlist_play),
-        labelButton('加入队列', () async {
+        labelButton('加入播放队列', () async {
           await p.enqueue(track);
           if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.queue_music),
-        labelButton(p.likes.contains(track.id) ? '取消喜欢' : '喜欢', () async {
-          await p.toggleLike(track);
-          if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.favorite_border),
+        }, icon: Icons.add_to_queue),
+        labelButton(
+          p.likes.contains(track.id) ? '取消喜欢' : '喜欢',
+          () async {
+            await p.toggleLike(track);
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          icon: p.likes.contains(track.id)
+              ? Icons.favorite
+              : Icons.favorite_border,
+          selected: p.likes.contains(track.id),
+        ),
         labelButton('加入歌单', () async {
           Navigator.pop(ctx);
           await showAddPlaylist(context, p, track);
@@ -1309,105 +1365,97 @@ class MiniPlayer extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(extensions: [dockTokens]),
       child: Builder(
-        builder: (context) => Container(
-          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: tokens.playerSurface,
-            borderRadius: BorderRadius.circular(TingyuTokens.playerRadius),
-            border: Border.all(color: tokens.playerBorder),
-            boxShadow: [
-              BoxShadow(
-                color: tokens.playerShadow,
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Pressable(
-                  key: const ValueKey('展开播放器'),
-                  label: '展开播放器',
-                  onPressed: () => context.push('/player'),
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    children: [
-                      Artwork(t),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: tokens.onPlayer,
-                              ),
+        builder: (context) => Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: GlassSurface(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Pressable(
+                      key: const ValueKey('展开播放器'),
+                      label: '展开播放器',
+                      onPressed: () => context.push('/player'),
+                      padding: EdgeInsets.zero,
+                      child: Row(
+                        children: [
+                          Artwork(t),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: tokens.onPlayer,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  p.opening
+                                      ? '正在解析…'
+                                      : p.quality.isEmpty
+                                      ? '点击继续播放'
+                                      : t.artist,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: context.tokens.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 5),
-                            Text(
-                              p.opening
-                                  ? '正在解析…'
-                                  : p.quality.isEmpty
-                                  ? '点击继续播放'
-                                  : t.artist,
-                              maxLines: 1,
-                              style: TextStyle(
-                                color: context.tokens.muted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (desktop)
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          transport(context, p, overlayContext: overlayContext),
+                          SeekBar(p),
+                        ],
+                      ),
+                    )
+                  else
+                    Pressable(
+                      key: const ValueKey('播放或暂停'),
+                      label: '播放或暂停',
+                      onPressed: p.opening ? null : () => p.toggle(),
+
+                      radius: 48,
+                      child: TingyuIcon(
+                        p.playing ? Icons.pause : Icons.play_arrow,
+                        color: tokens.onPlayer,
+                      ),
+                    ),
+                  if (desktop)
+                    SizedBox(
+                      width: 120,
+                      child: Slider(
+                        value: p.playback.player.volume,
+                        onChanged: (v) => p.playback.player.setVolume(v),
+                      ),
+                    ),
+                  if (!desktop)
+                    action(
+                      Icons.queue_music,
+                      '播放队列',
+                      () => showQueue(overlayContext),
+                    ),
+                ],
               ),
-              if (desktop)
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      transport(context, p, overlayContext: overlayContext),
-                      SeekBar(p),
-                    ],
-                  ),
-                )
-              else
-                Pressable(
-                  key: const ValueKey('播放或暂停'),
-                  label: '播放或暂停',
-                  onPressed: p.opening ? null : () => p.toggle(),
-                  color: tokens.playerButton,
-                  radius: 48,
-                  child: TingyuIcon(
-                    p.playing ? Icons.pause : Icons.play_arrow,
-                    color: tokens.onPlayerButton,
-                  ),
-                ),
-              if (desktop)
-                SizedBox(
-                  width: 120,
-                  child: Slider(
-                    value: p.playback.player.volume,
-                    onChanged: (v) => p.playback.player.setVolume(v),
-                  ),
-                ),
-              if (!desktop)
-                action(
-                  Icons.queue_music,
-                  '播放队列',
-                  () => showQueue(overlayContext),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1901,7 +1949,7 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                     () => showContentActions(
                       context,
                       (ctx) => SimpleDialog(
-                        title: const Text('队列操作'),
+                        title: const Text('播放队列'),
                         children: [
                           labelButton('清空', () async {
                             Navigator.pop(ctx);
@@ -1913,7 +1961,11 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                       ),
                     ),
                   ),
-                  action(Icons.close, '关闭队列', () => Navigator.pop(context)),
+                  action(
+                    Icons.keyboard_arrow_down,
+                    '关闭队列',
+                    () => Navigator.pop(context),
+                  ),
                 ],
               ),
             ),
@@ -2260,8 +2312,14 @@ class DownloadsPanel extends StatelessWidget {
                     d.status == DownloadStatus.waiting)
                   action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
                 else
-                  action(Icons.refresh, '重试下载', () => p.downloads.retry(d)),
-                action(Icons.close, '移除下载', () => p.removeDownload(d)),
+                  action(
+                    d.status == DownloadStatus.paused
+                        ? Icons.play_arrow
+                        : Icons.refresh,
+                    d.status == DownloadStatus.paused ? '继续下载' : '重试下载',
+                    () => p.downloads.retry(d),
+                  ),
+                action(Icons.delete_outline, '移除下载', () => p.removeDownload(d)),
               ],
             ],
           ),
@@ -2395,7 +2453,11 @@ Future<void> showAboutTingyu(BuildContext context) =>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    action(Icons.close, '关闭', () => Navigator.pop(ctx)),
+                    action(
+                      Icons.keyboard_arrow_down,
+                      '关闭',
+                      () => Navigator.pop(ctx),
+                    ),
                   ],
                 ),
                 Container(
@@ -2437,7 +2499,7 @@ Future<void> showAboutTingyu(BuildContext context) =>
                     child: Text(
                       '知道了',
                       style: TextStyle(
-                        color: ctx.tokens.accent,
+                        color: ctx.tokens.accentInk,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -2457,10 +2519,35 @@ Future<void> showQueueTrackActions(
 ) => showContentActions(context, (ctx) {
   final i = p.queue.indexOf(id);
   return SimpleDialog(
-    title: const Text('队列操作'),
+    title: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          p.library[id]?.title ?? '歌曲操作',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: TingyuTokens.space),
+        Text(
+          '队列第 ${i + 1} 首',
+          style: TextStyle(fontSize: 12, color: ctx.tokens.muted),
+        ),
+      ],
+    ),
     children: [
       labelButton(
-        '上移第 ${i + 1} 首',
+        '移至下一首',
+        i >= 0 && id != p.current?.id
+            ? () async {
+                Navigator.pop(ctx);
+                final track = p.library[id];
+                if (track != null) await p.enqueue(track, next: true);
+              }
+            : null,
+        icon: Icons.playlist_play,
+      ),
+      labelButton(
+        '上移一位',
         i > 0
             ? () async {
                 Navigator.pop(ctx);
@@ -2471,7 +2558,7 @@ Future<void> showQueueTrackActions(
         icon: Icons.arrow_upward,
       ),
       labelButton(
-        '下移第 ${i + 1} 首',
+        '下移一位',
         i >= 0 && i < p.queue.length - 1
             ? () async {
                 Navigator.pop(ctx);
@@ -2481,10 +2568,10 @@ Future<void> showQueueTrackActions(
             : null,
         icon: Icons.arrow_downward,
       ),
-      labelButton('移除第 ${i + 1} 首', () async {
+      labelButton('从队列移除', () async {
         Navigator.pop(ctx);
         await p.removeQueue(id);
-      }, icon: Icons.close),
+      }, icon: Icons.remove_circle_outline),
     ],
   );
 });
@@ -2665,7 +2752,11 @@ class _AccountPanelState extends State<AccountPanel> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
               ),
-              action(Icons.close, '关闭账号窗口', () => Navigator.pop(context)),
+              action(
+                Icons.keyboard_arrow_down,
+                '关闭账号窗口',
+                () => Navigator.pop(context),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -2767,7 +2858,7 @@ class _AccountPanelState extends State<AccountPanel> {
                     final router = GoRouter.of(context), id = imported!.id;
                     Navigator.pop(context);
                     router.go('/playlist/$id');
-                  }, icon: Icons.queue_music),
+                  }, icon: Icons.featured_play_list_outlined),
         ],
       ),
     );
@@ -2820,10 +2911,22 @@ class FolderChoice extends StatelessWidget {
 Future<void> showLyrics(BuildContext context, LibraryController p) async {
   final track = p.current;
   if (track == null) return;
-  await showDialog<void>(
-    context: context,
-    builder: (_) => _LyricsDialog(p, track),
-  );
+  if (MediaQuery.sizeOf(context).width >= 960) {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _LyricsDialog(p, track),
+    );
+  } else {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+        child: _LyricsDialog(p, track),
+      ),
+    );
+  }
 }
 
 class _LyricsDialog extends StatefulWidget {
@@ -2851,7 +2954,7 @@ class _LyricsDialogState extends State<_LyricsDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) => TingyuFormPanel(
     title: const Text('匹配歌词'),
     content: SizedBox(
       width: 420,
@@ -2897,15 +3000,27 @@ class _LyricsDialogState extends State<_LyricsDialog> {
               controller: lrc,
               minLines: 3,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: '或粘贴 LRC / 纯文本歌词'),
+              decoration: const InputDecoration(
+                labelText: '粘贴歌词',
+                hintText: '支持 LRC 或纯文本歌词',
+              ),
             ),
-            Text('时间偏移 ${(offset / 1000).toStringAsFixed(1)} 秒'),
-            Slider(
-              value: offset.toDouble(),
-              min: -5000,
-              max: 5000,
-              divisions: 20,
-              onChanged: (v) => setState(() => offset = v.round()),
+            const SizedBox(height: TingyuTokens.space * 2),
+            Row(
+              children: [
+                const Expanded(child: Text('时间偏移')),
+                action(
+                  Icons.remove,
+                  '歌词提前 0.1 秒',
+                  offset > -5000 ? () => setState(() => offset -= 100) : null,
+                ),
+                Text('${(offset / 1000).toStringAsFixed(1)} 秒'),
+                action(
+                  Icons.add,
+                  '歌词延后 0.1 秒',
+                  offset < 5000 ? () => setState(() => offset += 100) : null,
+                ),
+              ],
             ),
           ],
         ),
@@ -2913,11 +3028,17 @@ class _LyricsDialogState extends State<_LyricsDialog> {
     ),
     actions: [
       labelButton('取消', () => Navigator.pop(context)),
-      labelButton('保存歌词', () async {
-        await p.setLyrics(lrc.text, track: track, offset: offset);
-        await p.save();
-        if (context.mounted) Navigator.pop(context);
-      }),
+      Pressable(
+        label: '保存歌词',
+        key: const ValueKey('保存歌词'),
+        color: context.tokens.accent,
+        onPressed: () => report(context, () async {
+          await p.setLyrics(lrc.text, track: track, offset: offset);
+          await p.save();
+          if (context.mounted) Navigator.pop(context);
+        }),
+        child: Text('保存歌词', style: TextStyle(color: context.tokens.onAccent)),
+      ),
     ],
   );
 }
@@ -2940,15 +3061,9 @@ class CompactNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: BorderRadius.circular(TingyuTokens.playerRadius),
-        border: Border.all(color: t.line),
-      ),
-      child: SafeArea(
-        top: false,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: GlassSurface(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -2997,7 +3112,7 @@ class CompactNavigation extends StatelessWidget {
                                 fontWeight: selected == item.$1
                                     ? FontWeight.w600
                                     : FontWeight.w400,
-                                color: selected == item.$1 ? t.accent : t.muted,
+                                color: selected == item.$1 ? t.text : t.muted,
                               ),
                             ),
                           ],

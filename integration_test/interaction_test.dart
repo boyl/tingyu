@@ -115,12 +115,8 @@ void main() {
 
       Future<void> tap(String label) async {
         if (find.byKey(ValueKey(label)).evaluate().isEmpty) {
-          if (label.startsWith('上移第 ') ||
-              label.startsWith('下移第 ') ||
-              label.startsWith('移除第 ')) {
-            final number = int.parse(
-              RegExp(r'\d+').firstMatch(label)!.group(0)!,
-            );
+          if (label == '上移一位' || label == '下移一位' || label == '从队列移除') {
+            const number = 2;
             final id = p.queue[number - 1];
             final more = find.byKey(ValueKey('队列选项 $id'));
             await tester.ensureVisible(more);
@@ -180,6 +176,7 @@ void main() {
         expect(p.playback.player.volume, 1);
         final libraryOrder = p.library.keys.toList();
         await tap('更多 ${firstTrack.title}');
+        await binding.takeScreenshot('track-actions-icons');
         await tap('喜欢');
         await tap('更多 ${firstTrack.title}');
         await tap('加入歌单');
@@ -189,9 +186,9 @@ void main() {
         await waitFor(() => p.playlists.length == 1);
         expect(p.playlists.single.trackIds, [firstTrack.id]);
         await tap('更多 ${secondTrack.title}');
-        await tap('加入队列');
+        await tap('加入播放队列');
         await tap('播放队列');
-        await tap('上移第 2 首');
+        await tap('上移一位');
         expect(p.queue, [secondTrack.id, firstTrack.id]);
         await tap('关闭队列');
         await tap('tab-library');
@@ -277,7 +274,30 @@ void main() {
         await tap('保存歌词');
         await waitFor(() => p.lyricText.contains('原生验收歌词'));
         await tester.pump();
+        final beforeScreenshot = p.position;
+        final beforeGain = p.playback.player.volume;
+        final screenshotClient = HttpClient();
+        try {
+          final request = await screenshotClient.postUrl(
+            Uri.parse('http://127.0.0.1:47935/system-screenshot'),
+          );
+          final response = await request.close().timeout(
+            const Duration(seconds: 10),
+          );
+          expect(
+            response.statusCode,
+            HttpStatus.ok,
+            reason: 'Android 系统截图桥执行失败',
+          );
+          await response.drain<void>();
+        } finally {
+          screenshotClient.close(force: true);
+        }
+        await tester.pump(const Duration(seconds: 3));
         await binding.takeScreenshot('audit-native-player');
+        expect(p.playing, isTrue, reason: '系统截图后应继续播放');
+        expect(p.position, greaterThan(beforeScreenshot));
+        expect(p.playback.player.volume, beforeGain, reason: '截图不得改变播放器增益');
         await tap('返回');
         expect(find.byType(PlayerScreen), findsNothing);
         expect(p.playing, isTrue);

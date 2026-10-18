@@ -19,7 +19,7 @@ void main() {
         for (final text in [
           tokens.text,
           tokens.muted,
-          tokens.accent,
+          tokens.accentInk,
           tokens.danger,
         ]) {
           expect(
@@ -29,7 +29,10 @@ void main() {
           );
         }
       }
-      expect(contrast(tokens.accent, tokens.tint), greaterThanOrEqualTo(4.5));
+      expect(
+        contrast(tokens.accentInk, tokens.tint),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(
         contrast(tokens.onAccent, tokens.accent),
         greaterThanOrEqualTo(4.5),

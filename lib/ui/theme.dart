@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../models/appearance.dart';
 
@@ -42,6 +43,15 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       playerTrack,
       playerShadow,
       danger;
+  // Brand accents need not double as small text ink.
+  Color get accentInk => accent == brandPink ? const Color(0xffa93660) : accent;
+  bool get isDark => background.computeLuminance() < .1;
+  Color get glassFill => surface.withValues(alpha: isDark ? .20 : .16);
+  Color get glassEdge => onArtwork.withValues(alpha: isDark ? .16 : .65);
+  Color get glassHighlight => onArtwork.withValues(alpha: isDark ? .06 : .12);
+  Color get glassShadow => playerShadow.withValues(alpha: isDark ? .24 : .07);
+  static const brandPink = Color(0xfffb7299);
+  static const glassBlur = 5.0;
   static const space = 8.0,
       radius = 12.0,
       iconSize = 22.0,
@@ -50,10 +60,11 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
       profileAvatarSize = 56.0,
       themePreviewHeight = 112.0,
       coverSize = 144.0,
+      artworkRadius = 4.0,
       sheetRadius = 24.0,
       iconStroke = 1.7,
       heroRatio = 1.65,
-      shelfVisibleCards = 2.35,
+      shelfVisibleCards = 2.15,
       playControlSize = 68.0,
       collectionRadius = 16.0,
       downloadTabWidth = 116.0,
@@ -133,24 +144,24 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
     playerShadow: Color(0x3d000000),
   );
   static const bilibili = TingyuTokens(
-    background: Color(0xfffffafb),
+    background: Color(0xffffffff),
     surface: Color(0xffffffff),
-    sidebar: Color(0xfffcf3f6),
-    text: Color(0xff29232a),
-    muted: Color(0xff766b73),
-    accent: Color(0xffbf3565),
-    onAccent: Color(0xffffffff),
-    tint: Color(0xfffff0f5),
-    line: Color(0xfff1e5e9),
+    sidebar: Color(0xfff5f5f7),
+    text: Color(0xff19191b),
+    muted: Color(0xff68686e),
+    accent: brandPink,
+    onAccent: Color(0xff361522),
+    tint: Color(0xfff2f1f3),
+    line: Color(0xffe7e7eb),
     danger: Color(0xffad334c),
-    playerSurface: Color(0xffffedf3),
-    playerBorder: Color(0xfff5d5e1),
-    onPlayer: Color(0xff38242d),
-    playerMuted: Color(0xff795665),
-    playerButton: Color(0xfffb7299),
-    onPlayerButton: Color(0xff46172a),
-    playerTrack: Color(0xffe5bbca),
-    playerShadow: Color(0x125e2440),
+    playerSurface: Color(0xffffffff),
+    playerBorder: Color(0xffe7e7eb),
+    onPlayer: Color(0xff19191b),
+    playerMuted: Color(0xff515157),
+    playerButton: brandPink,
+    onPlayerButton: Color(0xff361522),
+    playerTrack: Color(0xffdcd9de),
+    playerShadow: Color(0x122a2230),
   );
   static const themes = [
     ('bili', '哔哩粉', bilibili),
@@ -417,10 +428,65 @@ class _PressableState extends State<Pressable> {
                     color: widget.selected ? t.accent : t.text,
                     size: TingyuTokens.iconSize,
                   ),
-                  child: widget.child,
+                  child: DefaultTextStyle.merge(
+                    style: TextStyle(
+                      color: widget.selected ? t.accentInk : t.text,
+                    ),
+                    child: widget.child,
+                  ),
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Thin optical layer: the scrolling scene stays behind the dock.
+class GlassSurface extends StatelessWidget {
+  const GlassSurface({
+    super.key,
+    required this.child,
+    this.radius = TingyuTokens.playerRadius,
+  });
+  final Widget child;
+  final double radius;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final border = BorderRadius.circular(radius);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: border,
+        boxShadow: [
+          BoxShadow(
+            color: t.glassShadow,
+            blurRadius: TingyuTokens.space * 2,
+            offset: const Offset(0, TingyuTokens.space / 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: border,
+        child: BackdropFilter.grouped(
+          filter: ui.ImageFilter.blur(
+            sigmaX: TingyuTokens.glassBlur,
+            sigmaY: TingyuTokens.glassBlur,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: border,
+              color: t.glassFill,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [t.glassHighlight, t.glassFill],
+              ),
+              border: Border.all(color: t.glassEdge),
+            ),
+            child: child,
           ),
         ),
       ),

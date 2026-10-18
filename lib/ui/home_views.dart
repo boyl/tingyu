@@ -28,11 +28,12 @@ class HomeShelves extends StatelessWidget {
             SizedBox(
               height:
                   (width * .9).clamp(240.0, 480.0) / TingyuTokens.heroRatio +
-                  TingyuTokens.space,
+                  scale.scale(16) * 1.4 +
+                  scale.scale(12) * 1.4 +
+                  TingyuTokens.space * 3,
               child: ListView.separated(
                 key: const ValueKey('continue-shelf'),
                 scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.hardEdge,
                 itemCount: history.length,
                 separatorBuilder: (_, _) =>
                     const SizedBox(width: TingyuTokens.space * 1.5),
@@ -46,78 +47,43 @@ class HomeShelves extends StatelessWidget {
                       history[i],
                       p.collectionIds('library', p.library.keys),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        TingyuTokens.collectionRadius,
-                      ),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          FittedBox(
-                            fit: BoxFit.cover,
-                            child: Artwork(history[i], size: 400),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          history[i].title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.tokens.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  TingyuTokens.discoveryPalettes.first.last
-                                      .withValues(alpha: .88),
-                                ],
+                        ),
+                        Text(
+                          history[i].artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.tokens.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: TingyuTokens.space * 1.5),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              TingyuTokens.artworkRadius,
+                            ),
+                            child: SizedBox.expand(
+                              child: FittedBox(
+                                fit: BoxFit.cover,
+                                child: Artwork(history[i], size: 400),
                               ),
                             ),
                           ),
-                          Positioned(
-                            left: TingyuTokens.space * 2,
-                            right: TingyuTokens.space * 2,
-                            bottom: TingyuTokens.space * 2,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        history[i].title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: TingyuTokens.onArtwork,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: TingyuTokens.space / 2,
-                                      ),
-                                      Text(
-                                        history[i].artist,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: TingyuTokens.onArtwork,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: TingyuTokens.space),
-                                const TingyuIcon(
-                                  Icons.play_arrow,
-                                  color: TingyuTokens.onArtwork,
-                                  size: 28,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -174,7 +140,7 @@ class HomeShelves extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: context.tokens.tint,
                                 borderRadius: BorderRadius.circular(
-                                  TingyuTokens.collectionRadius,
+                                  TingyuTokens.artworkRadius,
                                 ),
                               ),
                               alignment: Alignment.center,

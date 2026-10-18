@@ -55,7 +55,8 @@ class _ScrollToTopState extends State<ScrollToTop> {
             Positioned.fill(child: widget.builder(scroll)),
             Positioned(
               right: TingyuTokens.space * 2,
-              bottom: TingyuTokens.space * 2,
+              bottom:
+                  TingyuTokens.space * 2 + MediaQuery.paddingOf(context).bottom,
               child: ValueListenableBuilder<bool>(
                 valueListenable: visible,
                 builder: (context, show, _) => show
