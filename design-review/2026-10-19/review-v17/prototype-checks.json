@@ -1,0 +1,9 @@
+{
+  "errors": [],
+  "checks": [
+    "empty disabled",
+    "count in primary action",
+    "busy disables repeat",
+    "button position unchanged"
+  ]
+}

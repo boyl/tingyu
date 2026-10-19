@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +28,8 @@ Future<void> runTingyu({
   LyricsClient? lyricsClient,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  final launchClock = Stopwatch()..start();
+  runApp(const TingyuLaunch());
   try {
     final directory = dataDirectory ?? await getApplicationSupportDirectory();
     await directory.create(recursive: true);
@@ -52,6 +55,8 @@ Future<void> runTingyu({
     if (Platform.isMacOS || Platform.isWindows) {
       await DesktopIntegration(controller).initialize();
     }
+    final remaining = const Duration(milliseconds: 850) - launchClock.elapsed;
+    if (remaining > Duration.zero) await Future<void>.delayed(remaining);
     runApp(
       ProviderScope(
         overrides: [libraryProvider.overrideWith((ref) => controller)],
@@ -65,7 +70,9 @@ Future<void> runTingyu({
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
-              child: Text('听屿暂时无法启动，请检查系统播放器及本地存储配置。\n错误类型：${e.runtimeType}'),
+              child: Text(
+                'tingyu暂时无法启动，请检查系统播放器及本地存储配置。\n错误类型：${e.runtimeType}',
+              ),
             ),
           ),
         ),
@@ -176,6 +183,15 @@ GoRouter createRouter() => GoRouter(
         ),
       ],
     ),
+    GoRoute(
+      path: '/settings/account',
+      builder: (_, _) => const AccountScreen(),
+    ),
+    GoRoute(
+      path: '/settings/glass',
+      builder: (_, _) => const GlassPreferencesScreen(),
+    ),
+    GoRoute(path: '/lyrics', builder: (_, _) => const LyricsScreen()),
     GoRoute(path: '/player', builder: (_, _) => const PlayerScreen()),
   ],
 );
@@ -202,11 +218,67 @@ class TingyuApp extends ConsumerWidget {
           child: child!,
         );
       },
-      title: '听屿',
+      title: 'tingyu',
       debugShowCheckedModeBanner: false,
       theme: tingyuTheme(theme),
       themeAnimationDuration: Duration.zero,
       routerConfig: router ?? _router,
     );
   }
+}
+
+class TingyuLaunch extends StatelessWidget {
+  const TingyuLaunch({super.key});
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: tingyuTheme('bili'),
+    home: Builder(
+      builder: (context) => Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        context.tokens.accentInk,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/branding/ribbon-outline.png',
+                        width: TingyuTokens.space * 15,
+                        height: TingyuTokens.space * 15,
+                      ),
+                    ),
+                    const SizedBox(height: TingyuTokens.space * 2),
+                    const Text(
+                      'tingyu',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: TingyuTokens.space * 6,
+                left: 0,
+                right: 0,
+                child: Text(
+                  'v$tingyuVersion',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: context.tokens.muted, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

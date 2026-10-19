@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>听屿 · 频谱与进度</title>
+<style>
+  :root {
+    --paper: #ffffff;
+    --text: #19191b;
+    --muted: #68686e;
+    --ink: #a93660;
+    --pink: #fb7299;
+    --on-pink: #361522;
+    --line: #e7e7eb;
+    --track: #dcd9de;
+    --stage: #ecebee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--stage);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+    padding: 28px;
+  }
+  .board { display: flex; gap: 28px; align-items: flex-start; }
+  .col { width: 390px; }
+  .cap { margin: 0 0 10px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .player, .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+  }
+  .player { padding: 18px 22px 16px; }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--muted); font-size: 13px; margin-bottom: 16px;
+  }
+  .disc {
+    width: 148px; height: 148px; margin: 0 auto 16px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #fb7299 0 16px, #f7f4f8 17px 40px, #171513 41px);
+    box-shadow: inset 0 0 0 9px #11100e;
+  }
+  h2 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.4px; }
+  .artist { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+  .lyric {
+    margin: 18px 0 8px;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .spectrum { width: 100%; height: 44px; display: block; }
+  .seek {
+    display: grid;
+    grid-template-columns: 34px 1fr 34px;
+    gap: 8px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  .time { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slider { position: relative; height: 22px; }
+  .rail {
+    position: absolute; left: 0; right: 0; top: 9px; height: 3px;
+    border-radius: 2px; background: var(--line);
+  }
+  .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 2px; background: var(--pink);
+  }
+  .thumb {
+    position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+    border-radius: 50%; background: var(--pink);
+  }
+  .bubble {
+    position: absolute; top: -16px; transform: translateX(-50%);
+    background: var(--text); color: #fff; font-size: 11px;
+    border-radius: 8px; padding: 2px 6px; white-space: nowrap;
+  }
+  .transport {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; padding: 0 4px;
+  }
+  .round {
+    width: 64px; height: 64px; border: 0; border-radius: 32px;
+    background: var(--pink); color: var(--on-pink);
+    display: grid; place-items: center;
+  }
+  .icon { width: 22px; height: 22px; color: var(--text); }
+  .icon.pink { color: var(--pink); }
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .card { border-radius: 16px; padding: 12px 14px 12px; }
+  .card p { margin: 0 0 8px; font-size: 13px; font-weight: 500; }
+  .card .lyric { margin: 0 0 6px; font-size: 14px; }
+  .card .seek { margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="board">
+    <section class="col" id="play-shot">
+      <p class="cap">播放</p>
+      <div class="player" id="player"></div>
+    </section>
+    <section class="col" id="state-shot">
+      <p class="cap">其他状态</p>
+      <div class="cards" id="cards"></div>
+    </section>
+  </div>
+<script>
+const bands = [0.55,0.88,0.42,0.96,0.7,0.34,0.8,0.48,0.28,0.66,0.9,0.32,0.58,0.22,0.74,0.4,0.18,0.62,0.36,0.84,0.24,0.5,0.14,0.42,0.68,0.26,0.16,0.52,0.3,0.12,0.44,0.2,0.1,0.36,0.14,0.24,0.1,0.18];
+function spectrum(active) {
+  const w = 320, h = 44, n = bands.length, gap = 3;
+  const bw = (w - gap * (n - 1)) / n;
+  let svg = "";
+  bands.forEach((pct, i) => {
+    const rh = active ? Math.max(3, h * pct) : 3;
+    const x = i * (bw + gap);
+    const y = h - rh;
+    svg += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${rh.toFixed(2)}" rx="1.4" fill="${active ? "#fb7299" : "#dcd9de"}"/>`;
+  });
+  return `<svg class="spectrum" viewBox="0 0 ${w} ${h}" role="img" aria-label="实时频谱">${svg}</svg>`;
+}
+function seek(progress, label) {
+  const left = `calc(${(progress * 100).toFixed(1)}% - 6px)`;
+  const bubble = label ? `<span class="bubble" style="left:${(progress * 100).toFixed(1)}%">${label}</span>` : "";
+  return `<div class="slider">${bubble}<div class="rail"><div class="fill" style="width:${(progress * 100).toFixed(1)}%"></div></div><div class="thumb" style="left:${(progress * 100).toFixed(1)}%"></div></div>`;
+}
+function row(a, b, progress, active, bubble) {
+  return `${spectrum(active)}<div class="seek"><span class="time">${a}</span>${seek(progress, bubble)}<span class="time">${b}</span></div>`;
+}
+const icon = (d, cls = "") => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+document.getElementById("player").innerHTML = `
+  <div class="nav"><span>‹</span><span>正在播放 · 2 / 12</span><span>···</span></div>
+  <div class="disc"></div>
+  <h2>爱江山更爱美人</h2>
+  <p class="artist">李丽芬</p>
+  <p class="lyric">道不尽红尘奢恋</p>
+  ${row("01:24", "04:35", 0.32, true)}
+  <div class="transport">
+    ${icon('<path d="M17 3l3 3-3 3M20 6H8a5 5 0 0 0-5 5"/><path d="M7 21l-3-3 3-3M4 18h12a5 5 0 0 0 5-5"/>', "pink")}
+    ${icon('<path d="M7 6v12M18 7l-8 5 8 5z"/>')}
+    <button class="round" type="button" aria-label="暂停">${icon('<path d="M9 6v12M15 6v12"/>')}</button>
+    ${icon('<path d="M17 6v12M6 7l8 5-8 5z"/>')}
+    ${icon('<path d="M5 7h14M5 12h14M5 17h9"/>')}
+  </div>`;
+const rows = [
+  ["暂停", "01:24", "04:35", 0.32, false, ""],
+  ["拖动", "02:05", "04:35", 0.47, false, "02:05"],
+  ["加载", "00:00", "04:35", 0, false, ""],
+  ["播完", "04:35", "04:35", 1, false, ""],
+  ["减少动态", "01:24", "04:35", 0.32, false, ""],
+];
+const cards = document.getElementById("cards");
+for (const [name, a, b, p, active, bubble] of rows) {
+  const card = document.createElement("section");
+  card.className = "card";
+  card.innerHTML = `<p>${name}</p><p class="lyric">道不尽红尘奢恋</p>${row(a, b, p, active, bubble)}`;
+  cards.appendChild(card);
+}
+</script>
+</body>
+</html>

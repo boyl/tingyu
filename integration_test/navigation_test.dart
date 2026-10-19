@@ -252,7 +252,7 @@ void main() {
       await settleAnimations();
       await tester.tap(find.byKey(const ValueKey('settings-account')));
       await settleAnimations();
-      expect(find.text('请先选择收藏夹'), findsOneWidget);
+      expect(find.text('选择收藏夹'), findsOneWidget);
       final accountScroll = find
           .descendant(
             of: find.byKey(const ValueKey('account-content')),
@@ -270,7 +270,7 @@ void main() {
         tester.widget<FolderChoice>(find.byType(FolderChoice).last).selected,
         isTrue,
       );
-      final importButton = find.text('导入所选收藏夹');
+      final importButton = find.text('导入 1 个收藏夹');
       expect(
         tester.getBottomRight(importButton).dy,
         lessThan(

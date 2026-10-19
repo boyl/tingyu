@@ -1,14 +1,38 @@
 ![GitHub Release Downloads](https://img.shields.io/github/downloads/boyl/tingyu/total?label=Downloads&color=blue)
 
-# 听屿 · Flutter 三端应用
+# tingyu · 本地优先音乐播放器
 
 正式工程，与 `../music-player-prototype` 的 React 交互原型相互独立。目标为 Windows、macOS 和 Android，本地优先，无自建后端。主题为哔哩粉、日出橙、月影蓝、夜间暗，默认哔哩粉；未发布阶段不做旧主题兼容映射。
 
 ## 当前阶段
 
-已经建立可静态分析、可运行自动化测试的原生项目源码，接入真实 B 站接口；Android ABI 拆分 Release 已构建并在本地 Android 16 模拟器完成导航、账号布局和全屏专项验收；已发布 Android 开发版；尚未完成全部功能及三端验收。
+当前发布为 **0.1.20+21**，Android 只提供 arm64-v8a 开发签名包。它包含自 0.1.17 之后尚未单独公开发布的播放、歌词和设置修订。Mac 新设计和桌面打包暂停。
 
-已实现的源码包括搜索/BV/AV/短链解析、多 P、独立音频流解析、播放与系统媒体控制适配、队列/喜欢/歌单/历史、SQLite 恢复、安全存储扫码凭据、收藏夹导入、逐行歌词匹配和手动 LRC、单曲/整歌单下载及四主题界面。桌面托盘可控制播放，关闭窗口隐藏，托盘退出会保存状态。
+0.1.20 增加系统返回规则、16–32 连续字号与独立恢复、收藏夹多关键词检索，并统一开关、导入按钮及自动透明度布局。模拟器失声已定位到音频输出链路，不能写成播放器修复，详见 [本轮 Spec](docs/specs/player-settings-polish.md) 和 [0.1.20 验收](docs/ACCEPTANCE-2026-10-19-020.md)。
+
+已有实现包括：唱片与侧露封面的详情布局、四种播放模式（含播完暂停）、0.5–2× 倍速、定时关闭、全局歌词显示与独立歌词页、逐字/翻译/罗马音、多源匹配与离线歌词、队列拖拽、真实文件空间占比、底栏自动/手动透明度、唯一账号/收藏夹入口、App 优先 B 站外跳，以及 tingyu 与包版本启动画面。工程通过和真机全验以版本验收记录为准。
+
+### 我要下载哪个版本？
+
+| 设备／场景 | 应下载的文件 | 说明 |
+|---|---|---|
+| 支持 arm64-v8a 的 Android 设备 | [tingyu-0.1.20-android-arm64-v8a-release.apk](https://github.com/boyl/tingyu/releases/download/v0.1.20/tingyu-0.1.20-android-arm64-v8a-release.apk) | 本次唯一安装包。不提供其他架构或桌面包。 |
+
+只构建及提供 arm64-v8a，不提供 armeabi-v7a、x86_64 或通用 Release。当前为开发/debug 签名，同签名覆盖升级保留数据，不要求卸载或清空数据。SHA-256：`84329c4e015fe82d062e5be6914b833e5b5c75dcbddf915afba58d5c440f3464`。
+
+## 本版验证与运行截图
+
+141 项离线测试通过、1 项跳过；原生导航、交互、导出、滚动专项和匿名 B 站真实音频下载及断网回放通过；Release 系统栏通过。详情见 [0.1.20 验收记录](docs/ACCEPTANCE-2026-10-19-020.md)。开发签名包不表示真机全验。
+
+截图为同版隔离 Android 实际运行，曲目及收藏夹使用测试夹具；存储安装占用由测试环境系统查询，不等于 Release 包大小。真实账号授权、听感及厂商后台仍待验。
+
+| 歌曲详情 | 独立歌词 | 歌词排版 |
+|---|---|---|
+| ![歌曲详情](docs/screenshots/0.1.20/minimal-player-downloaded.png) | ![独立歌词](docs/screenshots/0.1.20/independent-lyrics-page.png) | ![歌词排版](docs/screenshots/0.1.20/lyrics-display-020.png) |
+
+| 玻璃透明度 | 按住原位预览 | 存储空间 |
+|---|---|---|
+| ![透明度](docs/screenshots/0.1.20/glass-manual-020.png) | ![按住预览](docs/screenshots/0.1.20/glass-preview-020.png) | ![存储空间](docs/screenshots/0.1.20/storage-space-020.png) |
 
 ## 工具链与运行
 
@@ -30,6 +54,16 @@ sh tool/flutterw.sh run -d macos
 
 初次打包是开发构建；Android 模板使用调试签名。正式签名、公证、安装程序和自动更新不在当前验证范围内。
 
+## 长期维护文档
+
+- [已有功能与行为契约](docs/FEATURES.md)：入口、状态、数据与能力边界。
+- [验收标准](docs/ACCEPTANCE.md)：功能与 V01–V09 风格门禁、自动/原生/人工证据。
+- [界面规范](docs/UI.md)：当前已确认视觉与历史演进。
+- [红绿重构流程](docs/REFACTORING.md)：基线、Red → Green → Refactor、回归范围与记录模板。
+- [图标资源规范](docs/ICONS.md)：优先复用、状态配色、使用登记和校验。
+- [本轮开发计划](docs/PLAN-2026-10-19.md)：需求、阶段、回归与交付边界。
+- [发布准则](docs/RELEASE.md)：只构建和发布 arm64-v8a、同源签名校验和远端资产核对；新增/变更功能必须在同次发布同步更新相关文档。
+
 ## 架构和状态
 
 - `lib/models` 定义曲目、分 P、歌单、下载任务与业务失败。稳定曲目标识为 `bvid:cid`；搜索的临时 CID 在详情解析后更新所有引用。
@@ -49,7 +83,7 @@ Android/macOS 使用 just_audio；Windows 使用 just_audio_media_kit。系统�
 4. 中断任务重试时重新下载，避免对不同临时 URL 盲目拼接；**目前不实现 HTTP Range 断点续传**。已下载音频附带曲目信息、封面和已匹配歌词。
 5. 重启检查下载文件是否存在且长度一致；缺失/损坏标记失败。歌单、喜欢、队列和进度持久化，恢复后暂停。删除下载保留歌单和喜欢。
 6. Android 下载只在应用进程存活期间运行，不能保证系统结束进程后仍继续；后台播放通过媒体服务配置。
-7. 逐字歌词、跨设备同步、车载、复杂音效、音量均衡和自动更新暂未实现。
+7. 歌词源没有逐字/翻译/罗马音数据时不伪造，保留逐句或纯文本显示；跨设备同步、车载、复杂音效、音量均衡和自动更新暂未实现。
 
 ## 验证与真实网络探测
 
@@ -77,7 +111,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.17 只构建、发布 arm64-v8a 安装包，附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.17)。不再附带 x86_64 与 armeabi-v7a。仍为开发签名，不是应用商店上架包；真机与桌面验收未完成。
+- Android 0.1.20 只构建、发布 arm64-v8a 安装包，附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.20)。不再附带 x86_64 与 armeabi-v7a。仍为开发签名，不是应用商店上架包；真机听感、真实账号与桌面验收未完成。上一公开发布为 [0.1.17](https://github.com/boyl/tingyu/releases/tag/v0.1.17)。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。

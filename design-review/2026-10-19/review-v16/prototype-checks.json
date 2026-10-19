@@ -1,0 +1,43 @@
+{
+  "errors": [],
+  "checks": [
+    "8 screenshots",
+    "lyrics toggle geometry unchanged",
+    "casefold contains filter",
+    "multiple tokens and empty state",
+    "font32 preview and reset24",
+    "rate fine0.05"
+  ],
+  "positions": {
+    ".discwrap": [
+      1,
+      116,
+      388,
+      264
+    ],
+    ".disc:not(.side)": [
+      72,
+      125,
+      246,
+      246
+    ],
+    ".songtitle": [
+      25,
+      395,
+      100,
+      34
+    ],
+    ".progress": [
+      25,
+      618,
+      340,
+      3
+    ],
+    ".transport": [
+      25,
+      661,
+      340,
+      66
+    ]
+  }
+}

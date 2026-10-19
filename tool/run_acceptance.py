@@ -26,7 +26,7 @@ if args.device:
 output = ROOT / 'artifacts' / 'acceptance'
 output.mkdir(parents=True, exist_ok=True)
 flutter = ['flutter'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']
-commands = [('cached-dependencies', flutter + ['pub', 'get', '--offline']), ('analyze', flutter + ['analyze', '--no-pub']), ('offline-tests', flutter + ['test', '--no-pub', '--reporter', 'expanded']),
+commands = [('icon-catalog', [sys.executable, 'tool/icon_catalog.py', '--check']), ('cached-dependencies', flutter + ['pub', 'get', '--offline']), ('analyze', flutter + ['analyze', '--no-pub']), ('offline-tests', flutter + ['test', '--no-pub', '--reporter', 'expanded']),
             ('desktop-packaging-tests', [sys.executable, 'tool/test_package_desktop.py'])]
 if args.device:
     for name, target in [('android-navigation', 'navigation_test.dart'), ('android-interactions', 'interaction_test.dart')]:

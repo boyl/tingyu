@@ -34,6 +34,7 @@ void main() {
             .widgetList<RecordDisc>(find.byType(RecordDisc))
             .any((disc) => disc.playing) ||
         find.byType(QueuePanel).evaluate().isNotEmpty ||
+        find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
         tester
             .widgetList<PlayingIndicator>(find.byType(PlayingIndicator))
             .any((indicator) => indicator.playing)) {
@@ -115,6 +116,21 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await settle(tester);
   }
+
+  testWidgets('cached settings entry survives route replacement and reopens', (
+    tester,
+  ) async {
+    await mount(tester);
+    await tap(tester, '打开设置');
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    router.go('/downloads');
+    await settle(tester);
+    router.go('/');
+    await settle(tester);
+    await tap(tester, '打开设置');
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    await unmount(tester);
+  });
 
   test(
     'batch adding existing songs commits once, deduplicates and recovers after save failure',
@@ -743,18 +759,24 @@ void main() {
       expect(fixture.controller.mode, 'shuffle');
       await tap(tester, '下一首');
       expect(fixture.controller.current!.id, firstTrack.id);
-      await tap(tester, '歌词');
+      await tap(tester, '展开歌词 ›');
+      await tap(tester, '歌曲操作');
+      await tap(tester, '编辑歌词');
       await tap(tester, '歌词延后 0.1 秒');
       await settle(tester);
       expect(fixture.controller.lyricOffset, 0);
-      await tap(tester, '取消');
+      await tap(tester, '返回');
+      await tap(tester, '确认');
       expect(fixture.controller.lyricOffset, 0);
-      await tap(tester, '歌词');
+      await tap(tester, '歌曲操作');
+      await tap(tester, '编辑歌词');
       await tester.enterText(find.byType(TextField).last, '[00:01.00]测试歌词');
       await tap(tester, '歌词延后 0.1 秒');
       await tap(tester, '保存歌词');
       expect(fixture.controller.lyricText, '[00:01.00]测试歌词');
-      expect(fixture.controller.lyricOffset, 100);
+      expect(fixture.controller.lyricOffset, -100);
+      await tap(tester, '返回');
+      expect(find.byType(PlayerScreen), findsOneWidget);
       await tap(tester, '返回');
       expect(find.byType(PlayerScreen), findsNothing);
       await unmount(tester);
@@ -853,7 +875,7 @@ void main() {
       await mount(tester);
       await tap(tester, '打开设置');
       await tap(tester, 'settings-account');
-      await tap(tester, '生成登录二维码');
+      await tap(tester, '登录');
       fixture.api.qrCode = 86038;
       await tester.pump(const Duration(seconds: 2));
       await settle(tester);
@@ -876,7 +898,7 @@ void main() {
       );
       expect(find.text('暂无可导入的收藏夹。'), findsOneWidget);
       final disabled = tester.widget<Pressable>(
-        find.byKey(const ValueKey('请先选择收藏夹')),
+        find.byKey(const ValueKey('import-folders')),
       );
       expect(disabled.onPressed, isNull);
       fixture.api.loggedIn = false;
@@ -888,13 +910,14 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tap(tester, '生成登录二维码');
+      await tap(tester, '登录');
       await tester.pump(const Duration(seconds: 2));
       await settle(tester);
       await tap(tester, '退出账号');
+      await tap(tester, '确认');
       expect(fixture.controller.profile, isNull);
       expect(fixture.controller.library.length, 2);
-      await tap(tester, '关闭账号窗口');
+      await tap(tester, '返回设置');
       await unmount(tester);
     },
   );
@@ -984,10 +1007,7 @@ void main() {
       expect(find.byType(CompactNavigation), findsNothing);
       expect(find.byType(MiniPlayer), findsNothing);
       expect(find.text('收藏夹导入'), findsNothing);
-      final disabledImport = tester.widget<Pressable>(
-        find.byKey(const ValueKey('settings-import')),
-      );
-      expect(disabledImport.onPressed, isNull);
+      expect(find.byKey(const ValueKey('settings-import')), findsNothing);
       await tap(tester, 'theme-night');
       expect(fixture.controller.theme, 'night');
       await tap(tester, 'theme-moon');
@@ -997,11 +1017,12 @@ void main() {
       await tap(tester, 'quality-true');
       expect(fixture.controller.standard, isTrue);
       await tap(tester, 'settings-storage');
-      expect(find.byType(DownloadsPanel), findsOneWidget);
+      expect(find.byType(StoragePanel), findsOneWidget);
       await tap(tester, '返回设置');
       expect(find.byType(SettingsScreen), findsOneWidget);
       await tap(tester, 'settings-about');
-      await tap(tester, '关闭');
+      Navigator.of(tester.element(find.text('关于 tingyu'))).pop();
+      await settle(tester);
       await tap(tester, '返回');
       expect(find.byType(SettingsScreen), findsNothing);
       expect(find.textContaining('账号凭据保存在'), findsNothing);
@@ -1213,8 +1234,16 @@ void main() {
       task.status = DownloadStatus.completed;
       fixture.controller.clearError();
       await tester.pump();
-      await tap(tester, 'download-${firstTrack.id}');
-      expect(find.byType(DownloadsPanel), findsOneWidget);
+      expect(
+        tester
+            .widget<Pressable>(
+              find.byKey(ValueKey('download-${firstTrack.id}')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      expect(find.byType(DownloadsPanel), findsNothing);
       await unmount(tester);
     },
   );
@@ -1354,6 +1383,82 @@ void main() {
           }
         }
       }
+      await unmount(tester);
+    },
+  );
+  testWidgets(
+    'removing downloads preserves current track and cached player detail entry',
+    (tester) async {
+      final p = fixture.controller;
+      await p.play(firstTrack);
+      final task = DownloadTask(secondTrack, status: DownloadStatus.completed);
+      fixture.downloads.tasks.add(task);
+      await mount(tester);
+      await tap(tester, '展开播放器');
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      router.go('/downloads');
+      await settle(tester);
+      await tap(tester, '下载选项 ${secondTrack.title}');
+      await tap(tester, '移除下载');
+      await tap(tester, '确认');
+      expect(p.current?.id, firstTrack.id);
+      await tap(tester, 'tab-library');
+      await tap(tester, '展开播放器');
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      await tap(tester, '返回');
+      await tap(tester, '展开播放器');
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+  testWidgets(
+    'system back returns other tabs home then scrolls home top before exiting',
+    (tester) async {
+      var exits = 0;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'SystemNavigator.pop') exits++;
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      for (var i = 0; i < 30; i++) {
+        await fixture.controller.remember(
+          Track(
+            bvid: 'BVback$i',
+            cid: 500 + i,
+            title: '返回测试$i',
+            artist: 'UP',
+            cover: '',
+            duration: 30,
+          ),
+        );
+      }
+      await mount(tester);
+      final home = find.byKey(const PageStorageKey('page-library-null'));
+      await tester.drag(home, const Offset(0, -600));
+      await settle(tester);
+      final scroll = tester.widget<CustomScrollView>(home).controller!;
+      expect(scroll.offset, greaterThan(0));
+      await tap(tester, 'tab-search');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(router.routeInformationProvider.value.uri.path, '/');
+      expect(exits, 0);
+      expect(scroll.offset, greaterThan(0));
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(scroll.offset, 0);
+      expect(exits, 0);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(exits, 1);
       await unmount(tester);
     },
   );

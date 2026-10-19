@@ -96,6 +96,88 @@ void main() {
     },
   );
 
+  testWidgets(
+    'current player line shows words, translation and romaji inside the row',
+    (tester) async {
+      fixture.controller.lyricText = '[00:01.00]你[00:02.00]好[00:03.00]';
+      fixture.controller.lyricTranslation = '[00:01.00]hello';
+      fixture.controller.lyricRomaji = '[00:01.00]ni hao';
+      fixture.controller.position = const Duration(milliseconds: 1500);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: tingyuTheme('bili'),
+          home: Scaffold(
+            body: SizedBox(
+              height: 150,
+              width: 360,
+              child: LyricPanel(fixture.controller),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('你'), findsOneWidget);
+      expect(find.text('好'), findsOneWidget);
+      expect(find.text('hello'), findsOneWidget);
+      expect(find.text('ni hao'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      fixture.controller.showLyricTranslation = false;
+      fixture.controller.showLyricRomaji = false;
+      fixture.controller.position = const Duration(milliseconds: 1501);
+      await tester.pump();
+      expect(find.text('hello'), findsNothing);
+      expect(find.text('ni hao'), findsNothing);
+      expect(find.text('你'), findsOneWidget);
+    },
+  );
+
+  testWidgets('subtitle gaps do not leave a tall blank row', (tester) async {
+    fixture.controller.lyricText = '[00:01.00]第一句\n[00:02.00] \n[00:04.00]第二句';
+    fixture.controller.position = const Duration(seconds: 1);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: tingyuTheme('bili'),
+        home: Scaffold(
+          body: SizedBox(
+            height: 480,
+            width: 360,
+            child: RichLyricTimeline(fixture.controller),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final above = tester.getRect(find.text('第一句'));
+    final below = tester.getRect(find.text('第二句'));
+    expect(below.top - above.bottom, lessThan(48));
+  });
+
+  testWidgets('reduced motion keeps a timed line as one readable sentence', (
+    tester,
+  ) async {
+    fixture.controller.lyricText = '[00:01.00]你[00:02.00]好[00:03.00]';
+    fixture.controller.position = const Duration(milliseconds: 1500);
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(
+          theme: tingyuTheme('bili'),
+          home: Scaffold(
+            body: SizedBox(
+              height: 150,
+              width: 360,
+              child: LyricPanel(fixture.controller),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('你好'), findsOneWidget);
+    expect(find.text('你'), findsNothing);
+  });
+
   testWidgets('phone player keeps the current lyric fully above the seek bar', (
     tester,
   ) async {
@@ -115,7 +197,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [libraryProvider.overrideWith((_) => fixture.controller)],
-        child: MaterialApp(theme: tingyuTheme('bili'), home: const PlayerScreen()),
+        child: MaterialApp(
+          theme: tingyuTheme('bili'),
+          home: const PlayerScreen(),
+        ),
       ),
     );
     await tester.pump();
@@ -128,43 +213,44 @@ void main() {
     expect(line.bottom, lessThan(seek));
   });
 
-  testWidgets('record keeps turning while playing and holds still when paused', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    providerOwnsController = true;
-    fixture.controller.current = firstTrack;
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [libraryProvider.overrideWith((_) => fixture.controller)],
-        child: MaterialApp(
-          theme: tingyuTheme('bili'),
-          home: const PlayerScreen(),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.byType(RecordDisc), findsOneWidget);
-    final turns = tester
-        .widget<RotationTransition>(
-          find.descendant(
-            of: find.byType(RecordDisc),
-            matching: find.byType(RotationTransition),
+  testWidgets(
+    'record keeps turning while playing and holds still when paused',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      providerOwnsController = true;
+      fixture.controller.current = firstTrack;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [libraryProvider.overrideWith((_) => fixture.controller)],
+          child: MaterialApp(
+            theme: tingyuTheme('bili'),
+            home: const PlayerScreen(),
           ),
-        )
-        .turns;
-    expect(turns.value, 0);
-    await fixture.playback.play();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(turns.value, greaterThan(0));
-    final held = turns.value;
-    await fixture.playback.pause();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(turns.value, held);
-  });
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(RecordDisc), findsOneWidget);
+      final turns = tester
+          .widget<RotationTransition>(
+            find.descendant(
+              of: find.byType(RecordDisc),
+              matching: find.byType(RotationTransition),
+            ),
+          )
+          .turns;
+      expect(turns.value, 0);
+      await fixture.playback.play();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(turns.value, greaterThan(0));
+      final held = turns.value;
+      await fixture.playback.pause();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(turns.value, held);
+    },
+  );
 }

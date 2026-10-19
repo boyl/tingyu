@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "aligned": true,
+  "checks": [
+    "global lyrics",
+    "independent lyrics remains accessible",
+    "timer enable/edit/disable",
+    "legacy timer actions removed"
+  ],
+  "nativeTests": "NOT RUN"
+}

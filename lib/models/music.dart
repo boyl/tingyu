@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'lyrics.dart';
+export 'lyrics.dart';
 
 class Track {
   const Track({
@@ -114,35 +116,6 @@ class AppFailure implements Exception {
   final int? code;
   @override
   String toString() => message;
-}
-
-class LyricLine {
-  const LyricLine(this.time, this.text);
-  final Duration time;
-  final String text;
-}
-
-List<LyricLine> parseLrc(String text) {
-  final lines = <LyricLine>[];
-  final pattern = RegExp(r'\[(\d+):(\d+(?:\.\d+)?)\]');
-  for (final line in text.split('\n')) {
-    final matches = pattern.allMatches(line);
-    final words = line.replaceAll(pattern, '').trim();
-    if (words.isEmpty && matches.isEmpty) continue;
-    for (final m in matches) {
-      lines.add(
-        LyricLine(
-          Duration(
-            milliseconds: ((int.parse(m[1]!) * 60 + double.parse(m[2]!)) * 1000)
-                .round(),
-          ),
-          words,
-        ),
-      );
-    }
-  }
-  lines.sort((a, b) => a.time.compareTo(b.time));
-  return lines;
 }
 
 /// Latest non-empty line that has already started. Blank gap markers stay in

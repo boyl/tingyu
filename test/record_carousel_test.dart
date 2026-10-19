@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/ui/app.dart';
 import 'package:tingyu/ui/theme.dart';
 import 'support/fakes.dart';
+import 'package:tingyu/models/music.dart';
 
 void main() {
   late TestLibrary fixture;
@@ -51,6 +52,55 @@ void main() {
       expect(p.adjacentTrack(1)?.id, preview);
       await p.next();
       expect(p.current?.id, preview);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  testWidgets(
+    'both adjacent records expose equal small edges at different central sizes',
+    (tester) async {
+      final p = fixture.controller;
+      const third = Track(
+        bvid: 'BVedgefixture',
+        cid: 303,
+        title: '第三首',
+        artist: 'UP',
+        cover: '',
+        duration: 30,
+      );
+      for (final t in [firstTrack, secondTrack, third]) {
+        await p.remember(t);
+      }
+      p.queue.addAll([firstTrack.id, secondTrack.id, third.id]);
+      await p.play(secondTrack);
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final size in [100.0, 240.0]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [libraryProvider.overrideWith((ref) => p)],
+            child: MaterialApp(
+              theme: tingyuTheme('bili'),
+              home: Scaffold(body: RecordCarousel(p, size: size)),
+            ),
+          ),
+        );
+        final left = tester.getRect(
+          find.byWidgetPredicate(
+            (w) => w is RecordDisc && w.track.id == firstTrack.id,
+          ),
+        );
+        final right = tester.getRect(
+          find.byWidgetPredicate(
+            (w) => w is RecordDisc && w.track.id == third.id,
+          ),
+        );
+        expect(left.right, closeTo(size * .1, .01));
+        expect(right.left, closeTo(390 - size * .1, .01));
+        expect(left.right, greaterThan(0));
+        expect(right.left, lessThan(390));
+      }
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

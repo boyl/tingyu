@@ -18,14 +18,51 @@ import com.ryanheise.audioservice.AudioServiceActivity
 class MainActivity : AudioServiceActivity() {
     private var exportResult: MethodChannel.Result? = null
     private var exportSource: File? = null
+    private var spectrum: SpectrumCapture? = null
     private val exportRequest = 7018
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        spectrum?.release()
+        spectrum = SpectrumCapture(flutterEngine.dartExecutor.binaryMessenger)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/storage").setMethodCallHandler { call, result ->
+            if (call.method != "installedBytes") { result.notImplemented(); return@setMethodCallHandler }
+            Thread {
+                try {
+                    val bytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val manager = getSystemService(android.app.usage.StorageStatsManager::class.java)
+                        manager.queryStatsForUid(android.os.storage.StorageManager.UUID_DEFAULT, applicationInfo.uid).appBytes
+                    } else {
+                        // Older platforms expose installed APK/split/native files, not compiled ART sizes.
+                        val apk = listOfNotNull(applicationInfo.sourceDir) + (applicationInfo.splitSourceDirs?.toList() ?: emptyList())
+                        apk.distinct().sumOf { File(it).length() } + File(applicationInfo.nativeLibraryDir).walkTopDown().filter { it.isFile }.sumOf { it.length() }
+                    }
+                    runOnUiThread { result.success(bytes) }
+                } catch (_: Exception) { runOnUiThread { result.error("STORAGE", "无法获取应用安装大小", null) } }
+            }.start()
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/external").setMethodCallHandler { call, result ->
-            if (call.method != "openBilibiliApp") { result.notImplemented(); return@setMethodCallHandler }
+            if (call.method !in listOf("openBilibiliApp", "openBilibiliVideo", "openBilibiliLogin")) { result.notImplemented(); return@setMethodCallHandler }
+            val login = call.method == "openBilibiliLogin"
+            val loginUrl = call.argument<String>("url")
+            if (login && (loginUrl == null || android.net.Uri.parse(loginUrl).let { it.scheme != "https" || it.host != "passport.bilibili.com" || !it.path.orEmpty().contains("login") })) {
+                result.error("INVALID_LOGIN", "登录地址无效", null); return@setMethodCallHandler
+            }
+            val bvid = call.argument<String>("bvid")
+            val page = (call.argument<Int>("page") ?: 1).coerceAtLeast(1)
+            val video = call.method == "openBilibiliVideo"
+            if (video && (bvid == null || !Regex("^BV[0-9A-Za-z]{10}$").matches(bvid))) {
+                result.error("INVALID_VIDEO", "视频编号无效", null)
+                return@setMethodCallHandler
+            }
             var opened = false
             for (packageName in listOf("tv.danmaku.bili", "com.bilibili.app.in")) {
-                val intent = packageManager.getLaunchIntentForPackage(packageName) ?: continue
+                val intent = if (login) {
+                    // Official QR URL carries this session; the official client decides whether to confirm it.
+                    Intent(Intent.ACTION_VIEW, android.net.Uri.parse("bilibili://browser/?url=" + android.net.Uri.encode(loginUrl))).setPackage(packageName)
+                } else if (video) {
+                    android.content.Intent(android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://www.bilibili.com/video/$bvid?p=$page")).setPackage(packageName)
+                } else packageManager.getLaunchIntentForPackage(packageName) ?: continue
                 try {
                     startActivity(intent)
                     opened = true
@@ -51,7 +88,7 @@ class MainActivity : AudioServiceActivity() {
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "audio/mp4"
-                putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "听屿音频.m4a")
+                putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "tingyu音频.m4a")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     putExtra(DocumentsContract.EXTRA_INITIAL_URI,
                         DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download"))
@@ -110,6 +147,12 @@ class MainActivity : AudioServiceActivity() {
                 runOnUiThread { result.error("WRITE", "无法保存音频，请检查空间与目标位置", null) }
             }
         }.start()
+    }
+
+    override fun onDestroy() {
+        spectrum?.release()
+        spectrum = null
+        super.onDestroy()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

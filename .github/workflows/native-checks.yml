@@ -33,7 +33,7 @@ jobs:
         if: runner.os == 'Windows'
       - run: python tool/package_desktop.py windows-x64
         if: runner.os == 'Windows'
-      - run: flutter build apk --release --split-per-abi
+      - run: flutter build apk --release --target-platform android-arm64 --split-per-abi
         if: runner.os == 'Linux'
       - uses: actions/upload-artifact@v4
         if: runner.os != 'Linux'
@@ -46,6 +46,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Linux'
         with:
-          name: tingyu-Android-release
-          path: build/app/outputs/flutter-apk/*-release.apk
+          name: tingyu-Android-arm64-v8a-release
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error

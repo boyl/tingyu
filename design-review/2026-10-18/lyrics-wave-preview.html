@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>听屿效果图</title>
+<style>
+  :root {
+    --paper: #ffffff;
+    --text: #19191b;
+    --muted: #68686e;
+    --ink: #a93660;
+    --pink: #fb7299;
+    --on-pink: #361522;
+    --tint: #f2f1f3;
+    --line: #e7e7eb;
+    --track: #dcd9de;
+    --stage: #ecebee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--stage);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+    padding: 28px;
+  }
+  .board { display: flex; gap: 28px; align-items: flex-start; }
+  .col { width: 390px; }
+  .cap {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .phone {
+    width: 390px;
+    height: 860px;
+    background: #d9d7de;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+  }
+  .dim {
+    padding: 22px 20px 0;
+    color: #3a3a40;
+  }
+  .dim .top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+  }
+  .dim .top b { font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; }
+  .dim .sub { margin: 18px 0 0; text-align: center; color: #6d6d74; font-size: 13px; }
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 790px;
+    z-index: 1;
+    background: var(--paper);
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 20px 14px;
+  }
+  .grab {
+    width: 40px; height: 4px; border-radius: 4px;
+    background: var(--line); margin: 0 auto 16px;
+  }
+  .sheet h1 { margin: 0 0 16px; font-size: 20px; font-weight: 600; }
+  .scroll { flex: 1; min-height: 0; overflow: hidden; padding-bottom: 8px; }
+  .label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .field { margin-bottom: 12px; }
+  .box {
+    background: var(--tint);
+    border-radius: 16px;
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chev { color: var(--muted); font-size: 20px; line-height: 1; }
+  .search {
+    display: block;
+    margin: -2px 0 14px;
+    padding: 8px 2px 10px;
+    background: none;
+    border: 0;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .lyric {
+    min-height: 78px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #8d8d93;
+  }
+  .lyric b { font-weight: 400; color: var(--text); }
+  .offset {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .offset strong { font-size: 16px; font-weight: 600; }
+  .hint {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .step { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .step button {
+    width: 36px; height: 36px; border: 0; border-radius: 18px;
+    background: var(--tint); color: var(--text); font-size: 18px;
+  }
+  .actions {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .cancel { background: none; border: 0; color: var(--muted); font-size: 16px; padding: 12px 4px; }
+  .save {
+    background: var(--pink); color: var(--on-pink); border: 0;
+    border-radius: 22px; min-height: 44px; padding: 0 22px;
+    font-size: 16px; font-weight: 600;
+  }
+  .player {
+    height: auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: 18px 20px 16px;
+  }
+  .player .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--muted); font-size: 13px; margin-bottom: 18px;
+  }
+  .disc {
+    width: 168px; height: 168px; margin: 0 auto 18px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, #fb7299 0 18px, #f7f4f8 19px 46px, #171513 47px);
+    box-shadow: inset 0 0 0 10px #11100e;
+  }
+  .title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.4px; }
+  .artist { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+  .line {
+    margin: 16px 0 8px;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .seek { display: grid; grid-template-columns: 34px 1fr 34px; gap: 8px; align-items: center; }
+  .time { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .wave { width: 100%; height: 32px; display: block; }
+  .transport {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 6px; padding: 0 6px;
+  }
+  .round {
+    width: 64px; height: 64px; border-radius: 32px; border: 0;
+    background: var(--pink); color: var(--on-pink);
+    display: grid; place-items: center;
+  }
+  .icon { width: 22px; height: 22px; color: var(--text); }
+  .icon.pink { color: var(--pink); }
+  .tools { display: flex; justify-content: space-around; margin-top: 4px; color: var(--muted); }
+  .tools span { font-size: 12px; }
+  .cards { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px 14px 10px;
+  }
+  .card p { margin: 0 0 8px; font-size: 13px; color: var(--text); font-weight: 500; }
+  .bubble-wrap { height: 22px; position: relative; }
+  .bubble {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: white;
+    font-size: 11px;
+    border-radius: 8px;
+    padding: 2px 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="board">
+    <section class="col" id="sheet-shot">
+      <p class="cap">匹配歌词</p>
+      <div class="phone">
+        <div class="dim">
+          <div class="top"><span>‹</span><b>李丽芬这首《爱江山更爱美人》曾红…</b><span>···</span></div>
+          <p class="sub">B 站 AI 字幕</p>
+        </div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h1>匹配歌词</h1>
+          <div class="scroll">
+            <div class="field">
+              <span class="label">来源</span>
+              <div class="box row">全部来源 <span class="chev">›</span></div>
+            </div>
+            <div class="field">
+              <span class="label">歌名 / 歌手</span>
+              <div class="box">李丽芬 爱江山更爱美人</div>
+            </div>
+            <button class="search" type="button">搜索歌词</button>
+            <div class="field">
+              <span class="label">歌词</span>
+              <div class="box lyric"><b>[00:28.28]啊</b><br>[00:31.72]道不尽红尘奢恋<br>[00:34.42]诉不完人间恩怨</div>
+            </div>
+            <div class="field">
+              <span class="label">翻译歌词，可选</span>
+              <div class="box" style="color:#68686e">相同时间戳的译文</div>
+            </div>
+            <div class="field">
+              <span class="label">罗马音，可选</span>
+              <div class="box" style="color:#68686e">相同时间戳的读音</div>
+            </div>
+            <div class="offset">
+              <strong>时间偏移</strong>
+              <div class="step">
+                <button type="button" aria-label="减小偏移">−</button>
+                <span>0.0 秒</span>
+                <button type="button" aria-label="增大偏移">+</button>
+              </div>
+              <div class="hint">正值提前，负值延后</div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="cancel" type="button">取消</button>
+            <button class="save" type="button">保存歌词</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="col" id="wave-shot">
+      <p class="cap">播放</p>
+      <div class="player" id="player"></div>
+      <div class="cards" id="cards"></div>
+    </section>
+  </div>
+<script>
+const heights = [22,34,48,40,62,84,58,36,70,96,74,46,58,80,42,28,50,66,90,54,32,48,72,40,24,38,56,82,64,36,28,52,70,44,24,34,60,46,30,20,42,68,50,32,26];
+function bars(progress, mode) {
+  const w = 300, h = 32, n = heights.length, gap = 2;
+  const bw = (w - gap * (n - 1)) / n;
+  const head = Math.min(n - 1, Math.max(0, Math.round(progress * (n - 1))));
+  let svg = "";
+  heights.forEach((pct, i) => {
+    let rh = h * pct / 100;
+    const played = mode === "ended" || (mode !== "loading" && i <= head);
+    let fill = played ? "#fb7299" : "#dcd9de";
+    if (mode === "loading") { rh = 5; fill = "#e7e7eb"; }
+    if (mode === "play" && Math.abs(i - head) <= 1) {
+      rh = h;
+      fill = "#a93660";
+    }
+    if (mode === "drag" && i === head) rh = h;
+    const y = (h - rh) / 2;
+    const x = i * (bw + gap);
+    svg += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(rh, 2).toFixed(2)}" rx="1" fill="${fill}"/>`;
+  });
+  if (mode === "play" || mode === "pause" || mode === "drag" || mode === "still" || mode === "ended") {
+    const x = head * (bw + gap) + bw / 2;
+    const color = mode === "pause" || mode === "still" ? "#a93660" : "#a93660";
+    svg += `<rect x="${(x - 0.8).toFixed(2)}" y="0" width="1.6" height="${h}" rx="0.8" fill="${color}"/>`;
+  }
+  return `<svg class="wave" viewBox="0 0 ${w} ${h}" role="img" aria-label="进度">${svg}</svg>`;
+}
+function seek(a, b, p, mode) {
+  return `<div class="seek"><span class="time">${a}</span>${bars(p, mode)}<span class="time">${b}</span></div>`;
+}
+const icon = (d, cls="") => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const pause = icon('<path d="M9 6v12M15 6v12"/>');
+const play = icon('<path d="M8 5.5v13l11-6.5z"/>', "");
+const prev = icon('<path d="M7 6v12M18 7l-8 5 8 5z"/>');
+const next = icon('<path d="M17 6v12M6 7l8 5-8 5z"/>');
+const repeat = icon('<path d="M17 3l3 3-3 3M20 6H8a5 5 0 0 0-5 5"/><path d="M7 21l-3-3 3-3M4 18h12a5 5 0 0 0 5-5"/>', "pink");
+const queue = icon('<path d="M5 7h14M5 12h14M5 17h9"/>');
+document.getElementById("player").innerHTML = `
+  <div class="nav"><span>‹</span><span>正在播放 · 2 / 12</span><span>···</span></div>
+  <div class="disc"></div>
+  <h2 class="title">爱江山更爱美人</h2>
+  <p class="artist">李丽芬</p>
+  <p class="line">道不尽红尘奢恋</p>
+  ${seek("01:24", "04:35", 0.32, "play")}
+  <div class="transport">${repeat}<span>${prev}</span><button class="round" type="button" aria-label="暂停">${pause}</button><span>${next}</span><span>${queue}</span></div>
+  `;
+const rows = [
+  ["暂停", "01:24", "04:35", 0.32, "pause", ""],
+  ["拖动", "02:05", "04:35", 0.47, "drag", "02:05"],
+  ["加载", "00:00", "04:35", 0, "loading", ""],
+  ["播完", "04:35", "04:35", 1, "ended", ""],
+  ["减少动态", "01:24", "04:35", 0.32, "still", ""],
+];
+const cards = document.getElementById("cards");
+for (const [name, a, b, p, mode, bubble] of rows) {
+  const card = document.createElement("section");
+  card.className = "card";
+  card.innerHTML = `<p>${name}</p>${bubble ? `<div class="bubble-wrap"><span class="bubble" style="left:calc(34px + 8px + (100% - 76px) * ${p})">${bubble}</span></div>` : ""}` + seek(a, b, p, mode);
+  cards.appendChild(card);
+}
+</script>
+</body>
+</html>

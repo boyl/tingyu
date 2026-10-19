@@ -401,6 +401,8 @@ class DownloadManager extends ChangeNotifier {
                 expectedRevision: revision,
                 allowed: () => !_closed && tasks.contains(task),
                 source: candidate?['source'] as String? ?? 'lrclib',
+                translation: candidate?['translation'] as String? ?? '',
+                romaji: candidate?['romaji'] as String? ?? '',
               );
               if (valid()) task.lyricStatus = DownloadLyricStatus.available;
             }
@@ -428,10 +430,19 @@ class DownloadManager extends ChangeNotifier {
     Track t,
     String text, {
     String source = 'manual',
+    String translation = '',
+    String romaji = '',
     int offset = 0,
   }) async {
     _lyricRevisions[t.id] = (_lyricRevisions[t.id] ?? 0) + 1;
-    await _writeLyrics(t, text, source: source, offset: offset);
+    await _writeLyrics(
+      t,
+      text,
+      source: source,
+      offset: offset,
+      translation: translation,
+      romaji: romaji,
+    );
     for (final task in tasks.where((task) => task.track.id == t.id)) {
       task.lyricStatus = text.trim().isEmpty
           ? DownloadLyricStatus.missing
@@ -446,6 +457,8 @@ class DownloadManager extends ChangeNotifier {
     int? expectedRevision,
     bool Function()? allowed,
     String source = 'manual',
+    String translation = '',
+    String romaji = '',
     int offset = 0,
   }) async {
     final previous = _lyricWrites[t.id];
@@ -461,7 +474,13 @@ class DownloadManager extends ChangeNotifier {
       final file = File(path.join(directory.path, '${_stem(t)}.lyrics'));
       final temp = File('${file.path}.tmp');
       await temp.writeAsString(
-        jsonEncode({'lrc': text, 'source': source, 'offset': offset}),
+        jsonEncode({
+          'lrc': text,
+          'source': source,
+          'offset': offset,
+          'translation': translation,
+          'romaji': romaji,
+        }),
         flush: true,
       );
       await temp.rename(file.path);

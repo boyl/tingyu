@@ -1,0 +1,20 @@
+[
+  {
+    "name": "controls",
+    "result": "PASS",
+    "loaded": true,
+    "errors": []
+  },
+  {
+    "name": "transparency",
+    "result": "PASS",
+    "loaded": true,
+    "errors": []
+  },
+  {
+    "name": "details",
+    "result": "PASS",
+    "loaded": true,
+    "errors": []
+  }
+]

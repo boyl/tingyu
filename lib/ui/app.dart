@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
+import '../services/storage_usage.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../services/lyrics.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../main.dart';
 import '../controllers/library_controller.dart';
 import '../models/music.dart';
@@ -23,6 +28,26 @@ part 'settings_views.dart';
 part 'playlist_add_views.dart';
 part 'downloads_views.dart';
 part 'search_views.dart';
+part 'lyrics_views.dart';
+part 'lyrics_preferences_views.dart';
+part 'playback_settings_views.dart';
+part 'preferences_views.dart';
+
+String normalizedFolderName(String value) => String.fromCharCodes(
+  value.runes.map(
+    (r) => r == 0x3000
+        ? 0x20
+        : r >= 0xff01 && r <= 0xff5e
+        ? r - 0xfee0
+        : r,
+  ),
+).toLowerCase().trim();
+bool matchesFolderName(String name, String query) {
+  final normalized = normalizedFolderName(name);
+  return normalizedFolderName(
+    query,
+  ).split(RegExp(r'\s+')).where((w) => w.isNotEmpty).every(normalized.contains);
+}
 
 bool matchesLocal(Track? track, String query) {
   if (track == null) return false;
@@ -277,8 +302,8 @@ class _RecordDiscState extends State<RecordDisc>
   @override
   Widget build(BuildContext context) {
     final size = widget.size;
-    final label = size * .62;
-    final hole = size * .075;
+    final label = size * (130 / 246);
+    final hole = size * (7 / 246);
     return RepaintBoundary(
       child: RotationTransition(
         turns: spin,
@@ -294,15 +319,34 @@ class _RecordDiscState extends State<RecordDisc>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: TingyuTokens.vinyl,
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.tokens.playerShadow.withValues(alpha: .22),
+                      blurRadius: TingyuTokens.space * 2,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                  gradient: RadialGradient(
+                    center: const Alignment(-.5, -.8),
+                    radius: 1.4,
+                    colors: [
+                      Color.alphaBlend(
+                        TingyuTokens.onArtwork.withValues(alpha: .16),
+                        TingyuTokens.vinyl,
+                      ),
+                      TingyuTokens.vinyl,
+                      TingyuTokens.vinyl,
+                    ],
+                  ),
                   border: Border.all(
                     color: TingyuTokens.onArtwork.withValues(alpha: .16),
                   ),
                 ),
               ),
-              for (var ring = 0; ring < 8; ring++)
+              for (var ring = 0; ring < 18; ring++)
                 Container(
-                  width: size * (.68 + ring * .04),
-                  height: size * (.68 + ring * .04),
+                  width: size * (.58 + ring * .022),
+                  height: size * (.58 + ring * .022),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -467,6 +511,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     search = TextEditingController(text: ref.read(libraryProvider).query);
   }
 
+  final pageScroll = ScrollController();
   final localSearch = TextEditingController();
   bool localSearchOpen = false;
   bool selecting = false;
@@ -497,6 +542,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     debounce?.cancel();
     search.dispose();
     localSearch.dispose();
+    pageScroll.dispose();
     super.dispose();
   }
 
@@ -569,7 +615,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                   label: '打开设置',
                   padding: const EdgeInsets.all(TingyuTokens.space / 2),
                   radius: TingyuTokens.playerRadius,
-                  onPressed: () => context.push('/settings'),
+                  onPressed: () {
+                    unawaited(context.push('/settings'));
+                  },
                   child: AccountAvatar(
                     profile: p.profile,
                     size: TingyuTokens.avatarSize,
@@ -750,7 +798,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     );
     return PopScope(
-      canPop: !selecting && widget.page != 'playlist',
+      canPop: !selecting && widget.playlistId != null,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (selecting) {
@@ -758,8 +806,24 @@ class _AppShellState extends ConsumerState<AppShell> {
             selecting = false;
             selection.clear();
           });
-        } else if (widget.page == 'playlist') {
-          navigate('library');
+        } else if (widget.playlistId == null) {
+          if (widget.page != 'library') {
+            navigate('library');
+          } else if (pageScroll.hasClients && pageScroll.offset > 0) {
+            if (MediaQuery.disableAnimationsOf(context)) {
+              pageScroll.jumpTo(0);
+            } else {
+              unawaited(
+                pageScroll.animateTo(
+                  0,
+                  duration: TingyuTokens.scrollReturn,
+                  curve: Curves.easeOutCubic,
+                ),
+              );
+            }
+          } else {
+            unawaited(SystemNavigator.pop());
+          }
         }
       },
       child: Shortcuts(
@@ -784,109 +848,117 @@ class _AppShellState extends ConsumerState<AppShell> {
           child: BackdropGroup(
             child: Scaffold(
               extendBody: !desktop,
-              body: Builder(
-                builder: (context) => SafeArea(
-                  bottom: desktop,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (desktop &&
-                                !(widget.page == 'search' &&
-                                    widget.playlistId != null))
-                              SizedBox(width: 224, child: sidebar(p)),
-                            Expanded(
-                              child: widget.page == 'downloads'
-                                  ? DownloadsWorkspace(
-                                      p,
-                                      tasks: widget.downloadSection == 'tasks',
-                                      desktop: desktop,
-                                      dockInset: desktop
-                                          ? 0
-                                          : MediaQuery.paddingOf(
-                                              context,
-                                            ).bottom,
-                                    )
-                                  : ScrollToTop(
-                                      builder: (scroll) => CustomScrollView(
-                                        controller: scroll,
-                                        key: PageStorageKey(
-                                          'page-${widget.page}-${widget.playlistId}',
+              body: GlassBackdrop(
+                p: p,
+                child: Builder(
+                  builder: (context) => SafeArea(
+                    bottom: desktop,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (desktop &&
+                                  !(widget.page == 'search' &&
+                                      widget.playlistId != null))
+                                SizedBox(width: 224, child: sidebar(p)),
+                              Expanded(
+                                child: widget.page == 'downloads'
+                                    ? DownloadsWorkspace(
+                                        p,
+                                        tasks:
+                                            widget.downloadSection == 'tasks',
+                                        desktop: desktop,
+                                        dockInset: desktop
+                                            ? 0
+                                            : MediaQuery.paddingOf(
+                                                context,
+                                              ).bottom,
+                                      )
+                                    : ScrollToTop(
+                                        controller: pageScroll,
+                                        builder: (scroll) => CustomScrollView(
+                                          controller: scroll,
+                                          key: PageStorageKey(
+                                            'page-${widget.page}-${widget.playlistId}',
+                                          ),
+                                          slivers: [
+                                            SliverPadding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                desktop ? 36 : 20,
+                                                desktop ? 36 : 20,
+                                                desktop
+                                                    ? 36
+                                                    : widget.page == 'library'
+                                                    ? 0
+                                                    : 20,
+                                                0,
+                                              ),
+                                              sliver: SliverToBoxAdapter(
+                                                child:
+                                                    !desktop &&
+                                                        widget.page == 'library'
+                                                    ? Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          for (final child
+                                                              in content
+                                                                  .children)
+                                                            if (child
+                                                                is HomeShelves)
+                                                              child
+                                                            else
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      right: 20,
+                                                                    ),
+                                                                child: child,
+                                                              ),
+                                                        ],
+                                                      )
+                                                    : content,
+                                              ),
+                                            ),
+                                            SliverPadding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                desktop ? 36 : 20,
+                                                0,
+                                                desktop ? 36 : 20,
+                                                TingyuTokens.space * 10 +
+                                                    (desktop
+                                                        ? 0
+                                                        : MediaQuery.paddingOf(
+                                                            context,
+                                                          ).bottom),
+                                              ),
+                                              sliver: rowSliver,
+                                            ),
+                                          ],
                                         ),
-                                        slivers: [
-                                          SliverPadding(
-                                            padding: EdgeInsets.fromLTRB(
-                                              desktop ? 36 : 20,
-                                              desktop ? 36 : 20,
-                                              desktop
-                                                  ? 36
-                                                  : widget.page == 'library'
-                                                  ? 0
-                                                  : 20,
-                                              0,
-                                            ),
-                                            sliver: SliverToBoxAdapter(
-                                              child:
-                                                  !desktop &&
-                                                      widget.page == 'library'
-                                                  ? Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        for (final child
-                                                            in content.children)
-                                                          if (child
-                                                              is HomeShelves)
-                                                            child
-                                                          else
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets.only(
-                                                                    right: 20,
-                                                                  ),
-                                                              child: child,
-                                                            ),
-                                                      ],
-                                                    )
-                                                  : content,
-                                            ),
-                                          ),
-                                          SliverPadding(
-                                            padding: EdgeInsets.fromLTRB(
-                                              desktop ? 36 : 20,
-                                              0,
-                                              desktop ? 36 : 20,
-                                              TingyuTokens.space * 10 +
-                                                  (desktop
-                                                      ? 0
-                                                      : MediaQuery.paddingOf(
-                                                          context,
-                                                        ).bottom),
-                                            ),
-                                            sliver: rowSliver,
-                                          ),
-                                        ],
                                       ),
-                                    ),
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      if (desktop && selecting)
-                        SelectionBar(
-                          ids: selection.where(p.library.containsKey).toList(),
-                          list: list,
-                          onDone: () => setState(() {
-                            selecting = false;
-                            selection.clear();
-                          }),
-                        )
-                      else if (desktop)
-                        RepaintBoundary(child: MiniPlayer(p)),
-                    ],
+                        if (desktop && selecting)
+                          SelectionBar(
+                            ids: selection
+                                .where(p.library.containsKey)
+                                .toList(),
+                            list: list,
+                            onDone: () => setState(() {
+                              selecting = false;
+                              selection.clear();
+                            }),
+                          )
+                        else if (desktop)
+                          RepaintBoundary(child: MiniPlayer(p)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -913,6 +985,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           else
                             MiniPlayer(p),
                           CompactNavigation(
+                            controller: p,
                             selected: widget.page == 'playlist'
                                 ? 'library'
                                 : widget.page,
@@ -983,9 +1056,13 @@ class _AppShellState extends ConsumerState<AppShell> {
             children: [
               TingyuIcon(Icons.graphic_eq),
               SizedBox(width: 12),
-              Text(
-                '听屿',
-                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  'tingyu',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -1020,7 +1097,9 @@ class _AppShellState extends ConsumerState<AppShell> {
         Pressable(
           key: const ValueKey('打开设置'),
           label: '设置',
-          onPressed: () => context.push('/settings'),
+          onPressed: () {
+            unawaited(context.push('/settings'));
+          },
           child: Row(
             children: [
               AccountAvatar(profile: p.profile, size: TingyuTokens.avatarSize),
@@ -1233,7 +1312,7 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
             DownloadStatus.waiting => '等待下载，点击查看',
             DownloadStatus.downloading =>
               '下载中${task!.total > 0 ? ' ${(task.progress! * 100).round()}%' : ''}，点击查看',
-            DownloadStatus.completed => '已下载，点击查看',
+            DownloadStatus.completed => '已下载',
             DownloadStatus.paused => '下载已暂停，点击继续',
             DownloadStatus.failed => '下载失败，点击重试',
             null => '下载',
@@ -1268,10 +1347,13 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
       message: label,
       child: Pressable(
         key: ValueKey('download-${track.id}'),
+        dimWhenDisabled: !completed,
         label: '$label ${track.title}',
         selected: completed,
         selectionFill: false,
-        onPressed: preparing ? null : () => report(context, activate),
+        onPressed: preparing || completed
+            ? null
+            : () => report(context, activate),
         child: transferring
             ? downloadProgress(context, preparing ? null : task?.progress)
             : TingyuIcon(
@@ -1434,13 +1516,10 @@ Future<void> showTrackActions(
               await p.editPlaylist(list, remove: track.id);
             }
           }, icon: Icons.remove_circle_outline),
-        labelButton(
-          '在 B 站打开',
-          () => launchUrl(
-            Uri.parse('https://www.bilibili.com/video/${track.bvid}'),
-          ),
-          icon: Icons.open_in_new,
-        ),
+        labelButton('在 B 站打开', () async {
+          Navigator.pop(ctx);
+          await report(context, () => BilibiliLinkLauncher().openVideo(track));
+        }, icon: Icons.open_in_new),
       ],
     ),
   );
@@ -1495,7 +1574,9 @@ class MiniPlayer extends StatelessWidget {
       child: Builder(
         builder: (context) => Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          child: GlassSurface(
+          child: AdaptiveGlass(
+            p: p,
+            navigation: false,
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Row(
@@ -1504,7 +1585,9 @@ class MiniPlayer extends StatelessWidget {
                     child: Pressable(
                       key: const ValueKey('展开播放器'),
                       label: '展开播放器',
-                      onPressed: () => context.push('/player'),
+                      onPressed: () {
+                        unawaited(context.push('/player'));
+                      },
                       padding: EdgeInsets.zero,
                       child: Row(
                         children: [
@@ -1594,11 +1677,13 @@ class MiniPlayer extends StatelessWidget {
 String modeLabel(String mode) => switch (mode) {
   'shuffle' => '随机播放',
   'repeat' => '单曲循环',
+  'once' => '播完暂停',
   _ => '列表循环',
 };
 IconData modeIcon(String mode) => switch (mode) {
   'shuffle' => Icons.shuffle,
   'repeat' => Icons.repeat_one,
+  'once' => Icons.pause_circle_outline,
   _ => Icons.repeat,
 };
 
@@ -1612,8 +1697,12 @@ class ModeButton extends StatelessWidget {
       key: const ValueKey('cycle-mode'),
       label: '播放模式：${modeLabel(p.mode)}，点击切换',
       onPressed: () => report(context, () {
-        const modes = ['order', 'repeat', 'shuffle'];
-        return p.setMode(modes[(modes.indexOf(p.mode) + 1) % modes.length]);
+        const modes = ['order', 'repeat', 'shuffle', 'once'];
+        final task = p.setMode(
+          modes[(modes.indexOf(p.mode) + 1) % modes.length],
+        );
+        p.announceMode(modeLabel(p.mode));
+        return task;
       }),
       child: TingyuIcon(modeIcon(p.mode), color: context.tokens.accent),
     ),
@@ -1651,9 +1740,34 @@ Widget transport(
   ],
 );
 
+class PlayerProgress extends StatefulWidget {
+  const PlayerProgress(this.controller, {super.key});
+  final LibraryController controller;
+  @override
+  State<PlayerProgress> createState() => _PlayerProgressState();
+}
+
+class _PlayerProgressState extends State<PlayerProgress> {
+  var seeking = false;
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SeekBar(
+        widget.controller,
+        onSeeking: (value) {
+          if (seeking == value) return;
+          setState(() => seeking = value);
+        },
+      ),
+    ],
+  );
+}
+
 class SeekBar extends StatelessWidget {
-  const SeekBar(this.p, {super.key});
+  const SeekBar(this.p, {super.key, this.onSeeking});
   final LibraryController p;
+  final ValueChanged<bool>? onSeeking;
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<Duration>(
     valueListenable: p.playhead,
@@ -1665,27 +1779,33 @@ class SeekBar extends StatelessWidget {
             p.playback.player.duration ??
             Duration(seconds: p.current?.duration ?? 0),
         max = duration.inMilliseconds.toDouble();
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          clock(p.position),
-          style: TextStyle(fontSize: 10, color: context.tokens.muted),
-        ),
-        Expanded(
-          child: Slider(
-            value: p.position.inMilliseconds.toDouble().clamp(
-              0,
-              max > 0 ? max : 1,
-            ),
-            max: max > 0 ? max : 1,
-            onChanged: max > 0
-                ? (v) => p.playback.seek(Duration(milliseconds: v.round()))
-                : null,
+        Slider(
+          value: p.position.inMilliseconds.toDouble().clamp(
+            0,
+            max > 0 ? max : 1,
           ),
+          max: max > 0 ? max : 1,
+          onChangeStart: max > 0 ? (_) => onSeeking?.call(true) : null,
+          onChangeEnd: max > 0 ? (_) => onSeeking?.call(false) : null,
+          onChanged: max > 0
+              ? (v) => p.playback.seek(Duration(milliseconds: v.round()))
+              : null,
         ),
-        Text(
-          clock(duration),
-          style: TextStyle(fontSize: 10, color: context.tokens.muted),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              clock(p.position),
+              style: TextStyle(fontSize: 10, color: context.tokens.muted),
+            ),
+            Text(
+              clock(duration),
+              style: TextStyle(fontSize: 10, color: context.tokens.muted),
+            ),
+          ],
         ),
       ],
     );
@@ -1739,10 +1859,13 @@ class _RecordCarouselState extends State<RecordCarousel> {
         child: LayoutBuilder(
           builder: (context, box) {
             final center = (box.maxWidth - size) / 2;
+            final peek = (size * (1 - TingyuTokens.recordPeek) / 2);
+            final previousLeft = -size + size * .1 + peek;
+            final nextLeft = box.maxWidth - size * .1 - peek;
             final offset = drag.clamp(-size * .2, size * .2);
             Widget record(Track track, double left, bool active) => Positioned(
               left: left + offset,
-              top: TingyuTokens.space * 2,
+              top: TingyuTokens.space,
               child: Opacity(
                 opacity: active ? 1 : .6,
                 child: Transform.scale(
@@ -1757,13 +1880,12 @@ class _RecordCarouselState extends State<RecordCarousel> {
             );
             return ClipRect(
               child: SizedBox(
-                height: size + TingyuTokens.space * 4,
+                height: size + TingyuTokens.space * 2,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    if (previous != null)
-                      record(previous, center - size * 1.15, false),
-                    if (next != null) record(next, center + size * 1.15, false),
+                    if (previous != null) record(previous, previousLeft, false),
+                    if (next != null) record(next, nextLeft, false),
                     record(p.current!, center, true),
                   ],
                 ),
@@ -1793,7 +1915,10 @@ class PlayerScreen extends ConsumerWidget {
       );
     }
     final width = MediaQuery.sizeOf(context).width, desktop = width >= 960;
-    final phoneArtMax = (width - 64).clamp(180.0, 340.0);
+    final phoneArtMax = (width * TingyuTokens.recordDiameterRatio).clamp(
+      180.0,
+      340.0,
+    );
     final meta = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1806,14 +1931,27 @@ class PlayerScreen extends ConsumerWidget {
                 children: [
                   Text(
                     track.title,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: desktop ? null : 25,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    track.artist,
-                    style: TextStyle(color: context.tokens.muted),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          track.artist,
+                          style: TextStyle(color: context.tokens.muted),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      TrackDownloadAction(
+                        track,
+                        key: ValueKey('download-action-${track.id}'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1867,7 +2005,12 @@ class PlayerScreen extends ConsumerWidget {
         meta,
       ],
     );
-    final lyrics = desktop ? SizedBox(height: 280, child: LyricPanel(p)) : null;
+    final lyrics = desktop
+        ? SizedBox(
+            height: 280,
+            child: p.showPlayerLyrics ? LyricPanel(p) : const SizedBox.shrink(),
+          )
+        : null;
     final screen = Scaffold(
       backgroundColor: desktop ? null : Colors.transparent,
       appBar: PlayerHeader(
@@ -1891,21 +2034,24 @@ class PlayerScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SeekBar(p),
-                  transport(context, p),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      TrackDownloadAction(
-                        track,
-                        key: ValueKey('download-action-${track.id}'),
-                      ),
-                      action(
-                        Icons.lyrics_outlined,
-                        '歌词',
-                        () => showLyrics(context, p),
-                      ),
+                      PlaybackTool(p, timer: false),
+                      PlaybackTool(p, timer: true),
                     ],
+                  ),
+                  PlayerProgress(p),
+                  transport(context, p),
+                  Padding(
+                    padding: const EdgeInsets.only(top: TingyuTokens.space * 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        LyricVisibilityControl(p),
+                        labelButton('展开歌词 ›', () => context.push('/lyrics')),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1944,65 +2090,46 @@ class PlayerScreen extends ConsumerWidget {
                 ),
               )
             : LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    key: const ValueKey('player-content'),
+                builder: (context, box) {
+                  Widget recordAndMeta() => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (p.error.isNotEmpty)
+                        errorBox(
+                          context,
+                          p.error,
+                          () => p.play(track, at: p.position),
+                        ),
+                      RecordCarousel(p, size: phoneArtMax),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: meta,
+                      ),
+                    ],
+                  );
+                  Widget stableLyrics() => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: SizedBox(
-                      height: constraints.maxHeight,
-                      width: constraints.maxWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (p.error.isNotEmpty)
-                              errorBox(
-                                context,
-                                p.error,
-                                () => p.play(track, at: p.position),
-                              ),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Expanded(
-                                    child: LayoutBuilder(
-                                      builder: (context, box) {
-                                        final side =
-                                            (box.maxHeight -
-                                                    TingyuTokens.space * 4)
-                                                .clamp(0.0, phoneArtMax);
-                                        return Center(
-                                          child: side < 48
-                                              ? const SizedBox.shrink()
-                                              : RecordCarousel(p, size: side),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                    ),
-                                    child: meta,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
-                              child: SizedBox(
-                                height: 112,
-                                child: LyricPanel(p),
-                              ),
-                            ),
-                          ],
+                      height: 112,
+                      child: IgnorePointer(
+                        ignoring: !p.showPlayerLyrics,
+                        child: ExcludeSemantics(
+                          excluding: !p.showPlayerLyrics,
+                          child: AnimatedOpacity(
+                            opacity: p.showPlayerLyrics ? 1 : 0,
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? Duration.zero
+                                : TingyuTokens.transition,
+                            child: LyricPanel(p),
+                          ),
                         ),
                       ),
                     ),
+                  );
+                  return SingleChildScrollView(
+                    key: const ValueKey('player-content'),
+                    child: Column(children: [recordAndMeta(), stableLyrics()]),
                   );
                 },
               ),
@@ -2039,12 +2166,23 @@ class PlayerHeader extends StatelessWidget implements PreferredSizeWidget {
             action(Icons.arrow_back, '返回', onBack),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                status,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: context.tokens.muted),
+              child: Consumer(
+                builder: (context, ref, _) => ValueListenableBuilder<String?>(
+                  valueListenable: ref.watch(libraryProvider).modeNotice,
+                  builder: (context, notice, _) => Semantics(
+                    liveRegion: notice != null,
+                    child: Text(
+                      notice ?? status,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.tokens.muted,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -2154,21 +2292,62 @@ class _LyricPanelState extends State<LyricPanel> {
             itemCount: lines.length,
             itemExtent: 64,
             padding: const EdgeInsets.symmetric(vertical: 12),
-            itemBuilder: (ctx, i) => Center(
-              child: Text(
-                lines[i].text,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: i == index
-                      ? context.tokens.accent
-                      : context.tokens.muted,
-                  fontWeight: i == index ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 16,
+            itemBuilder: (ctx, i) {
+              final line = lines[i];
+              final active = i == index;
+              final secondary =
+                  active &&
+                  ((p.showLyricTranslation && line.translation.isNotEmpty) ||
+                      (p.showLyricRomaji && line.romaji.isNotEmpty));
+              final style = TextStyle(
+                color: active ? context.tokens.accent : context.tokens.muted,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 16,
+                height: 1.1,
+              );
+              final main = LyricWordLine(
+                line: line,
+                milliseconds: p.position.inMilliseconds + p.lyricOffset,
+                style: style,
+                sung: context.tokens.accent,
+                unsung: context.tokens.muted,
+                animate: active && !MediaQuery.disableAnimationsOf(context),
+                maxLines: secondary ? 1 : 2,
+              );
+              if (!secondary) return Center(child: main);
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    main,
+                    if (p.showLyricTranslation && line.translation.isNotEmpty)
+                      Text(
+                        line.translation,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.tokens.muted,
+                          fontSize: 12,
+                          height: 1.1,
+                        ),
+                      ),
+                    if (p.showLyricRomaji && line.romaji.isNotEmpty)
+                      Text(
+                        line.romaji,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.tokens.muted,
+                          fontSize: 11,
+                          height: 1.1,
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -2206,6 +2385,7 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
     );
   }
 
+  List<String>? dragOrder;
   String? located;
   bool initialized = false;
   static const rowHeight = 72.0;
@@ -2245,7 +2425,19 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Expanded(child: Text('播放队列 · ${p.queue.length} 首')),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('播放队列 · ${p.queue.length} 首'),
+                        const SizedBox(height: 4),
+                        Text(
+                          '长按歌曲或拖动手柄排序',
+                          style: TextStyle(fontSize: 11, color: t.muted),
+                        ),
+                      ],
+                    ),
+                  ),
                   action(
                     Icons.my_location,
                     '定位当前歌曲',
@@ -2291,8 +2483,21 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                           bottom: TingyuTokens.space * 10,
                         ),
                         itemCount: p.queue.length,
+                        onReorderStart: (_) => dragOrder = List.of(p.queue),
                         onReorderItem: (oldIndex, newIndex) {
-                          unawaited(p.moveQueue(oldIndex, newIndex - oldIndex));
+                          final snapshot = List<String>.of(
+                            dragOrder ?? p.queue,
+                          );
+                          if (oldIndex < 0 || oldIndex >= snapshot.length) {
+                            return;
+                          }
+                          final id = snapshot.removeAt(oldIndex);
+                          final before = newIndex < snapshot.length
+                              ? snapshot[newIndex]
+                              : null;
+                          unawaited(
+                            report(context, () => p.reorderQueue(id, before)),
+                          );
                         },
                         proxyDecorator: (child, _, animation) => Material(
                           color: t.tint,
@@ -2304,130 +2509,138 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                         itemBuilder: (context, i) {
                           final track = p.library[p.queue[i]]!,
                               current = track.id == p.current?.id;
-                          return ColoredBox(
+                          return ReorderableDelayedDragStartListener(
                             key: ValueKey('queue-row-${track.id}'),
-                            color: current ? t.tint : t.background,
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 28,
-                                  child: current
-                                      ? Center(
-                                          child: PlayingIndicator(
-                                            playing:
-                                                p.playing &&
-                                                p
-                                                        .playback
-                                                        .player
-                                                        .processingState ==
-                                                    ProcessingState.ready,
+                            index: i,
+                            child: ColoredBox(
+                              color: current ? t.tint : t.background,
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 28,
+                                    child: current
+                                        ? Center(
+                                            child: PlayingIndicator(
+                                              playing:
+                                                  p.playing &&
+                                                  p
+                                                          .playback
+                                                          .player
+                                                          .processingState ==
+                                                      ProcessingState.ready,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  Expanded(
+                                    child: Pressable(
+                                      key: ValueKey('queue-track-${track.id}'),
+                                      label:
+                                          '${current ? '当前歌曲，' : ''}${track.title}',
+                                      selected: current,
+                                      selectionFill: false,
+                                      onPressed: () => report(
+                                        context,
+                                        () => current
+                                            ? p.toggle()
+                                            : p.play(track),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: TingyuTokens.space / 2,
+                                        vertical: TingyuTokens.space,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Artwork(track, size: 40),
+                                          const SizedBox(
+                                            width: TingyuTokens.space * 1.5,
                                           ),
-                                        )
-                                      : null,
-                                ),
-                                Expanded(
-                                  child: Pressable(
-                                    key: ValueKey('queue-track-${track.id}'),
-                                    label:
-                                        '${current ? '当前歌曲，' : ''}${track.title}',
-                                    selected: current,
-                                    selectionFill: false,
-                                    onPressed: () => report(
-                                      context,
-                                      () =>
-                                          current ? p.toggle() : p.play(track),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: TingyuTokens.space / 2,
-                                      vertical: TingyuTokens.space,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Artwork(track, size: 40),
-                                        const SizedBox(
-                                          width: TingyuTokens.space * 1.5,
-                                        ),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                track.title,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: current
-                                                      ? t.accent
-                                                      : t.text,
-                                                  fontSize: 13,
+                                          Expanded(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  track.title,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: current
+                                                        ? t.accent
+                                                        : t.text,
+                                                    fontSize: 13,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(
-                                                height: TingyuTokens.space / 2,
-                                              ),
-                                              Text(
-                                                track.artist,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: t.muted,
-                                                  fontSize: 11,
+                                                const SizedBox(
+                                                  height:
+                                                      TingyuTokens.space / 2,
                                                 ),
-                                              ),
-                                            ],
+                                                Text(
+                                                  track.artist,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: t.muted,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                action(
-                                  Icons.more_horiz,
-                                  '队列选项 ${track.id}',
-                                  () async {
-                                    await showQueueTrackActions(
-                                      context,
-                                      p,
-                                      track.id,
-                                    );
-                                    if (mounted && p.current?.id == track.id) {
-                                      locate(p);
-                                    }
-                                  },
-                                ),
-                                Semantics(
-                                  label: '拖动调整 ${track.title}',
-                                  customSemanticsActions: {
-                                    if (i > 0)
-                                      const CustomSemanticsAction(
-                                        label: '上移',
-                                      ): () =>
-                                          unawaited(p.moveQueue(i, -1)),
-                                    if (i < p.queue.length - 1)
-                                      const CustomSemanticsAction(
-                                        label: '下移',
-                                      ): () =>
-                                          unawaited(p.moveQueue(i, 1)),
-                                  },
-                                  child: ReorderableDragStartListener(
-                                    index: i,
-                                    child: SizedBox.square(
-                                      key: ValueKey('queue-drag-${track.id}'),
-                                      dimension: TingyuTokens.controlSize,
-                                      child: Center(
-                                        child: TingyuIcon(
-                                          Icons.drag_indicator,
-                                          color: t.muted,
-                                          size: 20,
+                                  action(
+                                    Icons.more_horiz,
+                                    '队列选项 ${track.id}',
+                                    () async {
+                                      await showQueueTrackActions(
+                                        context,
+                                        p,
+                                        track.id,
+                                      );
+                                      if (mounted &&
+                                          p.current?.id == track.id) {
+                                        locate(p);
+                                      }
+                                    },
+                                  ),
+                                  Semantics(
+                                    label: '拖动调整 ${track.title}',
+                                    customSemanticsActions: {
+                                      if (i > 0)
+                                        const CustomSemanticsAction(
+                                          label: '上移',
+                                        ): () =>
+                                            unawaited(p.moveQueue(i, -1)),
+                                      if (i < p.queue.length - 1)
+                                        const CustomSemanticsAction(
+                                          label: '下移',
+                                        ): () =>
+                                            unawaited(p.moveQueue(i, 1)),
+                                    },
+                                    child: ReorderableDragStartListener(
+                                      index: i,
+                                      child: SizedBox.square(
+                                        key: ValueKey('queue-drag-${track.id}'),
+                                        dimension: TingyuTokens.controlSize,
+                                        child: Center(
+                                          child: TingyuIcon(
+                                            Icons.drag_indicator,
+                                            color: t.muted,
+                                            size: 20,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -2602,14 +2815,6 @@ class DownloadsPanel extends StatelessWidget {
                 ),
               ),
               if (d.status == DownloadStatus.completed) ...[
-                Tooltip(
-                  message: '已下载，可离线播放',
-                  child: TingyuIcon(
-                    Icons.check_circle_outline,
-                    size: 20,
-                    color: context.tokens.accent,
-                  ),
-                ),
                 action(
                   Icons.more_horiz,
                   '下载选项 ${d.track.title}',
@@ -2744,81 +2949,41 @@ Future<void> exportTrack(
   }
 }
 
-Future<void> showAboutTingyu(BuildContext context) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: context.tokens.background,
-      builder: (ctx) => SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(TingyuTokens.space * 3),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    action(
-                      Icons.keyboard_arrow_down,
-                      '关闭',
-                      () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 64,
-                  height: 64,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: ctx.tokens.tint,
-                    borderRadius: BorderRadius.circular(
-                      TingyuTokens.collectionRadius,
-                    ),
-                  ),
-                  child: TingyuIcon(
-                    Icons.graphic_eq,
-                    size: 36,
-                    color: ctx.tokens.accent,
-                  ),
-                ),
-                const SizedBox(height: TingyuTokens.space * 2),
-                Text('听屿', style: Theme.of(ctx).textTheme.titleLarge),
-                const SizedBox(height: TingyuTokens.space),
-                Text(
-                  '版本 $tingyuVersion',
-                  style: TextStyle(color: ctx.tokens.muted, fontSize: 12),
-                ),
-                const SizedBox(height: TingyuTokens.space * 3),
-                Text(
-                  '歌单与下载保存在本机，账号凭据由系统安全存储。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: ctx.tokens.muted, height: 1.7),
-                ),
-                const SizedBox(height: TingyuTokens.space * 3),
-                Pressable(
-                  key: const ValueKey('about-dismiss'),
-                  label: '知道了',
-                  color: ctx.tokens.tint,
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Center(
-                    child: Text(
-                      '知道了',
-                      style: TextStyle(
-                        color: ctx.tokens.accentInk,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+Future<void> showAboutTingyu(BuildContext context) => showContentActions(
+  context,
+  (ctx) => SimpleDialog(
+    title: Row(children: [const Expanded(child: Text('关于 tingyu'))]),
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Image.asset(
+              'assets/branding/ribbon-outline.png',
+              width: 64,
+              height: 64,
+              color: ctx.tokens.accent,
+              semanticLabel: 'tingyu应用图标',
             ),
-          ),
+            const SizedBox(height: 16),
+            const Text(
+              'tingyu',
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text('版本 $tingyuVersion'),
+            const SizedBox(height: 24),
+            Text(
+              '音乐与下载保存在本机\n账号凭据由系统安全存储保护',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: ctx.tokens.muted, height: 1.8),
+            ),
+          ],
         ),
       ),
-    );
+    ],
+  ),
+);
 
 Future<void> showQueueTrackActions(
   BuildContext context,
@@ -2910,8 +3075,9 @@ Future<void> showAccount(BuildContext context, LibraryController p) async {
 }
 
 class AccountPanel extends StatefulWidget {
-  const AccountPanel(this.p, {super.key});
+  const AccountPanel(this.p, {super.key, this.standalone = false});
   final LibraryController p;
+  final bool standalone;
   @override
   State<AccountPanel> createState() => _AccountPanelState();
 }
@@ -2921,6 +3087,8 @@ class _AccountPanelState extends State<AccountPanel> {
   String message = '扫码后可以导入你的 B 站收藏夹';
   bool busy = false, polling = false;
   Map<String, dynamic>? selectedFolder;
+  final selectedFolders = <int>{};
+  final folderSearch = TextEditingController();
   Playlist? imported;
   Timer? timer;
   List<Map<String, dynamic>> folders = [];
@@ -2935,6 +3103,7 @@ class _AccountPanelState extends State<AccountPanel> {
   @override
   void dispose() {
     timer?.cancel();
+    folderSearch.dispose();
     super.dispose();
   }
 
@@ -2951,6 +3120,7 @@ class _AccountPanelState extends State<AccountPanel> {
           message = widget.p.error;
           folders = [];
           selectedFolder = null;
+          selectedFolders.clear();
         });
         return;
       }
@@ -2959,6 +3129,7 @@ class _AccountPanelState extends State<AccountPanel> {
         setState(() {
           folders = found;
           selectedFolder = null;
+          selectedFolders.clear();
         });
       }
     } on Exception catch (e) {
@@ -2979,11 +3150,21 @@ class _AccountPanelState extends State<AccountPanel> {
       imported = null;
     });
     try {
-      final result = await widget.p.importFolder(folder);
+      Playlist? result;
+      final chosen = folders
+          .where((f) => selectedFolders.contains(f['id']))
+          .toList();
+      for (final item in chosen.isEmpty ? [folder] : chosen) {
+        result = await widget.p.importFolder(item);
+        selectedFolders.remove(item['id']);
+      }
+      if (result == null) return;
+      final importedResult = result;
       if (mounted) {
         setState(() {
-          imported = result;
-          message = '已导入 ${result.trackIds.length} 首到「${result.name}」';
+          imported = importedResult;
+          message =
+              '已导入 ${importedResult.trackIds.length} 首到「${importedResult.name}」';
         });
       }
     } on Exception catch (e) {
@@ -2995,7 +3176,7 @@ class _AccountPanelState extends State<AccountPanel> {
     }
   }
 
-  Future<void> generate() async {
+  Future<void> generate({bool openApp = true}) async {
     timer?.cancel();
     setState(() => busy = true);
     try {
@@ -3007,6 +3188,17 @@ class _AccountPanelState extends State<AccountPanel> {
         message = '请使用哔哩哔哩 App 扫码确认';
         busy = false;
       });
+      if (openApp) {
+        final opened = await BilibiliLinkLauncher().openLogin(
+          Uri.parse(result.url),
+        );
+        if (!mounted) return;
+        setState(
+          () => message = opened
+              ? '请在 B 站 App 确认，返回后自动检查登录状态'
+              : '未能打开 B 站 App，请使用二维码扫码',
+        );
+      }
       timer = Timer.periodic(const Duration(seconds: 2), (_) async {
         if (busy || polling || !mounted) return;
         polling = true;
@@ -3054,17 +3246,26 @@ class _AccountPanelState extends State<AccountPanel> {
         children: [
           Row(
             children: [
+              if (widget.standalone)
+                action(
+                  Icons.arrow_back,
+                  '返回设置',
+                  () => context.canPop()
+                      ? context.pop()
+                      : context.go('/settings'),
+                ),
               const Expanded(
                 child: Text(
-                  '连接你的收藏',
+                  '账号与收藏',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
               ),
-              action(
-                Icons.keyboard_arrow_down,
-                '关闭账号窗口',
-                () => Navigator.pop(context),
-              ),
+              if (!widget.standalone)
+                action(
+                  Icons.keyboard_arrow_down,
+                  '关闭账号窗口',
+                  () => Navigator.pop(context),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -3081,25 +3282,97 @@ class _AccountPanelState extends State<AccountPanel> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '选择一个收藏夹，导入为本地歌单。',
+                      '选择收藏夹，导入为本地歌单。',
                       style: TextStyle(color: context.tokens.muted),
                     ),
                     const SizedBox(height: 16),
                     if (!busy && folders.isEmpty) const Text('暂无可导入的收藏夹。'),
-                    for (final folder in folders)
+                    TextField(
+                      controller: folderSearch,
+                      decoration: const InputDecoration(hintText: '查找收藏夹'),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${folderSearch.text.trim().isEmpty ? '我的收藏夹' : '匹配结果'} · ${folders.where((f) => matchesFolderName('${f['title']}', folderSearch.text)).length}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.tokens.muted,
+                            ),
+                          ),
+                        ),
+                        labelButton(
+                          '全选',
+                          busy
+                              ? null
+                              : () => setState(() {
+                                  final visible = folders.where(
+                                    (f) => '${f['title']}'.contains(
+                                      folderSearch.text,
+                                    ),
+                                  );
+                                  if (visible.every(
+                                    (f) => selectedFolders.contains(f['id']),
+                                  )) {
+                                    selectedFolders.removeAll(
+                                      visible.map((f) => f['id'] as int),
+                                    );
+                                  } else {
+                                    selectedFolders.addAll(
+                                      visible.map((f) => f['id'] as int),
+                                    );
+                                  }
+                                  selectedFolder = folders
+                                      .where(
+                                        (f) =>
+                                            selectedFolders.contains(f['id']),
+                                      )
+                                      .firstOrNull;
+                                }),
+                        ),
+                      ],
+                    ),
+                    for (final folder in folders.where(
+                      (f) =>
+                          matchesFolderName('${f['title']}', folderSearch.text),
+                    ))
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: 0),
                         child: FolderChoice(
                           folder: folder,
-                          selected: selectedFolder?['id'] == folder['id'],
+                          selected: selectedFolders.contains(folder['id']),
                           onSelect: busy
                               ? null
                               : () => setState(() {
-                                  selectedFolder = folder;
+                                  if (!selectedFolders.add(
+                                    folder['id'] as int,
+                                  )) {
+                                    selectedFolders.remove(folder['id']);
+                                  }
+                                  selectedFolder = folders
+                                      .where(
+                                        (f) =>
+                                            selectedFolders.contains(f['id']),
+                                      )
+                                      .firstOrNull;
                                   imported = null;
                                   message = '';
                                 }),
                         ),
+                      ),
+                    if (!busy &&
+                        folders.isNotEmpty &&
+                        !folders.any(
+                          (f) => matchesFolderName(
+                            '${f['title']}',
+                            folderSearch.text,
+                          ),
+                        ))
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('没有匹配的收藏夹'),
                       ),
                     if (!busy)
                       labelButton('刷新收藏夹', loadProfile, icon: Icons.refresh),
@@ -3108,11 +3381,18 @@ class _AccountPanelState extends State<AccountPanel> {
                       busy
                           ? null
                           : () async {
+                              if (!await confirm(
+                                context,
+                                '退出账号？本地歌曲、歌单和下载会保留。',
+                              )) {
+                                return;
+                              }
                               await p.logout();
                               if (!mounted) return;
                               setState(() {
                                 folders = [];
                                 selectedFolder = null;
+                                selectedFolders.clear();
                                 imported = null;
                                 message = '扫码后可以导入你的 B 站收藏夹';
                               });
@@ -3128,9 +3408,11 @@ class _AccountPanelState extends State<AccountPanel> {
                         ),
                       ),
                     if (!busy)
+                      labelButton('使用二维码', () => generate(openApp: false)),
+                    if (!busy)
                       labelButton(
-                        qr == null ? '生成登录二维码' : '刷新二维码',
-                        generate,
+                        qr == null ? '登录' : '刷新二维码',
+                        () => generate(),
                         icon: Icons.qr_code,
                       ),
                   ],
@@ -3153,14 +3435,33 @@ class _AccountPanelState extends State<AccountPanel> {
             ),
           if (p.profile != null)
             imported == null
-                ? labelButton(
-                    busy
-                        ? '正在导入或加载…'
+                ? Pressable(
+                    key: const ValueKey('import-folders'),
+                    label: busy
+                        ? '正在导入或加载'
                         : selectedFolder == null
-                        ? '请先选择收藏夹'
-                        : '导入所选收藏夹',
-                    busy || selectedFolder == null ? null : importSelected,
-                    icon: Icons.playlist_add,
+                        ? '选择收藏夹'
+                        : '导入 ${selectedFolders.length} 个收藏夹',
+                    color: busy || selectedFolder == null
+                        ? context.tokens.tint
+                        : context.tokens.accent,
+                    onPressed: busy || selectedFolder == null
+                        ? null
+                        : importSelected,
+                    child: Center(
+                      child: Text(
+                        busy
+                            ? '正在导入或加载…'
+                            : selectedFolder == null
+                            ? '选择收藏夹'
+                            : '导入 ${selectedFolders.length} 个收藏夹',
+                        style: TextStyle(
+                          color: busy || selectedFolder == null
+                              ? context.tokens.muted
+                              : context.tokens.onAccent,
+                        ),
+                      ),
+                    ),
                   )
                 : labelButton('查看已导入歌单', () {
                     final router = GoRouter.of(context), id = imported!.id;
@@ -3188,10 +3489,17 @@ class FolderChoice extends StatelessWidget {
     key: ValueKey('folder-${folder['id']}'),
     selected: selected,
     onPressed: onSelect,
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
     child: Row(
       children: [
-        TingyuIcon(
-          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: context.tokens.tint,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(child: TingyuIcon(Icons.folder_outlined)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -3211,6 +3519,11 @@ class FolderChoice extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: 12),
+        TingyuIcon(
+          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+          color: selected ? context.tokens.accent : context.tokens.muted,
+        ),
       ],
     ),
   );
@@ -3219,135 +3532,40 @@ class FolderChoice extends StatelessWidget {
 Future<void> showLyrics(BuildContext context, LibraryController p) async {
   final track = p.current;
   if (track == null) return;
-  if (MediaQuery.sizeOf(context).width >= 960) {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => _LyricsDialog(p, track),
-    );
-  } else {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: _LyricsDialog(p, track),
-      ),
-    );
-  }
-}
-
-class _LyricsDialog extends StatefulWidget {
-  const _LyricsDialog(this.controller, this.track);
-  final LibraryController controller;
-  final Track track;
-  @override
-  State<_LyricsDialog> createState() => _LyricsDialogState();
-}
-
-class _LyricsDialogState extends State<_LyricsDialog> {
-  LibraryController get p => widget.controller;
-  Track get track => widget.track;
-  late final edit = TextEditingController(text: track.title);
-  late final lrc = TextEditingController(text: p.lyricText);
-  late int offset = p.lyricOffset;
-  List<Map<String, dynamic>> candidates = [];
-  String? error;
-  bool busy = false;
-  @override
-  void dispose() {
-    edit.dispose();
-    lrc.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => TingyuFormPanel(
-    title: const Text('匹配歌词'),
-    content: SizedBox(
-      width: 420,
-      child: SingleChildScrollView(
+  final section = await showModalBottomSheet<String>(
+    context: context,
+    useSafeArea: true,
+    backgroundColor: context.tokens.surface,
+    builder: (ctx) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: edit,
-              decoration: const InputDecoration(labelText: '歌名 / 歌手'),
+            const Text(
+              '歌词',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
-            labelButton(
-              '搜索歌词',
-              busy
-                  ? null
-                  : () async {
-                      setState(() => busy = true);
-                      try {
-                        final found = await p.lyricsClient.search(edit.text);
-                        if (mounted) {
-                          setState(() {
-                            candidates = found;
-                            error = found.isEmpty ? '未找到歌词，可粘贴 LRC 文本' : null;
-                          });
-                        }
-                      } on AppFailure catch (e) {
-                        if (mounted) setState(() => error = e.message);
-                      } finally {
-                        if (mounted) setState(() => busy = false);
-                      }
-                    },
-            ),
-            if (error != null) Text(error!),
-            for (final c in candidates.take(10))
-              labelButton('${c['trackName']} · ${c['artistName']}', () async {
-                if (p.current?.id != track.id) {
-                  throw const AppFailure('歌曲已切换，请重新打开歌词窗口');
-                }
-                await p.chooseLyrics(c, track);
-                if (context.mounted) Navigator.pop(context);
-              }),
-            TextField(
-              controller: lrc,
-              minLines: 3,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: '粘贴歌词',
-                hintText: '支持 LRC 或纯文本歌词',
-              ),
-            ),
-            const SizedBox(height: TingyuTokens.space * 2),
-            Row(
-              children: [
-                const Expanded(child: Text('时间偏移')),
-                action(
-                  Icons.remove,
-                  '歌词提前 0.1 秒',
-                  offset > -5000 ? () => setState(() => offset -= 100) : null,
-                ),
-                Text('${(offset / 1000).toStringAsFixed(1)} 秒'),
-                action(
-                  Icons.add,
-                  '歌词延后 0.1 秒',
-                  offset < 5000 ? () => setState(() => offset += 100) : null,
-                ),
-              ],
-            ),
+            const SizedBox(height: 12),
+            for (final entry in [
+              ('display', '显示与排版'),
+              ('match', '匹配歌词'),
+              ('edit', '编辑歌词'),
+              ('offset', '时间偏移'),
+            ])
+              labelButton(entry.$2, () => Navigator.pop(ctx, entry.$1)),
           ],
         ),
       ),
     ),
-    actions: [
-      labelButton('取消', () => Navigator.pop(context)),
-      Pressable(
-        label: '保存歌词',
-        key: const ValueKey('保存歌词'),
-        color: context.tokens.accent,
-        onPressed: () => report(context, () async {
-          await p.setLyrics(lrc.text, track: track, offset: offset);
-          await p.save();
-          if (context.mounted) Navigator.pop(context);
-        }),
-        child: Text('保存歌词', style: TextStyle(color: context.tokens.onAccent)),
-      ),
-    ],
+  );
+  if (section == null || !context.mounted) return;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => LyricsPreferencesPage(p, track, section: section),
+    ),
   );
 }
 
@@ -3357,7 +3575,9 @@ class CompactNavigation extends StatelessWidget {
     super.key,
     required this.selected,
     required this.onSelect,
+    this.controller,
   });
+  final LibraryController? controller;
   final String selected;
   final ValueChanged<String> onSelect;
   static const destinations = [
@@ -3369,10 +3589,13 @@ class CompactNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
+    Widget surface(Widget child) => controller == null
+        ? GlassSurface(child: child)
+        : AdaptiveGlass(p: controller!, navigation: true, child: child);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      child: GlassSurface(
-        child: Padding(
+      child: surface(
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [

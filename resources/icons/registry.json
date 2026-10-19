@@ -1,0 +1,1171 @@
+{
+  "schema": 1,
+  "geometrySource": "lib/ui/icons.dart",
+  "runtimeSha256": "fae096833e315ecece8ff00fa05412baa292946df9d6e8c2e15c31701671065c",
+  "fontSha256": "d9865b671a09d683d13a863089d8825e0f61a37696ce5d7d448bc8023aa62453",
+  "note": "SVG review exports mirror runtime painter; app still reads TingyuIcon. Font glyphs are existing Flutter resources, not newly drawn icons.",
+  "tokens": {
+    "grid": 24,
+    "stroke": 1.7,
+    "download.completed": "tokens.accent",
+    "download.idle": "tokens.text",
+    "download.failed": "tokens.danger",
+    "player.glyph": "tokens.onPlayerButton",
+    "player.button": "tokens.playerButton"
+  },
+  "entries": [
+    {
+      "id": "back",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/back.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "arrow_back",
+        "chevron_left"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "check",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/check.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [],
+      "designUses": []
+    },
+    {
+      "id": "circle",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/circle.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "check_box_outline_blank"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "done",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/done.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "check",
+        "check_circle",
+        "check_circle_outline",
+        "check_box"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "down",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/down.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "keyboard_arrow_down",
+        "expand_more",
+        "close"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html"
+      ]
+    },
+    {
+      "id": "download",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/download.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "download",
+        "download_outlined",
+        "download_rounded",
+        "file_download_outlined"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "endPause",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/endPause.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "pause_circle_outline"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html"
+      ]
+    },
+    {
+      "id": "eraser",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/eraser.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "clear_all",
+        "cancel_outlined"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "external",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/external.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "open_in_new",
+        "north_east"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "folder",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/folder.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "folder_copy_outlined"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "folderPlus",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/folderPlus.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "playlist_add"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "grip",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/grip.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "drag_handle",
+        "drag_indicator"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "heart",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/heart.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "favorite_border"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "heartFilled",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/heartFilled.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "favorite",
+        "favorite_rounded"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "info",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/info.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "info_outline"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "locate",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/locate.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "my_location"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "lyrics",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/lyrics.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "lyrics_outlined"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html"
+      ]
+    },
+    {
+      "id": "minus",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/minus.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "remove"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "minusCircle",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/minusCircle.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "remove_circle_outline"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "more",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/more.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "more_horiz"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "moveDown",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/moveDown.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "arrow_downward"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "moveUp",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/moveUp.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "arrow_upward"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "music",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/music.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "library_music",
+        "library_music_outlined"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "next",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/next.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "skip_next"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "pause",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/pause.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "pause"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "play",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/play.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "play_arrow",
+        "play_arrow_rounded"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/review-v13/index.html"
+      ]
+    },
+    {
+      "id": "playNext",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/playNext.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "playlist_play"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "playlist",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/playlist.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "featured_play_list_outlined"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "plus",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/plus.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "add"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "previous",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/previous.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "skip_previous"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "queue",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/queue.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "queue_music"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "queuePlus",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/queuePlus.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "add_to_queue"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "refresh",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/refresh.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "refresh"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "right",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/right.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "chevron_right"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "search",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/search.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "search"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/glass-v14/index.html",
+        "design-review/2026-10-19/glass-v15/index.html",
+        "design-review/2026-10-19/layout-v4/transparency.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "select",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/select.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "checklist"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "sort",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/sort.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "swap_vert"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "toTop",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/toTop.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "vertical_align_top"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "trackPlus",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/trackPlus.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "library_add_outlined"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "trash",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/trash.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "delete_outline"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "wave",
+      "provider": "tingyu-painter",
+      "status": "existing",
+      "asset": "svg/wave.svg",
+      "runtimeSource": "lib/ui/icons.dart",
+      "aliases": [
+        "graphic_eq"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/album_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61031,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:403"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/blur_on",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57581,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/settings_views.dart:192"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/circle",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57699,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/preferences_views.dart:419"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/close",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57706,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/icons.dart:25"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v5/controls.html"
+      ]
+    },
+    {
+      "id": "material/edit_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61453,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1152"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/error_outline",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57912,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1266",
+        "lib/ui/app.dart:1342"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/folder_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61585,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3502"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/ios_share_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61752,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:2867"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/logout",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58291,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3400"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/looks_one_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61854,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/music_note",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58389,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/preferences_views.dart:148"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/nights_stay_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 61974,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/search_views.dart:16"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/person_outline",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58519,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/library_views.dart:247"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/person_rounded",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 983153,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3681"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/qr_code",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58613,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3416"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/radio_button_checked",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58627,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3524"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/radio_button_off",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58628,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:3524"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/radio_button_unchecked",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58628,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/playlist_add_views.dart:197"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/repeat",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58655,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1687"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html"
+      ]
+    },
+    {
+      "id": "material/repeat_one",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58657,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1685"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/schedule",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58710,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1343",
+        "lib/ui/library_views.dart:245",
+        "lib/ui/playback_settings_views.dart:89",
+        "lib/ui/playback_settings_views.dart:359",
+        "lib/ui/settings_views.dart:207"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "material/shield_outlined",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 62329,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": []
+    },
+    {
+      "id": "material/shuffle",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58785,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1684"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "material/sort_by_alpha",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58835,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/library_views.dart:246"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/speed",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58848,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/playback_settings_views.dart:89",
+        "lib/ui/playback_settings_views.dart:359",
+        "lib/ui/settings_views.dart:200"
+      ],
+      "designUses": [
+        "design-review/2026-10-19/layout-v10/controls.html",
+        "design-review/2026-10-19/layout-v11/controls.html",
+        "design-review/2026-10-19/layout-v12/controls.html",
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-19/layout-v4/details.html",
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-19/layout-v6/controls.html",
+        "design-review/2026-10-19/layout-v7/controls.html",
+        "design-review/2026-10-19/layout-v8/controls.html",
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v16/index.html",
+        "design-review/2026-10-19/review-v17/index.html"
+      ]
+    },
+    {
+      "id": "material/storage",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58889,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/tune",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 59011,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": [
+        "design-review/2026-10-19/layout-v4/controls.html"
+      ]
+    },
+    {
+      "id": "material/visibility",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 59069,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": []
+    },
+    {
+      "id": "material/visibility_off",
+      "provider": "Flutter MaterialIcons",
+      "status": "design-reuse",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 59070,
+      "matchTextDirection": false,
+      "uses": [],
+      "designUses": []
+    },
+    {
+      "id": "material/waves",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 59091,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/search_views.dart:18"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/wb_twilight",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 59099,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/search_views.dart:17"
+      ],
+      "designUses": []
+    }
+  ],
+  "assetSha256": {
+    "svg/back.svg": "8509f97aaa3c2cabe4251e7ebc86ef69ad8e70bdc77fb59e5f3609a043d75633",
+    "svg/check.svg": "cced6c20f2f0bb26e65f801e5ff4f81577805d094fd28865a30583e0c6403e1a",
+    "svg/circle.svg": "5371cdd6be3a215cfde6dea6dd41ac7843cfe3021f2d1cca2efd35ecc0874b35",
+    "svg/done.svg": "93df1f0e96c0823e26667fded704d20b727999e8c7f709e3181dc798803321d5",
+    "svg/down.svg": "57c0d2a5d18c77da73829dd5fbd1140545cb498759fae8f6bb28683d148efa22",
+    "svg/download.svg": "cdbcc964ecb17c77c3a36fc316b1f98be57241f92e7a28f7679ab613ae0076e7",
+    "svg/endPause.svg": "3419d3f778bffc923f6052205634f124743f5ccd03280bb17faf5e6210e974a4",
+    "svg/eraser.svg": "02f638050a58537cc1218a690c2b64a7c5b67ee5f47861ef3d4c68f5fb513572",
+    "svg/external.svg": "b934b75b08492ee1b62e77d8fb9c64ae89936991c4d5bf51ed4a9f02cfdd2d5d",
+    "svg/folder.svg": "82a2e626944ccfad8a33d3921c3b809c6852fb59ba2ca9470733ca573f673c21",
+    "svg/folderPlus.svg": "01243179189ab3c02a222d3a6ac36f473ba02f2b4e8df29308af813fe64fdb03",
+    "svg/grip.svg": "68fe64a25b68602715f664a9ac229a2cd9eca7427703fcc7dc1cdcf3d2d45d49",
+    "svg/heart.svg": "2138e55db29467fc6eaa5680f46cc8c514744ff8d18db02426a0e470dd5de272",
+    "svg/heartFilled.svg": "7f8ff2de63c128753f85b38950612d8a19b75cc1f4692d96a1aeac764d7ce9f6",
+    "svg/info.svg": "859ba4d37c00479aee599a183f1d1d0dab53d41ce3c74cac8760ef540c0cd99d",
+    "svg/locate.svg": "03758eb37b03ae67843b5a2869f00ff5374595f761cf5ed881b725673dd7cda3",
+    "svg/lyrics.svg": "b88884ee5be9881c5fa913d397ddcebed2631d2a3e520abeef33a83bd0e964a6",
+    "svg/minus.svg": "dc576ac2ea786702e85f10e619eee121a3731df9f93c3c315fd319837789f07e",
+    "svg/minusCircle.svg": "c0253e0e551c902e4aa767fd94b3933968d1e210afe9b2ea4dcf55a6e8ecb34b",
+    "svg/more.svg": "814d27388b8c3aa0767127fd3fa63aa520135fbf130464bf52ffa02141a53033",
+    "svg/moveDown.svg": "2131100d03c33d0ab530f8a428430a1af7cb709be2957e639667f30450e78c0c",
+    "svg/moveUp.svg": "9955c395729026b2d556731663d96a59768477269f4dd5ee02036471f6aa1c31",
+    "svg/music.svg": "7cc9aeaedf6757f950ce3b4b467cf415c34cf04d65da5eb2f4781c833cff3f9c",
+    "svg/next.svg": "89a68b8acfacd7a105d6be4d180f337b55b706f5348527fe7f957c0785de1afe",
+    "svg/pause.svg": "237b829362e854d1ece2ff6ccd9b07cc7323f11293125020622ac7d9610c431c",
+    "svg/play.svg": "79ce3cdeb67dd7312eb563789bbf9db33f1d958a3524f9598027664c4883b9c4",
+    "svg/playNext.svg": "45b99f38e180530ef6e060926ce240ebe6d66a8b7ace9feccf3858661d42cd66",
+    "svg/playlist.svg": "da21e8f81e8790f034d7956eb5f52a0e6e5b24a6a3530514270867e13370afbe",
+    "svg/plus.svg": "856d4fad3012d3213145dcc9d40ef36d8aac718a107eeb20424492f1e5415fee",
+    "svg/previous.svg": "c43d875f7f36c86bf56121d4b0eac9801d03a5e5cf276bffc4160bfb09f99e1e",
+    "svg/queue.svg": "8861f7b094f59dae8d48e53d67af2a8249ff524f35a6978bc8152077140f3d69",
+    "svg/queuePlus.svg": "9fa0bf85503867ee278acd4276ea893703153996b0e696056a8666f5f7d046af",
+    "svg/refresh.svg": "1dece6aa6a41cdb5e0a452a452d59eb13fab7e3aa0020df8cea5c9c1a1795d5e",
+    "svg/right.svg": "8ac8908ff4f8f3fc1713f1b4f4d5560490416a5aca648af59d9bd22a6fce415a",
+    "svg/search.svg": "93a636e7a1d56217df884df3cf693b90c47dc1ef30ea7ca61a77cbc8e6b3340d",
+    "svg/select.svg": "50ed29f5d1e3ebef08321a265cef8f043a7fb414a454c816dfe5cc1f1953fea7",
+    "svg/sort.svg": "4db8487b79439af57f2bc39bf5c87e264ac470716936d90734db11a94385a8b4",
+    "svg/toTop.svg": "6b36fc11b5263e682288b6e349f4c2dad2fadf5d11a25e7627ccc671559a43f5",
+    "svg/trackPlus.svg": "aff5b25f2a63fd1ab6a3eb8aa42769774e768d2d199902b17292624376354f89",
+    "svg/trash.svg": "91f0ca7137297c671c4f148d1efb9e77fe5f2228dff0fb8062ce70992becd49c",
+    "svg/wave.svg": "0a4c3109c819f64e0037b900d72ea0304ef2ccb693fb7064ebd58b2948b5386a"
+  }
+}

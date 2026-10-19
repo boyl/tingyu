@@ -62,6 +62,7 @@ class TingyuIcon extends StatelessWidget {
     Icons.check_box: 'done',
     Icons.check_box_outline_blank: 'circle',
     Icons.refresh: 'refresh',
+    Icons.pause_circle_outline: 'endPause',
   };
   @override
   Widget build(BuildContext context) {
@@ -369,6 +370,18 @@ class _IconPainter extends CustomPainter {
         line(8, 17, 17, 17);
         circle(6, 12, .5);
         circle(6, 17, .5);
+      case 'endPause':
+        line(2, 12, 11, 12);
+        path([const Offset(7, 8), const Offset(11, 12), const Offset(7, 16)]);
+        for (final x in [15.0, 20.0]) {
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(x, 5, 2.5, 14),
+              const Radius.circular(1),
+            ),
+            Paint()..color = color,
+          );
+        }
       case 'refresh':
         canvas.drawArc(const Rect.fromLTWH(4, 4, 16, 16), .2, 5.2, false, p);
         path([const Offset(15, 3), const Offset(20, 5), const Offset(20, 0.5)]);

@@ -1,0 +1,13 @@
+{
+  "errors": [],
+  "checks": [
+    "all stable position and release return",
+    "nav stable position and release return",
+    "mini stable position and release return",
+    "preview off retains live top panel",
+    "0/100 endpoints",
+    "mixed indication",
+    "default reset",
+    "automatic hides manual controls"
+  ]
+}

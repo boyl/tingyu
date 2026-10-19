@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.17';
+const tingyuVersion = '0.1.20';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -15,10 +15,10 @@ class SettingsStorageScreen extends ConsumerWidget {
   const SettingsStorageScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) => SettingsPageFrame(
-    title: '下载管理',
+    title: '存储空间',
     backLabel: '返回设置',
     fallback: '/settings',
-    child: DownloadsPanel(ref.watch(libraryProvider)),
+    child: StoragePanel(ref.watch(libraryProvider)),
   );
 }
 
@@ -116,7 +116,7 @@ class SettingsPanel extends StatelessWidget {
         Pressable(
           key: const ValueKey('settings-account'),
           label: '账号',
-          onPressed: () => showAccount(context, p),
+          onPressed: () => context.push('/settings/account'),
           padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 2),
           child: Row(
             children: [
@@ -130,7 +130,7 @@ class SettingsPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${p.profile?['uname'] ?? (connected ? '已连接' : '登录听屿')}',
+                      '${p.profile?['uname'] ?? (connected ? '已连接' : '登录tingyu')}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -150,13 +150,6 @@ class SettingsPanel extends StatelessWidget {
               const SettingsChevron(),
             ],
           ),
-        ),
-        SettingsRow(
-          icon: Icons.folder_copy_outlined,
-          title: '导入 B 站收藏夹',
-          keyName: 'settings-import',
-          value: connected ? null : '登录后',
-          onPressed: connected ? () => showAccount(context, p) : null,
         ),
         Divider(height: TingyuTokens.space * 2, color: t.line),
         heading('外观'),
@@ -195,7 +188,28 @@ class SettingsPanel extends StatelessWidget {
         ),
         const SizedBox(height: TingyuTokens.space * 3),
         Divider(height: 1, color: t.line),
+        SettingsRow(
+          icon: Icons.blur_on,
+          title: '玻璃透明度',
+          value: p.glassAutomatic ? '自动' : '手动',
+          keyName: 'settings-glass',
+          onPressed: () => context.push('/settings/glass'),
+        ),
         heading('播放与存储'),
+        SettingsRow(
+          icon: Icons.speed,
+          title: '默认倍速',
+          value: rateLabel(p.speed),
+          keyName: 'settings-speed',
+          onPressed: () => showPlaybackSettings(context, p, timer: false),
+        ),
+        SettingsRow(
+          icon: Icons.schedule,
+          title: '定时关闭',
+          value: p.sleepTimer.active ? timerLabel(p) : '未开启',
+          keyName: 'settings-timer',
+          onPressed: () => showPlaybackSettings(context, p, timer: true),
+        ),
         SettingsRow(
           icon: Icons.graphic_eq,
           title: '音质偏好',
@@ -229,7 +243,7 @@ class SettingsPanel extends StatelessWidget {
         Divider(height: 1, color: t.line),
         SettingsRow(
           icon: Icons.download_outlined,
-          title: '下载管理',
+          title: '存储空间',
           value: usage,
           keyName: 'settings-storage',
           onPressed: () => context.push('/settings/downloads'),
@@ -237,7 +251,7 @@ class SettingsPanel extends StatelessWidget {
         Divider(height: TingyuTokens.space * 3, color: t.line),
         SettingsRow(
           icon: Icons.info_outline,
-          title: '关于听屿',
+          title: '关于tingyu',
           keyName: 'settings-about',
           onPressed: () => showAboutTingyu(context),
         ),
@@ -245,7 +259,7 @@ class SettingsPanel extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 4),
           child: Center(
             child: Text(
-              '听屿  $tingyuVersion',
+              'tingyu  $tingyuVersion',
               style: TextStyle(color: t.muted, fontSize: 12),
             ),
           ),

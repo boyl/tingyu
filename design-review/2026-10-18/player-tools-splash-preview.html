@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>听屿 · 播放与启动</title>
+<style>
+  :root {
+    --paper: #fff;
+    --text: #19191b;
+    --muted: #68686e;
+    --ink: #a93660;
+    --pink: #fb7299;
+    --on-pink: #361522;
+    --tint: #f2f1f3;
+    --line: #e7e7eb;
+    --stage: #ecebee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--stage);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+    padding: 28px;
+  }
+  .board { display: flex; gap: 28px; align-items: flex-start; }
+  .cap { margin: 0 0 10px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .phone {
+    width: 390px;
+    height: 780px;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    background: #d9d7de;
+  }
+  .dim { padding: 28px 22px 0; color: #3c3c42; }
+  .dim .top { display: flex; justify-content: space-between; font-size: 15px; }
+  .dim h2 { margin: 86px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -.4px; }
+  .dim .artist { margin: 6px 0 0; color: #68686e; font-size: 14px; }
+  .dim .lyric { margin: 18px 0 0; color: var(--ink); font-weight: 600; }
+  .status {
+    margin: -6px 0 16px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 500px;
+    background: var(--paper);
+    border-radius: 24px 24px 0 0;
+    padding: 10px 20px 22px;
+  }
+  .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 0 auto 16px; }
+  .sheet h1 { margin: 0 0 18px; font-size: 20px; font-weight: 600; }
+  .block { margin-bottom: 18px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .row strong, .label { font-size: 16px; font-weight: 600; }
+  .hint { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+  .switch {
+    width: 48px; height: 28px; border-radius: 14px; background: var(--pink);
+    position: relative; flex: none;
+  }
+  .switch i {
+    position: absolute; top: 3px; right: 3px; width: 22px; height: 22px;
+    border-radius: 11px; background: #fff;
+  }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pill {
+    min-width: 64px; height: 40px; padding: 0 12px;
+    border-radius: 12px; background: var(--tint); color: var(--text);
+    display: grid; place-items: center; font-size: 14px;
+  }
+  .pill.on { background: var(--pink); color: var(--on-pink); font-weight: 600; }
+  .splash, .icon-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+  }
+  .splash {
+    width: 390px; height: 520px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .mark {
+    width: 120px; height: 120px; border-radius: 60px; background: var(--pink);
+    display: grid; place-items: center;
+  }
+  .mark svg { width: 68px; height: 68px; display: block; }
+  .splash b { display: block; margin-top: 18px; font-size: 20px; font-weight: 600; }
+  .icon-card { width: 390px; margin-top: 14px; padding: 16px 18px 18px; }
+  .icon-card p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .launcher { display: flex; align-items: center; gap: 16px; }
+  .launcher .mark { width: 84px; height: 84px; border-radius: 42px; }
+  .launcher .mark svg { width: 46px; height: 46px; }
+  .launcher strong { display: block; font-size: 16px; }
+  .launcher span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="board">
+    <section>
+      <p class="cap">播放</p>
+      <div class="phone" id="sheet-shot">
+        <div class="dim">
+          <div class="top"><span>‹</span><span>···</span></div>
+          <h2>爱江山更爱美人</h2>
+          <p class="artist">李丽芬</p>
+          <p class="lyric">道不尽红尘奢恋</p>
+        </div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h1>播放</h1>
+          <p class="status">1.25× · 29:12 后关闭 · 播完暂停</p>
+          <div class="block">
+            <div class="row">
+              <strong>播完暂停</strong>
+              <div class="switch" aria-label="播完暂停已打开"><i></i></div>
+            </div>
+            <p class="hint">每首歌放到结尾就停。一直保留，直到关掉。</p>
+          </div>
+          <div class="block">
+            <div class="label">倍速</div>
+            <div class="pills" id="speeds"></div>
+            <p class="hint">立刻生效，进度留在当前。变速不变调。</p>
+          </div>
+          <div class="block">
+            <div class="label">定时关闭</div>
+            <div class="pills" id="timers"></div>
+            <p class="hint">到点暂停播放，定时随后清除。播完这首只对当前一首生效。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <p class="cap">启动</p>
+      <div class="splash" id="splash-shot">
+        <div class="mark" id="mark"></div>
+        <b>听屿</b>
+      </div>
+      <div class="icon-card">
+        <p>桌面图标</p>
+        <div class="launcher">
+          <div class="mark" id="icon"></div>
+          <div>
+            <strong>听屿</strong>
+            <span>标记收在圆形安全区里，左右留白一致</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+<script>
+const speeds = ["0.75×", "1.0×", "1.25×", "1.5×", "2.0×"];
+const timers = ["不开启", "15 分钟", "30 分钟", "60 分钟", "播完这首"];
+function pills(id, items, current) {
+  const root = document.getElementById(id);
+  for (const item of items) {
+    const el = document.createElement("div");
+    el.className = "pill" + (item === current ? " on" : "");
+    el.textContent = item;
+    root.appendChild(el);
+  }
+}
+pills("speeds", speeds, "1.25×");
+pills("timers", timers, "30 分钟");
+const ribbon = `<svg viewBox="0 0 1024 1024" aria-hidden="true">
+  <g fill="none" stroke="#361522" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" transform="translate(-38 -4)">
+    <path d="M355.56 531.56 Q340.00 516.00 355.56 500.44 L584.44 271.56 Q600.00 256.00 622.00 256.00 L738.00 256.00 Q760.00 256.00 744.44 271.56 L435.56 580.44 Q420.00 596.00 404.44 580.44 Z"/>
+    <path d="M475.56 651.56 Q460.00 636.00 475.56 620.44 L584.44 511.56 Q600.00 496.00 622.00 496.00 L738.00 496.00 Q760.00 496.00 744.44 511.56 L635.56 620.44 Q620.00 636.00 635.56 651.56 L744.44 760.44 Q760.00 776.00 738.00 776.00 L622.00 776.00 Q600.00 776.00 584.44 760.44 Z"/>
+    <path d="M540 556 609.4 625.4Q620 636 609.4 646.6L540 716"/>
+  </g>
+</svg>`;
+document.getElementById("mark").innerHTML = ribbon;
+document.getElementById("icon").innerHTML = ribbon;
+</script>
+</body>
+</html>

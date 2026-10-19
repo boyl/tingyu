@@ -21,9 +21,9 @@ def foreground(size, adaptive=False):
                   if symbol.getpixel((x, y))[3] > 16]
         radius = max(math.hypot(x - symbol.width / 2, y - symbol.height / 2)
                      for x, y in points)
-        scale = size * 30 / 108 / radius
+        scale = size * 32 / 108 / radius
     else:
-        scale = size * .76 / max(symbol.size)
+        scale = size * .88 / max(symbol.size)
     resized = symbol.resize((round(symbol.width * scale), round(symbol.height * scale)),
                             Image.Resampling.LANCZOS)
     # White RGB everywhere; only alpha defines the unfilled rounded outline.

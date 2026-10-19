@@ -10,6 +10,10 @@ import '../models/music.dart';
 class PlaybackHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer player = AudioPlayer(useProxyForRequestHeaders: false);
   void Function()? onNext, onPrevious, onCompleted;
+  Future<void> Function(double)? onSpeedChange;
+  @override
+  Future<void> setSpeed(double speed) =>
+      onSpeedChange?.call(speed) ?? player.setSpeed(speed);
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   PlaybackHandler() {
     _subscriptions.add(
@@ -57,7 +61,7 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
       builder: () => PlaybackHandler(),
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'app.tingyu.playback',
-        androidNotificationChannelName: '听屿音乐播放',
+        androidNotificationChannelName: 'tingyu音乐播放',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: true,
       ),

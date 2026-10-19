@@ -1,0 +1,130 @@
+[
+  {
+    "name": "overview",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "geometry": [
+      {
+        "overflow": false,
+        "controls": []
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "player-bottom",
+            "top": 624,
+            "bottom": 808
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": []
+      }
+    ]
+  },
+  {
+    "name": "playback",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "geometry": [
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "sheet",
+            "top": 373,
+            "bottom": 843
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "sheet",
+            "top": 336,
+            "bottom": 843
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "sheet",
+            "top": 283,
+            "bottom": 843
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "glass-storage",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "geometry": [
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "glass-controls",
+            "top": 493,
+            "bottom": 734
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "glass-controls",
+            "top": 493,
+            "bottom": 734
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "primary secondary",
+            "top": 710,
+            "bottom": 758
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "account-lyrics",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "geometry": [
+      {
+        "overflow": false,
+        "controls": []
+      },
+      {
+        "overflow": false,
+        "controls": [
+          {
+            "class": "lyric-bottom",
+            "top": 683,
+            "bottom": 801
+          }
+        ]
+      },
+      {
+        "overflow": false,
+        "controls": []
+      }
+    ]
+  }
+]

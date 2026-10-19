@@ -1,7 +1,28 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/services/lyrics.dart';
+
+class LyricFixture implements HttpClientAdapter {
+  LyricFixture(this.answer);
+  final Map<String, dynamic> Function(RequestOptions) answer;
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    jsonEncode(answer(options)),
+    200,
+    headers: {
+      Headers.contentTypeHeader: ['application/json'],
+    },
+  );
+  @override
+  void close({bool force = false}) {}
+}
 
 class SearchLyrics extends LyricsClient {
   final seen = <String>[];
@@ -65,4 +86,79 @@ void main() {
       expect(client.seen, isEmpty);
     },
   );
+
+  test(
+    'netease prefers word lyrics and keeps translation and romaji',
+    () async {
+      final client = LyricsClient(
+        http: Dio()
+          ..httpClientAdapter = LyricFixture((options) {
+            expect(options.uri.path, '/api/song/lyric');
+            return {
+              'lrc': {'lyric': '[00:01.00]整句'},
+              'yrc': {'lyric': '[1000,1000](1000,1000,0)逐字'},
+              'ytlrc': {'lyric': '[00:01.00]word'},
+              'yromalrc': {'lyric': '[00:01.00]zhuzi'},
+            };
+          }),
+      );
+      final resolved = await client.resolveCandidate({
+        'source': 'netease',
+        'id': 1,
+      });
+      expect(resolved['syncedLyrics'], '[1000,1000](1000,1000,0)逐字');
+      expect(resolved['translation'], '[00:01.00]word');
+      expect(resolved['romaji'], '[00:01.00]zhuzi');
+      final line = parseRichLyrics(
+        resolved['syncedLyrics'] as String,
+        translation: resolved['translation'] as String,
+        romaji: resolved['romaji'] as String,
+      ).single;
+      expect(line.text, '逐字');
+      expect(line.words, isNotEmpty);
+      expect(line.translation, 'word');
+      expect(line.romaji, 'zhuzi');
+    },
+  );
+
+  test('netease without word lyrics falls back to synced lines', () async {
+    final client = LyricsClient(
+      http: Dio()
+        ..httpClientAdapter = LyricFixture(
+          (_) => {
+            'lrc': {'lyric': '[00:01.00]整句'},
+            'yrc': {'lyric': ''},
+            'tlyric': {'lyric': '[00:01.00]line'},
+            'romalrc': {'lyric': '[00:01.00]zhengju'},
+          },
+        ),
+    );
+    final resolved = await client.resolveCandidate({
+      'source': 'netease',
+      'id': 2,
+    });
+    expect(resolved['syncedLyrics'], '[00:01.00]整句');
+    expect(resolved['translation'], '[00:01.00]line');
+    expect(resolved['romaji'], '[00:01.00]zhengju');
+  });
+
+  test('qq lyrics keep the synced line and translation', () async {
+    final client = LyricsClient(
+      http: Dio()
+        ..httpClientAdapter = LyricFixture((options) {
+          expect(options.uri.queryParameters['songmid'], 'mid');
+          return {
+            'retcode': 0,
+            'lyric': '[00:01.00]晴天',
+            'trans': '[00:01.00]Sunny',
+          };
+        }),
+    );
+    final resolved = await client.resolveCandidate({
+      'source': 'qqmusic',
+      'id': 'mid',
+    });
+    expect(resolved['syncedLyrics'], '[00:01.00]晴天');
+    expect(resolved['translation'], '[00:01.00]Sunny');
+  });
 }

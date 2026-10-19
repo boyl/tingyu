@@ -1,0 +1,31 @@
+{
+  "registry": "../../../resources/icons/registry.json",
+  "usedIds": [
+    "back",
+    "done",
+    "down",
+    "download",
+    "heart",
+    "info",
+    "lyrics",
+    "material/blur_on",
+    "material/looks_one_outlined",
+    "material/person_outline",
+    "material/repeat",
+    "material/repeat_one",
+    "material/schedule",
+    "material/shuffle",
+    "material/speed",
+    "material/storage",
+    "material/tune",
+    "more",
+    "music",
+    "next",
+    "pause",
+    "previous",
+    "queue",
+    "right",
+    "search"
+  ],
+  "version": "0.1.17"
+}

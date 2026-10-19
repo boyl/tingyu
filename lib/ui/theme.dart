@@ -52,10 +52,15 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
   Color get glassShadow => playerShadow.withValues(alpha: isDark ? .24 : .07);
   Color get atmosphereCool => isDark ? tint : discoveryPalettes[0][1];
   Color get atmosphereWarm => isDark ? accent : brandPink;
+  static const pillRadius = 100.0;
   static const detailBlur = 18.0;
   static const detailRadius = 22.0;
   static const recordPeek = .79;
   static const swipeThreshold = 45.0;
+  static const recordDiameterRatio = 246.0 / 390;
+  static const toggleWidth = 36.0, toggleHeight = 22.0, toggleThumb = 16.0;
+  static const lyricMin = 16.0, lyricMax = 32.0, lyricDefault = 24.0;
+  static const lyricFontSizes = [20.0, 24.0, 28.0];
   static const brandPink = Color(0xfffb7299);
   static const glassBlur = 5.0;
   static const space = 8.0,
@@ -339,6 +344,7 @@ class Pressable extends StatefulWidget {
     this.label,
     this.selected = false,
     this.selectionFill = true,
+    this.dimWhenDisabled = true,
     this.padding = const EdgeInsets.all(12),
     this.color,
     this.minSize = 48,
@@ -347,7 +353,7 @@ class Pressable extends StatefulWidget {
   final Widget child;
   final FutureOr<void> Function()? onPressed;
   final String? label;
-  final bool selected, selectionFill;
+  final bool selected, selectionFill, dimWhenDisabled;
   final EdgeInsets padding;
   final Color? color;
   final double minSize;
@@ -426,7 +432,7 @@ class _PressableState extends State<Pressable> {
                 ),
               ),
               child: Opacity(
-                opacity: widget.onPressed == null
+                opacity: widget.onPressed == null && widget.dimWhenDisabled
                     ? 0.4
                     : pending
                     ? 0.65
@@ -459,9 +465,11 @@ class GlassSurface extends StatelessWidget {
     required this.child,
     this.radius = TingyuTokens.playerRadius,
     this.blur = TingyuTokens.glassBlur,
+    this.opacity,
   });
   final Widget child;
   final double radius, blur;
+  final double? opacity;
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -484,12 +492,16 @@ class GlassSurface extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: border,
-              color: t.glassFill,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [t.glassHighlight, t.glassFill],
-              ),
+              color: opacity == null
+                  ? t.glassFill
+                  : t.surface.withValues(alpha: opacity!),
+              gradient: opacity == null
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [t.glassHighlight, t.glassFill],
+                    )
+                  : null,
               border: Border.all(color: t.glassEdge),
             ),
             child: child,
@@ -544,4 +556,105 @@ class DetailAtmosphere extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Branded switch: a stable touch target around a small track, with shared semantics.
+class TingyuToggle extends StatelessWidget {
+  const TingyuToggle({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    required this.label,
+  });
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    toggled: value,
+    child: Pressable(
+      label: label,
+      selected: value,
+      selectionFill: false,
+      padding: EdgeInsets.zero,
+      onPressed: onChanged == null ? null : () => onChanged!(!value),
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: AnimatedContainer(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : TingyuTokens.pressDuration,
+          width: TingyuTokens.toggleWidth,
+          height: TingyuTokens.toggleHeight,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: value ? context.tokens.accent : context.tokens.line,
+            borderRadius: BorderRadius.circular(TingyuTokens.pillRadius),
+          ),
+          child: AnimatedAlign(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : TingyuTokens.pressDuration,
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              width: TingyuTokens.toggleThumb,
+              height: TingyuTokens.toggleThumb,
+              decoration: const BoxDecoration(
+                color: TingyuTokens.onArtwork,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class TingyuSegmented extends StatelessWidget {
+  const TingyuSegmented({
+    super.key,
+    required this.labels,
+    required this.index,
+    required this.onChanged,
+  });
+  final List<String> labels;
+  final int index;
+  final ValueChanged<int> onChanged;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: context.tokens.tint,
+      borderRadius: BorderRadius.circular(TingyuTokens.collectionRadius),
+    ),
+    child: Row(
+      children: [
+        for (final e in labels.indexed)
+          Expanded(
+            child: Pressable(
+              key: ValueKey('segment-${e.$2}'),
+              label: e.$2,
+              selected: index == e.$1,
+              selectionFill: false,
+              color: index == e.$1
+                  ? context.tokens.surface
+                  : Colors.transparent,
+              onPressed: () => onChanged(e.$1),
+              child: Center(
+                child: Text(
+                  e.$2,
+                  style: TextStyle(
+                    color: index == e.$1
+                        ? context.tokens.accentInk
+                        : context.tokens.text,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
 }

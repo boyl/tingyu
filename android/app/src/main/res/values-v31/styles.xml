@@ -1,0 +1,1 @@
+<resources><style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar"><item name="android:windowSplashScreenBackground">@android:color/white</item><item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_mark</item><item name="android:windowSplashScreenAnimationDuration">0</item></style></resources>

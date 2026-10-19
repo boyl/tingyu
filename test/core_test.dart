@@ -78,18 +78,9 @@ void main() {
     expect(focusedLyricLine(lines, 999999), 4);
   });
   test('centered lyric offset stays inside the viewport', () {
-    expect(
-      centeredLyricOffset(index: 0, viewport: 150, maxScroll: 400),
-      0,
-    );
-    expect(
-      centeredLyricOffset(index: 4, viewport: 150, maxScroll: 514),
-      225,
-    );
-    expect(
-      centeredLyricOffset(index: 9, viewport: 150, maxScroll: 514),
-      514,
-    );
+    expect(centeredLyricOffset(index: 0, viewport: 150, maxScroll: 400), 0);
+    expect(centeredLyricOffset(index: 4, viewport: 150, maxScroll: 514), 225);
+    expect(centeredLyricOffset(index: 9, viewport: 150, maxScroll: 514), 514);
     expect(centeredLyricOffset(index: 3, viewport: 150, maxScroll: 0), 0);
     expect(
       centeredLyricOffset(index: 3, viewport: 150, maxScroll: double.nan),

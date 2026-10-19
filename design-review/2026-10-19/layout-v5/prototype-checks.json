@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "checks": [
+    "registered endPause candidate",
+    "mode cycles without popup",
+    "icon-only lyrics toggle",
+    "icon-only reset works",
+    "icon-only timer start/cancel works",
+    "font loads",
+    "no script errors"
+  ],
+  "nativeTests": "NOT RUN"
+}

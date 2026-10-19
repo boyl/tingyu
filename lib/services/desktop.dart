@@ -34,7 +34,7 @@ class DesktopIntegration with TrayListener, WindowListener {
   late final DesktopSession session;
   Future<void> initialize() async {
     await windowManager.ensureInitialized();
-    await windowManager.setTitle('听屿');
+    await windowManager.setTitle('tingyu');
     await windowManager.setMinimumSize(const Size(800, 600));
     await windowManager.setSize(const Size(1200, 820));
     windowManager.addListener(this);
@@ -47,13 +47,13 @@ class DesktopIntegration with TrayListener, WindowListener {
       await trayManager.setContextMenu(
         Menu(
           items: [
-            MenuItem(key: 'show', label: '打开听屿'),
+            MenuItem(key: 'show', label: '打开tingyu'),
             MenuItem.separator(),
             MenuItem(key: 'previous', label: '上一首'),
             MenuItem(key: 'toggle', label: '播放 / 暂停'),
             MenuItem(key: 'next', label: '下一首'),
             MenuItem.separator(),
-            MenuItem(key: 'quit', label: '退出听屿'),
+            MenuItem(key: 'quit', label: '退出tingyu'),
           ],
         ),
       );

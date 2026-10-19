@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,7 @@ import '../services/downloads.dart';
 import '../services/lyrics.dart';
 import '../services/playback.dart';
 import '../services/storage.dart';
+import '../services/sleep_timer.dart';
 
 class LibraryController extends ChangeNotifier {
   LibraryController(
@@ -21,7 +23,10 @@ class LibraryController extends ChangeNotifier {
   }) : lyricsClient = lyricsClient ?? LyricsClient(subtitleClient: api) {
     playback.onNext = () => unawaited(next());
     playback.onPrevious = () => unawaited(next(-1));
-    playback.onCompleted = () => unawaited(next(1, true));
+    playback.onCompleted = () => unawaited(_completed());
+    sleepTimer.onExpire = _expireTimer;
+    sleepTimer.addListener(_timerChanged);
+    playback.onSpeedChange = setSpeed;
     _subscriptions.add(
       playback.player.positionStream.listen((v) {
         if (!opening &&
@@ -44,6 +49,13 @@ class LibraryController extends ChangeNotifier {
     _subscriptions.add(
       playback.player.errorStream.listen((e) {
         if (_disposed || opening) return;
+        if (_waitingForTrack != null) {
+          _waitingForTrack = null;
+          error = '播放失败，定时已结束';
+          unawaited(playback.pause());
+          notifyListeners();
+          return;
+        }
         if (!_refreshing && current != null) {
           _refreshing = true;
           unawaited(_recover());
@@ -69,6 +81,111 @@ class LibraryController extends ChangeNotifier {
   final List<Playlist> playlists = [];
   final Map<String, String> collectionSort = {};
   final List<String> queue = [], likes = [], history = [];
+  final SleepTimer sleepTimer = SleepTimer();
+  String? _waitingForTrack;
+  bool get waitingForTrack => _waitingForTrack != null;
+  double speed = 1;
+  bool showPlayerLyrics = true;
+  bool glassAutomatic = true;
+  final autoGlassOpacity = ValueNotifier<double>(.26);
+  double navigationOpacity = .26, playerOpacity = .26;
+  void _timerChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> _expireTimer(bool finishTrack) async {
+    if (_disposed) return;
+    if (finishTrack &&
+        playing &&
+        current != null &&
+        !opening &&
+        playback.player.processingState != ProcessingState.completed) {
+      _waitingForTrack = current!.id;
+      notifyListeners();
+      return;
+    }
+    ++_playEpoch;
+    opening = false;
+    await playback.pause();
+    notifyListeners();
+    await save();
+  }
+
+  Future<void> _completed() async {
+    if (_disposed || opening) return;
+    if (mode == 'once' || _waitingForTrack != null) {
+      _waitingForTrack = null;
+      await playback.pause();
+      notifyListeners();
+      await save();
+    } else {
+      await next(1, true);
+    }
+  }
+
+  void setSleepTimer(Duration? duration, {bool? finishTrack}) {
+    _waitingForTrack = null;
+    if (duration == null) {
+      sleepTimer.cancel();
+    } else {
+      sleepTimer.start(
+        duration,
+        finishTrack: finishTrack ?? sleepTimer.finishTrack,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> setSpeed(double value) async {
+    if (!value.isFinite || value < .5 || value > 2) {
+      throw const AppFailure('倍速范围为 0.5–2×');
+    }
+    final rounded = (value * 20).round() / 20;
+    await playback.player.setSpeed(rounded);
+    speed = rounded;
+    notifyListeners();
+    await save();
+  }
+
+  Future<void> setPlayerLyrics(bool value) async {
+    showPlayerLyrics = value;
+    notifyListeners();
+    await save();
+  }
+
+  void announceMode(String name) {
+    _modeNoticeTimer?.cancel();
+    modeNotice.value = name;
+    _modeNoticeTimer = Timer(const Duration(milliseconds: 1800), () {
+      modeNotice.value = null;
+    });
+  }
+
+  Future<void> setLyricCentered(bool value) async {
+    lyricCentered = value;
+    notifyListeners();
+    await save();
+  }
+
+  Future<void> setGlass({
+    bool? automatic,
+    double? navigation,
+    double? player,
+  }) async {
+    if (automatic != null) {
+      glassAutomatic = automatic;
+      if (automatic) {
+        navigationOpacity = .26;
+        playerOpacity = .26;
+        autoGlassOpacity.value = .26;
+      }
+    }
+    if (navigation != null) navigationOpacity = navigation.clamp(0.0, 1.0);
+    if (player != null) playerOpacity = player.clamp(0.0, 1.0);
+    notifyListeners();
+    await save();
+  }
+
   final PlayOrder _playOrder = PlayOrder();
   final List<String> _nextPriority = [];
   Future<void>? _advancing;
@@ -110,7 +227,31 @@ class LibraryController extends ChangeNotifier {
   Duration get position => playhead.value;
   set position(Duration value) => playhead.value = value;
   Map<String, dynamic>? profile;
-  List<LyricLine> get lines => parseLrc(lyricText);
+  String lyricTranslation = '', lyricRomaji = '';
+  bool lyricLoading = false,
+      showLyricWords = true,
+      showLyricTranslation = true,
+      showLyricRomaji = true;
+  int lyricSize = 1;
+  double lyricFontSize = 24;
+  bool lyricCentered = false;
+  final modeNotice = ValueNotifier<String?>(null);
+  Timer? _modeNoticeTimer;
+  String? _parsedLyricKey;
+  List<LyricLine> _parsedLines = [];
+  List<LyricLine> get lines {
+    final key = jsonEncode([lyricText, lyricTranslation, lyricRomaji]);
+    if (key != _parsedLyricKey) {
+      _parsedLyricKey = key;
+      _parsedLines = parseRichLyrics(
+        lyricText,
+        translation: lyricTranslation,
+        romaji: lyricRomaji,
+      );
+    }
+    return _parsedLines;
+  }
+
   bool get playing => playback.player.playing;
   Future<void> initialize() async {
     await api.initialize();
@@ -125,7 +266,7 @@ class LibraryController extends ChangeNotifier {
     final s = await db.readState('library');
     if (s != null) {
       theme = supportedThemes.contains(s['theme']) ? s['theme'] : defaultTheme;
-      mode = ['order', 'shuffle', 'repeat'].contains(s['mode'])
+      mode = ['order', 'shuffle', 'repeat', 'once'].contains(s['mode'])
           ? s['mode']
           : 'order';
       final ordered = <String, Track>{
@@ -140,6 +281,25 @@ class LibraryController extends ChangeNotifier {
         Map<String, String>.from(s['collectionSort'] ?? {}),
       );
       standard = s['standard'] ?? false;
+      final storedSpeed = (s['speed'] as num?)?.toDouble() ?? 1;
+      speed = storedSpeed.isFinite ? storedSpeed.clamp(.5, 2) : 1;
+      showPlayerLyrics = s['showPlayerLyrics'] as bool? ?? true;
+      glassAutomatic = s['glassAutomatic'] as bool? ?? true;
+      navigationOpacity = ((s['navigationOpacity'] as num?)?.toDouble() ?? .26)
+          .clamp(0.0, 1.0);
+      playerOpacity = ((s['playerOpacity'] as num?)?.toDouble() ?? .26).clamp(
+        0.0,
+        1.0,
+      );
+      showLyricWords = s['showLyricWords'] as bool? ?? true;
+      showLyricTranslation = s['showLyricTranslation'] as bool? ?? true;
+      showLyricRomaji = s['showLyricRomaji'] as bool? ?? true;
+      lyricCentered = s['lyricCentered'] as bool? ?? false;
+      lyricSize = (s['lyricSize'] as int? ?? 1).clamp(0, 2);
+      final storedFont = (s['lyricFontSize'] as num?)?.toDouble();
+      lyricFontSize = storedFont != null && storedFont.isFinite
+          ? storedFont.clamp(16, 32)
+          : [20.0, 24.0, 28.0][lyricSize];
       lyricOffset = s['lyricOffset'] ?? 0;
       queue.addAll(
         List<String>.from(s['queue'] ?? []).where(library.containsKey),
@@ -166,6 +326,7 @@ class LibraryController extends ChangeNotifier {
       );
       position = Duration(milliseconds: s['position'] ?? 0);
     }
+    await playback.player.setSpeed(speed);
     await downloads.initialize();
     if (api.hasSession) unawaited(refreshProfile(silent: true));
     notifyListeners();
@@ -202,6 +363,17 @@ class LibraryController extends ChangeNotifier {
     'mode': mode,
     'standard': standard,
     'lyricOffset': lyricOffset,
+    'showLyricWords': showLyricWords,
+    'showLyricTranslation': showLyricTranslation,
+    'showLyricRomaji': showLyricRomaji,
+    'lyricSize': lyricSize,
+    'lyricFontSize': lyricFontSize,
+    'lyricCentered': lyricCentered,
+    'speed': speed,
+    'showPlayerLyrics': showPlayerLyrics,
+    'glassAutomatic': glassAutomatic,
+    'navigationOpacity': navigationOpacity,
+    'playerOpacity': playerOpacity,
     'queue': queue,
     'playOrder': _playOrder.toJson(),
     'nextPriority': _nextPriority,
@@ -221,8 +393,31 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setLyricDisplay({
+    bool? words,
+    bool? translation,
+    bool? romaji,
+    int? size,
+    double? fontSize,
+  }) async {
+    if (words != null) showLyricWords = words;
+    if (translation != null) showLyricTranslation = translation;
+    if (romaji != null) showLyricRomaji = romaji;
+    if (size != null) {
+      lyricSize = size.clamp(0, 2);
+      lyricFontSize = [20.0, 24.0, 28.0][lyricSize];
+    }
+    if (fontSize != null) {
+      if (!fontSize.isFinite) throw const AppFailure('字号无效');
+      lyricFontSize = fontSize.clamp(16, 32).roundToDouble();
+      lyricSize = ((lyricFontSize - 20) / 4).round().clamp(0, 2);
+    }
+    notifyListeners();
+    await save();
+  }
+
   Future<void> setMode(String value) async {
-    if (!['order', 'shuffle', 'repeat'].contains(value)) {
+    if (!['order', 'shuffle', 'repeat', 'once'].contains(value)) {
       throw const AppFailure('不支持的播放模式');
     }
     if (value != mode) _playOrder.reset(queue, current?.id);
@@ -349,6 +544,12 @@ class LibraryController extends ChangeNotifier {
     Duration at = Duration.zero,
     bool advancing = false,
   }) async {
+    if (_waitingForTrack != null) {
+      _waitingForTrack = null;
+      await playback.pause();
+      notifyListeners();
+      return;
+    }
     final epoch = ++_playEpoch;
     opening = true;
     error = '';
@@ -367,6 +568,7 @@ class LibraryController extends ChangeNotifier {
         await playback.pause();
         if (epoch != _playEpoch || _disposed) return;
         await playback.open(t, file: file, source: source, position: at);
+        await playback.player.setSpeed(speed);
       });
       if (epoch != _playEpoch) return;
       current = t;
@@ -471,11 +673,18 @@ class LibraryController extends ChangeNotifier {
       return;
     }
     if (playing) {
+      _waitingForTrack = null;
       await playback.pause();
       await save();
     } else if (playback.player.processingState == ProcessingState.idle ||
         playback.player.processingState == ProcessingState.completed) {
-      await play(current!, at: position, advancing: true);
+      await play(
+        current!,
+        at: playback.player.processingState == ProcessingState.completed
+            ? Duration.zero
+            : position,
+        advancing: true,
+      );
     } else {
       try {
         unawaited(_startPlayback());
@@ -519,6 +728,16 @@ class LibraryController extends ChangeNotifier {
   Future<void> _advance(int delta, bool automatic) async {
     final ids = queue.where(library.containsKey).toSet().toList();
     if (ids.isEmpty || (automatic && opening)) return;
+    if (!automatic && _waitingForTrack != null) {
+      _waitingForTrack = null;
+      await playback.pause();
+      notifyListeners();
+      return;
+    }
+    if (automatic && mode == 'once') {
+      await _completed();
+      return;
+    }
     String id;
     if (automatic &&
         mode == 'repeat' &&
@@ -720,11 +939,25 @@ class LibraryController extends ChangeNotifier {
     await save();
   }
 
+  Future<void> reorderQueue(String id, String? beforeId) async {
+    if (!queue.contains(id) ||
+        id == beforeId ||
+        (beforeId != null && !queue.contains(beforeId))) {
+      return;
+    }
+    queue.remove(id);
+    queue.insert(beforeId == null ? queue.length : queue.indexOf(beforeId), id);
+    _playOrder.sync(queue);
+    notifyListeners();
+    await save();
+  }
+
   Future<void> moveQueue(int i, int delta) async {
     final j = i + delta;
     if (i < 0 || i >= queue.length || j < 0 || j >= queue.length) return;
     final t = queue.removeAt(i);
     queue.insert(j, t);
+    _playOrder.sync(queue);
     notifyListeners();
     await save();
   }
@@ -739,6 +972,7 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> _clearPlayback() async {
+    _waitingForTrack = null;
     ++_playEpoch;
     opening = false;
     current = null;
@@ -798,7 +1032,10 @@ class LibraryController extends ChangeNotifier {
     if (_disposed || current?.id != t.id) return;
     final epoch = ++_lyricEpoch;
     lyricText = '';
+    lyricTranslation = lyricRomaji = lyricSource = '';
+    lyricOffset = 0;
     lyricError = '';
+    lyricLoading = true;
     notifyListeners();
     try {
       final document = await downloads.lyricDocument(t);
@@ -806,6 +1043,8 @@ class LibraryController extends ChangeNotifier {
       if (_disposed || epoch != _lyricEpoch || current?.id != t.id) return;
       if (cached != null) {
         lyricText = cached;
+        lyricTranslation = document?['translation'] as String? ?? '';
+        lyricRomaji = document?['romaji'] as String? ?? '';
         lyricSource = document?['source'] as String? ?? 'manual';
         lyricOffset = document?['offset'] as int? ?? 0;
         notifyListeners();
@@ -822,7 +1061,12 @@ class LibraryController extends ChangeNotifier {
       }
     } on Exception {
       if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
-        lyricError = '歌词服务暂不可用，可通过歌词图标重新匹配或粘贴 LRC';
+        lyricError = '歌词服务暂不可用，可重新匹配或导入 LRC / SPL';
+        notifyListeners();
+      }
+    } finally {
+      if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
+        lyricLoading = false;
         notifyListeners();
       }
     }
@@ -839,6 +1083,8 @@ class LibraryController extends ChangeNotifier {
       return;
     }
     final epoch = expectedEpoch ?? ++_lyricEpoch;
+    candidate = await lyricsClient.resolveCandidate(candidate);
+    if (_disposed || current?.id != t.id || epoch != _lyricEpoch) return;
     final synced = candidate['syncedLyrics'] as String?;
     final text = synced != null && synced.trim().isNotEmpty
         ? synced
@@ -847,9 +1093,14 @@ class LibraryController extends ChangeNotifier {
       t,
       text,
       source: candidate['source'] as String? ?? 'lrclib',
+      translation: candidate['translation'] as String? ?? '',
+      romaji: candidate['romaji'] as String? ?? '',
     );
     if (!_disposed && epoch == _lyricEpoch && current?.id == t.id) {
       lyricText = text;
+      lyricTranslation = candidate['translation'] as String? ?? '';
+      lyricRomaji = candidate['romaji'] as String? ?? '';
+      lyricLoading = false;
       lyricSource = candidate['source'] as String? ?? 'lrclib';
       lyricOffset = 0;
       lyricError = '';
@@ -857,15 +1108,30 @@ class LibraryController extends ChangeNotifier {
     }
   }
 
-  Future<void> setLyrics(String text, {Track? track, int? offset}) async {
+  Future<void> setLyrics(
+    String text, {
+    Track? track,
+    int? offset,
+    String translation = '',
+    String romaji = '',
+  }) async {
     final target = track ?? current;
     if (target == null || current?.id != target.id) {
       throw const AppFailure('歌曲已切换，请重新打开歌词窗口');
     }
-    ++_lyricEpoch;
-    await downloads.saveLyrics(target, text, offset: offset ?? lyricOffset);
-    if (_disposed || current?.id != target.id) return;
+    final epoch = ++_lyricEpoch;
+    await downloads.saveLyrics(
+      target,
+      text,
+      offset: offset ?? lyricOffset,
+      translation: translation,
+      romaji: romaji,
+    );
+    if (_disposed || current?.id != target.id || epoch != _lyricEpoch) return;
     lyricText = text;
+    lyricTranslation = translation;
+    lyricRomaji = romaji;
+    lyricLoading = false;
     lyricSource = 'manual';
     lyricError = '';
     if (offset != null) lyricOffset = offset;
@@ -919,10 +1185,16 @@ class LibraryController extends ChangeNotifier {
     ++_playEpoch;
     ++_searchEpoch;
     _saveTimer?.cancel();
+    _modeNoticeTimer?.cancel();
+    modeNotice.dispose();
+    sleepTimer.removeListener(_timerChanged);
+    sleepTimer.dispose();
+    playback.onSpeedChange = null;
     for (final sub in _subscriptions) {
       unawaited(sub.cancel());
     }
     downloads.removeListener(_downloadsChanged);
+    autoGlassOpacity.dispose();
     playhead.dispose();
     super.dispose();
   }

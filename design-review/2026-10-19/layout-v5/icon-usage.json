@@ -1,0 +1,24 @@
+{
+  "registry": "../../../resources/icons/registry.json",
+  "usedIds": [
+    "back",
+    "done",
+    "down",
+    "endPause",
+    "heart",
+    "lyrics",
+    "material/close",
+    "material/repeat",
+    "material/repeat_one",
+    "material/schedule",
+    "material/shuffle",
+    "material/speed",
+    "more",
+    "next",
+    "pause",
+    "play",
+    "previous",
+    "queue",
+    "refresh"
+  ]
+}

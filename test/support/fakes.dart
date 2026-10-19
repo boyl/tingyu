@@ -70,7 +70,8 @@ class FixtureApi extends BilibiliClient {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> folders(int mid) async => [];
+  Future<List<Map<String, dynamic>>> folders(int mid) async => folderResults;
+  List<Map<String, dynamic>> folderResults = [];
   @override
   Future<void> logout() async {
     loggedIn = false;
@@ -131,6 +132,14 @@ class FakePlayer implements AudioPlayer {
   final errors = StreamController<PlayerException>.broadcast();
   final volumes = StreamController<double>.broadcast();
   double gain = 1;
+  double playbackSpeed = 1;
+  @override
+  double get speed => playbackSpeed;
+  @override
+  Future<void> setSpeed(double value) async {
+    playbackSpeed = value;
+  }
+
   @override
   Stream<double> get volumeStream => volumes.stream;
   @override
@@ -203,6 +212,8 @@ class FakePlayback extends BaseAudioHandler implements PlaybackHandler {
   final FakePlayer player = FakePlayer();
   @override
   void Function()? onNext, onPrevious, onCompleted;
+  @override
+  Future<void> Function(double)? onSpeedChange;
   final List<String> opened = [];
   Future<void> Function(Track)? openAnswer;
   @override

@@ -1,0 +1,101 @@
+[
+  {
+    "name": "playback",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "bottom": [
+      {
+        "screen": "player-demo",
+        "boxes": [
+          {
+            "class": "player-actions",
+            "bottom": 810
+          }
+        ]
+      },
+      {
+        "screen": "phone player",
+        "boxes": [
+          {
+            "class": "player-actions",
+            "bottom": 810
+          }
+        ]
+      },
+      {
+        "screen": "phone player",
+        "boxes": [
+          {
+            "class": "player-actions",
+            "bottom": 810
+          },
+          {
+            "class": "primary full",
+            "bottom": 811
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "settings",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "bottom": [
+      {
+        "screen": "phone ",
+        "boxes": []
+      },
+      {
+        "screen": "phone ",
+        "boxes": [
+          {
+            "class": "secondary full",
+            "bottom": 775
+          }
+        ]
+      },
+      {
+        "screen": "phone ",
+        "boxes": [
+          {
+            "class": "primary full",
+            "bottom": 561
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "experience",
+    "result": "PASS",
+    "loaded": true,
+    "errors": [],
+    "bottom": [
+      {
+        "screen": "phone ",
+        "boxes": [
+          {
+            "class": "glass-explanation",
+            "bottom": 764
+          }
+        ]
+      },
+      {
+        "screen": "phone lyric-phone",
+        "boxes": [
+          {
+            "class": "lyric-footer",
+            "bottom": 805
+          }
+        ]
+      },
+      {
+        "screen": "phone splash-phone",
+        "boxes": []
+      }
+    ]
+  }
+]

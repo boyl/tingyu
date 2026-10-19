@@ -259,7 +259,29 @@ void main() {
         await tap('quality-true');
         expect(p.standard, isTrue);
         await tap('settings-storage');
+        await waitFor(() => find.text('应用安装').evaluate().isNotEmpty);
+        await binding.takeScreenshot('storage-space-019');
         await tap('返回设置');
+        await tap('settings-glass');
+        await tap('segment-手动');
+        final navSlider = find.byKey(const ValueKey('glass-slider-nav'));
+        await settleAnimations();
+        await binding.takeScreenshot('glass-manual-019');
+        await tester.ensureVisible(navSlider);
+        await settleAnimations();
+        final sliderRect = tester.getRect(navSlider);
+        final drag = await tester.startGesture(sliderRect.center);
+        await drag.moveBy(const Offset(30, 0));
+        await tester.pump();
+        expect(tester.getRect(navSlider), sliderRect);
+        await binding.takeScreenshot('glass-preview-019');
+        await drag.up();
+        await settleAnimations();
+        await tap('返回设置');
+        await tap('settings-about');
+        await binding.takeScreenshot('about-019');
+        Navigator.of(tester.element(find.text('关于 tingyu'))).pop();
+        await settleAnimations();
         await tap('返回');
         await tap('展开播放器');
         // Settings/animation checks can outlast the 30-second fixture. Reset
@@ -277,14 +299,45 @@ void main() {
         await waitFor(() => p.current?.id == firstTrack.id && !p.opening);
         expect(p.library.keys.take(libraryOrder.length), libraryOrder);
         await tap('cycle-mode');
+        expect(p.mode, 'once');
+        await p.playback.seek(const Duration(milliseconds: 29500));
+        await waitFor(() => !p.playing);
+        expect(p.current!.id, firstTrack.id);
+        await tap('cycle-mode');
         expect(p.mode, 'order');
-        await tap('歌词');
+        await p.play(firstTrack);
+        await waitFor(() => p.playing && !p.opening);
+        await tap('player-speed');
+        await tap('speed-1.25');
+        expect(p.playback.player.speed, 1.25);
+        await binding.takeScreenshot('playback-speed-panel');
+        await tap('恢复正常倍速');
+        await tap('收起设置');
+        await tap('player-sleep-timer');
+        await tap('timer-30');
+        expect(p.sleepTimer.active, true);
+        await binding.takeScreenshot('sleep-timer-panel');
+        await tap('timer-off');
+        await tap('收起设置');
+        await tap('player-lyrics-toggle');
+        expect(p.showPlayerLyrics, false);
+        await tap('player-lyrics-toggle');
+        await tap('展开歌词 ›');
+        await binding.takeScreenshot('independent-lyrics-page');
+        await tap('歌曲操作');
+        await tap('显示与排版');
+        await binding.takeScreenshot('lyrics-display-019');
+        await tap('返回');
+        await tap('歌曲操作');
+        await tap('编辑歌词');
+        await binding.takeScreenshot('lyrics-editor-019');
         await tester.enterText(
           find.byType(TextField).last,
           '[00:00.00]原生验收歌词\n[00:04.00]同步显示',
         );
         await tap('保存歌词');
         await waitFor(() => p.lyricText.contains('原生验收歌词'));
+        await tap('返回');
         await tester.pump();
         final beforeScreenshot = p.position;
         final beforeGain = p.playback.player.volume;
@@ -360,7 +413,9 @@ void main() {
         );
         expect(find.byType(SimpleDialog), findsNothing);
         await binding.takeScreenshot('minimal-player-downloaded');
-        await tap('download-${firstTrack.id}');
+        expect(tester.widget<Pressable>(downloadedButton).onPressed, isNull);
+        expect(find.byType(PlayerScreen), findsOneWidget);
+        await tap('返回');
         expect(find.byType(DownloadsPanel), findsOneWidget);
 
         final beforeOffline = requests;
@@ -410,6 +465,10 @@ void main() {
         expect(p.playlists.single.trackIds, [firstTrack.id]);
         expect(p.likes, contains(firstTrack.id));
         await binding.takeScreenshot('audit-native-download-removed');
+        await tap('tab-library');
+        await tap('展开播放器');
+        expect(find.byType(PlayerScreen), findsOneWidget);
+        await tap('返回');
         api.offline = false;
         reject = false;
         for (var i = 0; i < 49; i++) {

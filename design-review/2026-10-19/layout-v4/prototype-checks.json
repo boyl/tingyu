@@ -1,0 +1,22 @@
+[
+  {
+    "name": "controls",
+    "result": "PASS",
+    "errors": []
+  },
+  {
+    "name": "transparency",
+    "result": "PASS",
+    "errors": []
+  },
+  {
+    "name": "details",
+    "result": "PASS",
+    "errors": []
+  },
+  {
+    "name": "icon-catalog",
+    "result": "PASS",
+    "entries": 68
+  }
+]
