@@ -1,3 +1,5 @@
+![GitHub Release Downloads](https://img.shields.io/github/downloads/boyl/tingyu/total?label=Downloads&color=blue)
+
 # 听屿 · Flutter 三端应用
 
 正式工程，与 `../music-player-prototype` 的 React 交互原型相互独立。目标为 Windows、macOS 和 Android，本地优先，无自建后端。主题为哔哩粉、日出橙、月影蓝、夜间暗，默认哔哩粉；未发布阶段不做旧主题兼容映射。
