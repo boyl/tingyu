@@ -19,11 +19,13 @@ void main() {
     (tester) async {
       final directory = await Directory.systemTemp.createTemp('tingyu-live-');
       final api = BilibiliClient(MemoryCredentials());
-      await app.runTingyu(
+      final startup = app.runTingyu(
         client: api,
         dataDirectory: directory,
         lyricsClient: FixtureLyrics(),
       );
+      await tester.pump();
+      await startup;
       await tester.pumpAndSettle();
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),

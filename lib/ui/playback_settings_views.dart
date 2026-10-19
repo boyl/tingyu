@@ -43,6 +43,7 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
   late final FixedExtentScrollController minutesWheel =
       FixedExtentScrollController(initialItem: minutes % 60);
   bool movingWheels = false;
+  bool customDuration = false;
   @override
   void dispose() {
     hoursWheel.dispose();
@@ -83,12 +84,27 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.timer)
+                Center(
+                  child: Container(
+                    width: TingyuTokens.space * 4,
+                    height: TingyuTokens.space / 2,
+                    margin: const EdgeInsets.only(
+                      bottom: TingyuTokens.space * 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: t.line,
+                      borderRadius: BorderRadius.circular(TingyuTokens.radius),
+                    ),
+                  ),
+                ),
               Row(
                 children: [
-                  TingyuIcon(
-                    widget.timer ? Icons.schedule : Icons.speed,
-                    color: t.muted,
-                  ),
+                  if (!widget.timer)
+                    TingyuIcon(
+                      widget.timer ? Icons.schedule : Icons.speed,
+                      color: t.muted,
+                    ),
                   const SizedBox(width: TingyuTokens.space),
                   Expanded(
                     child: Text(
@@ -99,11 +115,12 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                       ),
                     ),
                   ),
-                  action(
-                    Icons.keyboard_arrow_down,
-                    '收起设置',
-                    () => Navigator.pop(context),
-                  ),
+                  if (!widget.timer)
+                    action(
+                      Icons.keyboard_arrow_down,
+                      '收起设置',
+                      () => Navigator.pop(context),
+                    ),
                 ],
               ),
               const SizedBox(height: TingyuTokens.space * 2),
@@ -194,34 +211,67 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                   ),
                 ),
               ] else ...[
+                Center(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$minutes',
+                          style: const TextStyle(
+                            fontSize: 64,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' 分钟后',
+                          style: TextStyle(fontSize: 14, color: t.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    p.waitingForTrack
+                        ? '本首结束后暂停'
+                        : finish
+                        ? '播完本首'
+                        : '到时暂停',
+                    style: TextStyle(color: t.muted, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: TingyuTokens.space * 3),
                 Row(
                   children: [
-                    Expanded(
-                      child: Pressable(
-                        key: const ValueKey('timer-off'),
-                        label: '关闭定时',
-                        selected: !p.sleepTimer.active && !p.waitingForTrack,
-                        selectionFill: false,
-                        padding: EdgeInsets.zero,
-                        onPressed: () => p.setSleepTimer(null),
-                        child: const Center(
-                          child: Text('关闭', style: TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                    ),
                     for (final value in [15, 30, 45, 60])
                       Expanded(
-                        child: Pressable(
-                          key: ValueKey('timer-$value'),
-                          label: '$value分钟',
-                          selected: p.sleepTimer.active && minutes == value,
-                          selectionFill: false,
-                          padding: EdgeInsets.zero,
-                          onPressed: () => start(value),
-                          child: Center(
-                            child: Text(
-                              '$value 分钟',
-                              style: const TextStyle(fontSize: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: TingyuTokens.space / 2,
+                          ),
+                          child: Pressable(
+                            key: ValueKey('timer-$value'),
+                            label: '$value分钟',
+                            selected: p.sleepTimer.active && minutes == value,
+                            color: t.tint,
+                            radius: TingyuTokens.collectionRadius,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: TingyuTokens.space,
+                            ),
+                            onPressed: () => start(value),
+                            child: Center(
+                              child: Text(
+                                '$value\n分钟',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight:
+                                      p.sleepTimer.active && minutes == value
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  fontSize: 16,
+                                  height: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -229,91 +279,125 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                   ],
                 ),
                 const SizedBox(height: TingyuTokens.space * 2),
-                SizedBox(
-                  height: TingyuTokens.space * 18,
+                Pressable(
+                  key: const ValueKey('timer-custom'),
+                  label: '自定义时长',
+                  selectionFill: false,
+                  onPressed: () =>
+                      setState(() => customDuration = !customDuration),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: ListWheelScrollView.useDelegate(
-                          key: const ValueKey('timer-hours'),
-                          controller: hoursWheel,
-                          itemExtent: 48,
-                          diameterRatio: 1.4,
-                          overAndUnderCenterOpacity: .25,
-                          physics: const FixedExtentScrollPhysics(),
-                          onSelectedItemChanged: (h) {
-                            if (movingWheels) return;
-                            final total = h * 60 + minutes % 60;
-                            start(total.clamp(1, 180));
-                          },
-                          childDelegate: ListWheelChildListDelegate(
-                            children: [
-                              for (var h = 0; h <= 3; h++)
-                                Center(
-                                  child: Text(
-                                    '$h 小时',
-                                    style: const TextStyle(fontSize: 23),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListWheelScrollView.useDelegate(
-                          key: const ValueKey('timer-minutes'),
-                          controller: minutesWheel,
-                          itemExtent: 48,
-                          diameterRatio: 1.4,
-                          overAndUnderCenterOpacity: .25,
-                          physics: const FixedExtentScrollPhysics(),
-                          onSelectedItemChanged: (m) {
-                            if (movingWheels) return;
-                            final total = minutes ~/ 60 * 60 + m;
-                            start(total.clamp(1, 180));
-                          },
-                          childDelegate: ListWheelChildListDelegate(
-                            children: [
-                              for (var m = 0; m < 60; m++)
-                                Center(
-                                  child: Text(
-                                    '$m 分钟',
-                                    style: const TextStyle(fontSize: 23),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      const Expanded(child: Text('自定义时长')),
+                      Text('$minutes 分钟', style: TextStyle(color: t.muted)),
+                      const SizedBox(width: TingyuTokens.space),
+                      const TingyuIcon(Icons.chevron_right),
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    for (final value in [false, true])
-                      Expanded(
-                        child: Pressable(
-                          key: ValueKey('timer-finish-$value'),
-                          selected: finish == value,
-                          label: value ? '播完本首' : '到时暂停',
-                          onPressed: () {
-                            setState(() => finish = value);
-                            p.sleepTimer.finishTrack = value;
-                            if (p.sleepTimer.active) start(minutes);
-                          },
-                          child: Text(value ? '播完本首' : '到时暂停'),
+                if (customDuration)
+                  SizedBox(
+                    height: TingyuTokens.space * 18,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ListWheelScrollView.useDelegate(
+                            key: const ValueKey('timer-hours'),
+                            controller: hoursWheel,
+                            itemExtent: 48,
+                            diameterRatio: 1.4,
+                            overAndUnderCenterOpacity: .25,
+                            physics: const FixedExtentScrollPhysics(),
+                            onSelectedItemChanged: (h) {
+                              if (movingWheels) return;
+                              final total = h * 60 + minutes % 60;
+                              start(total.clamp(1, 180));
+                            },
+                            childDelegate: ListWheelChildListDelegate(
+                              children: [
+                                for (var h = 0; h <= 3; h++)
+                                  Center(
+                                    child: Text(
+                                      '$h 小时',
+                                      style: const TextStyle(fontSize: 23),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                  ],
+                        Expanded(
+                          child: ListWheelScrollView.useDelegate(
+                            key: const ValueKey('timer-minutes'),
+                            controller: minutesWheel,
+                            itemExtent: 48,
+                            diameterRatio: 1.4,
+                            overAndUnderCenterOpacity: .25,
+                            physics: const FixedExtentScrollPhysics(),
+                            onSelectedItemChanged: (m) {
+                              if (movingWheels) return;
+                              final total = minutes ~/ 60 * 60 + m;
+                              start(total.clamp(1, 180));
+                            },
+                            childDelegate: ListWheelChildListDelegate(
+                              children: [
+                                for (var m = 0; m < 60; m++)
+                                  Center(
+                                    child: Text(
+                                      '$m 分钟',
+                                      style: const TextStyle(fontSize: 23),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Container(
+                  padding: const EdgeInsets.all(TingyuTokens.space / 2),
+                  decoration: BoxDecoration(
+                    color: t.tint,
+                    borderRadius: BorderRadius.circular(
+                      TingyuTokens.collectionRadius,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      for (final value in [false, true])
+                        Expanded(
+                          child: Pressable(
+                            key: ValueKey('timer-finish-$value'),
+                            selected: finish == value,
+                            selectionFill: false,
+                            color: finish == value
+                                ? t.surface
+                                : Colors.transparent,
+                            label: value ? '播完本首' : '到时暂停',
+                            onPressed: () {
+                              setState(() => finish = value);
+                              p.sleepTimer.finishTrack = value;
+                              if (p.sleepTimer.active) start(minutes);
+                            },
+                            child: Text(value ? '播完本首' : '到时暂停'),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: TingyuTokens.space * 2),
-                Text(
-                  p.waitingForTrack
-                      ? '本首结束后暂停'
-                      : p.sleepTimer.active
-                      ? '${timerLabel(p)} 后暂停'
-                      : '未开启',
-                  style: TextStyle(color: t.muted, fontSize: 12),
+                Pressable(
+                  key: const ValueKey('timer-off'),
+                  label: '关闭定时',
+                  selected: !p.sleepTimer.active && !p.waitingForTrack,
+                  selectionFill: false,
+                  onPressed: () => p.setSleepTimer(null),
+                  child: Center(
+                    child: Text(
+                      '关闭定时',
+                      style: TextStyle(color: t.muted, fontSize: 14),
+                    ),
+                  ),
                 ),
               ],
             ],

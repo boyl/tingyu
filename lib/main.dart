@@ -28,8 +28,9 @@ Future<void> runTingyu({
   LyricsClient? lyricsClient,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final launchClock = Stopwatch()..start();
+  final launchClock = Stopwatch();
   runApp(const TingyuLaunch());
+  WidgetsBinding.instance.addPostFrameCallback((_) => launchClock.start());
   try {
     final directory = dataDirectory ?? await getApplicationSupportDirectory();
     await directory.create(recursive: true);
@@ -55,7 +56,8 @@ Future<void> runTingyu({
     if (Platform.isMacOS || Platform.isWindows) {
       await DesktopIntegration(controller).initialize();
     }
-    final remaining = const Duration(milliseconds: 850) - launchClock.elapsed;
+    if (!launchClock.isRunning) await WidgetsBinding.instance.endOfFrame;
+    final remaining = const Duration(milliseconds: 900) - launchClock.elapsed;
     if (remaining > Duration.zero) await Future<void>.delayed(remaining);
     runApp(
       ProviderScope(

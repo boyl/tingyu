@@ -46,13 +46,11 @@ void main() {
       await tester.pump();
 
       final scroll = tester.state<ScrollableState>(find.byType(Scrollable));
-      final viewport = scroll.position.viewportDimension;
-      final maxScroll = scroll.position.maxScrollExtent;
-      final centered = (12 + 4 * 64 - (viewport - 64) / 2).clamp(
-        0.0,
-        maxScroll,
+      final viewportRect = tester.getRect(find.byType(Scrollable));
+      expect(
+        tester.getCenter(find.text('第三句')).dy,
+        closeTo(viewportRect.center.dy, 1),
       );
-      expect(scroll.position.pixels, closeTo(centered, 0.5));
       expect(scroll.position.pixels, greaterThan(100));
       final active = tester
           .widgetList<Text>(find.byType(Text))
@@ -80,15 +78,15 @@ void main() {
       fixture.controller.position = const Duration(seconds: 10);
       await tester.pump();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 180));
+      await tester.pump(const Duration(milliseconds: 400));
       final arrived = tester
           .state<ScrollableState>(find.byType(Scrollable))
           .position;
-      final next = (12 + 5 * 64 - (arrived.viewportDimension - 64) / 2).clamp(
-        0.0,
-        arrived.maxScrollExtent,
+      expect(arrived.pixels, greaterThan(0));
+      expect(
+        tester.getCenter(find.text('第四句')).dy,
+        closeTo(tester.getRect(find.byType(Scrollable)).center.dy, 1),
       );
-      expect(arrived.pixels, closeTo(next, 1));
       expect(
         tester.widget<Text>(find.text('第四句')).style?.fontWeight,
         FontWeight.w600,
@@ -183,6 +181,8 @@ void main() {
   ) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 68, bottom: 24);
+    addTearDown(tester.view.resetPadding);
     providerOwnsController = true;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -206,6 +206,11 @@ void main() {
     await tester.pump();
     final line = tester.getRect(find.text('第二句完整歌词'));
     final panel = tester.getRect(find.byType(LyricPanel));
+    final visible = tester.getRect(
+      find.byKey(const ValueKey('player-content')),
+    );
+    expect(line.top, greaterThanOrEqualTo(visible.top));
+    expect(line.bottom, lessThanOrEqualTo(visible.bottom));
     final seek = tester.getTopLeft(find.text('00:10')).dy;
     expect(line.height, greaterThan(15));
     expect(line.top, greaterThanOrEqualTo(panel.top));

@@ -140,56 +140,50 @@ class CollectionToolbar extends ConsumerWidget {
       return Row(
         children: [
           Expanded(
-            child: Text(
-              '${ids.length} 首歌曲',
-              style: TextStyle(color: context.tokens.muted, fontSize: 12),
-            ),
-          ),
-          action(
-            Icons.more_horiz,
-            '曲库操作',
-            () => showContentActions(
-              context,
-              (ctx) => SimpleDialog(
-                title: const Text('曲库操作'),
+            child: Pressable(
+              key: const ValueKey('播放全部'),
+              label: '播放全部',
+              selectionFill: false,
+              padding: EdgeInsets.zero,
+              onPressed: ids.isEmpty
+                  ? null
+                  : () => report(context, () => p.playCollection(ids)),
+              child: Row(
                 children: [
-                  labelButton(
+                  TingyuIcon(Icons.play_arrow, color: context.tokens.accent),
+                  const SizedBox(width: TingyuTokens.space),
+                  Text(
                     '播放全部',
-                    ids.isEmpty
-                        ? null
-                        : () async {
-                            Navigator.pop(ctx);
-                            await p.playCollection(ids);
-                          },
-                    icon: Icons.play_arrow,
+                    style: TextStyle(color: context.tokens.accentInk),
                   ),
-                  labelButton(
-                    '歌曲排序',
-                    ids.isEmpty
-                        ? null
-                        : () {
-                            Navigator.pop(ctx);
-                            showCollectionSort(context, p, collectionKey);
-                          },
-                    icon: Icons.swap_vert,
-                  ),
-                  labelButton(
-                    '批量选择',
-                    ids.isEmpty
-                        ? null
-                        : () {
-                            Navigator.pop(ctx);
-                            onSelect();
-                          },
-                    icon: Icons.checklist,
+                  const SizedBox(width: TingyuTokens.space),
+                  Flexible(
+                    child: Text(
+                      '${ids.length} 首',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: context.tokens.muted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+          action(
+            Icons.swap_vert,
+            '歌曲排序',
+            ids.isEmpty
+                ? null
+                : () => showCollectionSort(context, p, collectionKey),
+          ),
+          action(Icons.checklist, '批量选择', ids.isEmpty ? null : onSelect),
         ],
       );
     }
+
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: TingyuTokens.space,
@@ -266,47 +260,94 @@ Future<void> showCollectionSort(
   ),
 );
 
+class SelectionSurface extends StatelessWidget {
+  const SelectionSurface({
+    super.key,
+    required this.child,
+    required this.first,
+    required this.last,
+  });
+  final Widget child;
+  final bool first, last;
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: context.tokens.tint.withValues(alpha: .45),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(first ? TingyuTokens.detailRadius : 0),
+        bottom: Radius.circular(last ? TingyuTokens.detailRadius : 0),
+      ),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        child,
+        if (!last)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: TingyuTokens.space * 7,
+              right: TingyuTokens.space * 2,
+            ),
+            child: Divider(
+              height: 1,
+              thickness: .5,
+              color: context.tokens.line,
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
 class SelectionTrackRow extends StatelessWidget {
   const SelectionTrackRow(
     this.track, {
     super.key,
     required this.selected,
     required this.onPressed,
+    this.first = false,
+    this.last = false,
   });
+  final bool first, last;
   final Track track;
   final bool selected;
   final VoidCallback onPressed;
   @override
-  Widget build(BuildContext context) => Pressable(
-    key: ValueKey('select-${track.id}'),
-    label: '选择 ${track.title}',
-    selected: selected,
-    onPressed: onPressed,
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        TingyuIcon(
-          selected ? Icons.check_box : Icons.check_box_outline_blank,
-          color: selected ? context.tokens.accent : context.tokens.muted,
-        ),
-        const SizedBox(width: 12),
-        Artwork(track),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text(
-                track.artist,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: context.tokens.muted, fontSize: 11),
-              ),
-            ],
+  Widget build(BuildContext context) => SelectionSurface(
+    first: first,
+    last: last,
+    child: Pressable(
+      key: ValueKey('select-${track.id}'),
+      selectionFill: false,
+      label: '选择 ${track.title}',
+      selected: selected,
+      onPressed: onPressed,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: Row(
+        children: [
+          TingyuIcon(
+            selected ? Icons.check_box : Icons.check_box_outline_blank,
+            color: selected ? context.tokens.accent : context.tokens.muted,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Artwork(track),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  track.artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: context.tokens.muted, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

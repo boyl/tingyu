@@ -1195,6 +1195,8 @@ void main() {
       await fixture.controller.play(firstTrack);
       await mount(tester);
       await tap(tester, '展开播放器');
+      expect(find.byType(TrackDownloadAction), findsNothing);
+      await tap(tester, '歌曲操作');
       final task = DownloadTask(firstTrack);
       fixture.downloads.tasks.add(task);
       for (final status in DownloadStatus.values) {

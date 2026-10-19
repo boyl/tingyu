@@ -89,11 +89,13 @@ void main() {
           '本地夹具音频',
         );
       };
-      await app.runTingyu(
+      final startup = app.runTingyu(
         client: api,
         dataDirectory: directory,
         lyricsClient: FixtureLyrics(),
       );
+      await tester.pump();
+      await startup;
       await settleAnimations();
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
@@ -318,9 +320,19 @@ void main() {
         expect(p.sleepTimer.active, true);
         await binding.takeScreenshot('sleep-timer-panel');
         await tap('timer-off');
-        await tap('收起设置');
+        Navigator.of(
+          tester.element(find.byKey(const ValueKey('timer-off'))),
+        ).pop();
+        await settleAnimations();
+        final beforeLyrics = p.position;
+        final beforeTrack = p.current!.id;
         await tap('player-lyrics-toggle');
         expect(p.showPlayerLyrics, false);
+        expect(p.playing, isTrue);
+        expect(p.opening, isFalse);
+        expect(p.current!.id, beforeTrack);
+        expect(p.playback.player.volume, 1);
+        expect(p.position, greaterThanOrEqualTo(beforeLyrics));
         await tap('player-lyrics-toggle');
         await tap('展开歌词 ›');
         await binding.takeScreenshot('independent-lyrics-page');
@@ -403,6 +415,9 @@ void main() {
         await tap('downloads-tab-completed');
         await binding.takeScreenshot('audit-native-download-complete');
         await tap('展开播放器');
+        expect(find.byType(TrackDownloadAction), findsNothing);
+        await binding.takeScreenshot('minimal-player-downloaded');
+        await tap('歌曲操作');
         final downloadedButton = find.byKey(
           ValueKey('download-${firstTrack.id}'),
         );
@@ -411,10 +426,13 @@ void main() {
           find.descendant(of: downloadedButton, matching: find.byType(Text)),
           findsNothing,
         );
-        expect(find.byType(SimpleDialog), findsNothing);
-        await binding.takeScreenshot('minimal-player-downloaded');
+        expect(find.text('已下载'), findsWidgets);
+        expect(downloadedButton.hitTestable(), findsOneWidget);
+        await binding.takeScreenshot('player-download-menu');
         expect(tester.widget<Pressable>(downloadedButton).onPressed, isNull);
         expect(find.byType(PlayerScreen), findsOneWidget);
+        Navigator.of(tester.element(downloadedButton)).pop();
+        await settleAnimations();
         await tap('返回');
         expect(find.byType(DownloadsPanel), findsOneWidget);
 
@@ -678,6 +696,23 @@ void main() {
         }
         expect(coverRequests, 1, reason: '歌曲行、下载、切页与不同尺寸必须复用同一 URL 封面');
         await binding.takeScreenshot('cover-cache-tab-revisit');
+        await p.setTheme('bili');
+        await p.play(covered);
+        await waitFor(() => p.playing && !p.opening);
+        p.lyricText =
+            '[00:00.00]沿途的风景慢慢走过\n[00:10.00]把晚风留在这段旋律里\n[00:20.00]让每一次归途都有光';
+        await p.playback.seek(const Duration(seconds: 11));
+        await p.playback.pause();
+        await tap('展开播放器');
+        await settleAnimations();
+        await binding.takeScreenshot('full-cover-player-22');
+        await tap('player-sleep-timer');
+        await tap('timer-30');
+        await binding.takeScreenshot('sleep-timer-pink-22');
+        Navigator.of(
+          tester.element(find.byKey(const ValueKey('timer-off'))),
+        ).pop();
+        await settleAnimations();
       } finally {
         await p.playback.pause();
         await p.downloads.prepareForExit();

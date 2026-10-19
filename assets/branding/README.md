@@ -8,3 +8,5 @@
 - `tool/generate_app_icons.py`：生成 Android legacy、adaptive foreground、Android 13 monochrome，适配中央安全区，背景透明。需要 Pillow。
 
 本轮仅发布 Android arm64-v8a；macOS、Windows 图标资源保持原样。历史 `sound-island.png` 保留用于追溯。
+
+2026-10-19 用户认可主体放大：adaptive/monochrome在原尺度上放大15%；legacy为避免原88%占比放大后超过画布，最大占比限制98%。母版轮廓、白色与透明背景不变，桌面平台图标不变。

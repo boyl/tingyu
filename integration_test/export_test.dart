@@ -21,11 +21,13 @@ void main() {
         '${root.path}/export-regression',
       ).create(recursive: true);
       final directory = await parent.createTemp('flow-');
-      await app.runTingyu(
+      final startup = app.runTingyu(
         client: FixtureApi(),
         dataDirectory: directory,
         lyricsClient: FixtureLyrics(),
       );
+      await tester.pump();
+      await startup;
       await tester.pumpAndSettle();
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),

@@ -6,6 +6,7 @@ tools="$root/../.toolchains"
 export ANDROID_HOME="$tools/android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export ANDROID_AVD_HOME="$tools/avd"
+tingyu_emulator=${TINGYU_EMULATOR_BIN:-"$ANDROID_HOME/emulator/emulator"}
 tingyu_avd=tingyu-api36
 tingyu_port=5556
 if [ "${TINGYU_EMULATOR_TEST:-0}" = 1 ]; then
@@ -47,6 +48,20 @@ awk '!/^hw\.audio(Input|Output)[[:space:]]*=/' "$tingyu_config" > "$tingyu_confi
 printf '\nhw.audioInput = no\nhw.audioOutput = yes\n' >> "$tingyu_config.audio"
 mv "$tingyu_config.audio" "$tingyu_config"
 if [ "${TINGYU_EMULATOR_HEADLESS:-0}" = 1 ]; then
-  exec "$ANDROID_HOME/emulator/emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -no-audio -gpu swiftshader -no-window
+  exec "$tingyu_emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -no-audio -gpu swiftshader -no-window
 fi
-exec "$ANDROID_HOME/emulator/emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -gpu auto
+# Use the host GPU for visible playback instead of auto-selected SwiftShader.
+# GPU selection alone did not resolve recurring virtual sound-card I/O errors.
+# The headless regression path above deliberately retains software/no-audio.
+if [ "$(uname -s)" = Darwin ]; then
+  # Prefer the separately verified runtime when present; never replace the SDK.
+  tingyu_verified_emulator="$tools/emulator-audio-37.3.2/emulator/emulator"
+  if [ -z "${TINGYU_EMULATOR_BIN:-}" ] && [ -x "$tingyu_verified_emulator" ]; then
+    tingyu_emulator="$tingyu_verified_emulator"
+  fi
+  # 30 account-page cycles plus continued playback and human listening passed
+  # with 16 buffers; 4 buffers repeatedly lost output on this Mac.
+  export QEMU_COREAUDIO_BUFFER_COUNT="${QEMU_COREAUDIO_BUFFER_COUNT:-16}"
+  exec "$tingyu_emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -gpu host -audio coreaudio
+fi
+exec "$tingyu_emulator" -avd "$tingyu_avd" -port "$tingyu_port" -no-snapshot -gpu auto

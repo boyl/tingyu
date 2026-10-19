@@ -9,6 +9,35 @@ import 'package:tingyu/ui/icons.dart';
 import 'package:tingyu/ui/theme.dart';
 
 void main() {
+  test(
+    'QR handoff preserves the session URL and rejects foreign hosts',
+    () async {
+      final opened = <Uri>[];
+      final launcher = BilibiliLinkLauncher(
+        openBrowser: (uri) async {
+          opened.add(uri);
+          return true;
+        },
+      );
+      final session = Uri.parse(
+        'https://passport.bilibili.com/h5-app/passport/login/scan?gourl=token',
+      );
+      expect(await launcher.openLogin(session), isTrue);
+      expect(opened, [session]);
+      expect(
+        await launcher.openLogin(Uri.parse('https://example.test/login')),
+        isFalse,
+      );
+      expect(opened, [session]);
+      expect(
+        await BilibiliLinkLauncher(
+          openBrowser: (_) async => false,
+        ).openLogin(session),
+        isFalse,
+      );
+    },
+  );
+
   test('installed client wins and browser is never opened', () async {
     var browserCalls = 0;
     await BilibiliLinkLauncher(

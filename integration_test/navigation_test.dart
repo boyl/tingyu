@@ -24,7 +24,9 @@ void main() {
         await tester.pump();
       }
 
-      await app.main();
+      final startup = app.main();
+      await tester.pump();
+      await startup;
       await settleAnimations();
       expect(find.text('音乐库'), findsWidgets);
       final topInset = tester.view.padding.top / tester.view.devicePixelRatio;

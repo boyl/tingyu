@@ -40,7 +40,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -61,7 +66,9 @@
       "aliases": [
         "check_box_outline_blank"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-19/review-v21/index.html"
+      ]
     },
     {
       "id": "done",
@@ -88,7 +95,8 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v21/index.html"
       ]
     },
     {
@@ -134,7 +142,8 @@
         "design-review/2026-10-19/layout-v4/transparency.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v21/index.html"
       ]
     },
     {
@@ -194,7 +203,11 @@
       "designUses": [
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html"
       ]
     },
     {
@@ -245,7 +258,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -359,7 +377,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -400,7 +423,11 @@
         "design-review/2026-10-19/layout-v4/transparency.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html"
       ]
     },
     {
@@ -427,7 +454,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -455,7 +487,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -470,7 +507,8 @@
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v5/controls.html",
-        "design-review/2026-10-19/review-v13/index.html"
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-19/review-v18/index.html"
       ]
     },
     {
@@ -493,7 +531,9 @@
       "aliases": [
         "featured_play_list_outlined"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-19/review-v21/index.html"
+      ]
     },
     {
       "id": "plus",
@@ -538,7 +578,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -564,7 +609,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -600,7 +650,8 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html"
       ]
     },
     {
@@ -631,7 +682,8 @@
         "design-review/2026-10-19/layout-v4/transparency.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html"
       ]
     },
     {
@@ -643,7 +695,9 @@
       "aliases": [
         "checklist"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-19/review-v18/index.html"
+      ]
     },
     {
       "id": "sort",
@@ -654,7 +708,9 @@
       "aliases": [
         "swap_vert"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-19/review-v18/index.html"
+      ]
     },
     {
       "id": "toTop",
@@ -708,7 +764,7 @@
       "codepoint": 61031,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:403"
+        "lib/ui/app.dart:338"
       ],
       "designUses": []
     },
@@ -760,7 +816,7 @@
       "codepoint": 61453,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1152"
+        "lib/ui/app.dart:1089"
       ],
       "designUses": []
     },
@@ -772,8 +828,8 @@
       "codepoint": 57912,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1266",
-        "lib/ui/app.dart:1342"
+        "lib/ui/app.dart:1203",
+        "lib/ui/app.dart:1279"
       ],
       "designUses": []
     },
@@ -785,7 +841,7 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3502"
+        "lib/ui/app.dart:3637"
       ],
       "designUses": []
     },
@@ -797,7 +853,7 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:2867"
+        "lib/ui/app.dart:2985"
       ],
       "designUses": []
     },
@@ -809,7 +865,7 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3400"
+        "lib/ui/app.dart:3528"
       ],
       "designUses": []
     },
@@ -857,7 +913,7 @@
       "codepoint": 58519,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/library_views.dart:247"
+        "lib/ui/library_views.dart:241"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -871,7 +927,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3681"
+        "lib/ui/app.dart:3817"
       ],
       "designUses": []
     },
@@ -883,7 +939,7 @@
       "codepoint": 58613,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3416"
+        "lib/ui/app.dart:3544"
       ],
       "designUses": []
     },
@@ -895,7 +951,7 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3524"
+        "lib/ui/app.dart:3659"
       ],
       "designUses": []
     },
@@ -907,7 +963,7 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3524"
+        "lib/ui/app.dart:3659"
       ],
       "designUses": []
     },
@@ -931,7 +987,7 @@
       "codepoint": 58655,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1687"
+        "lib/ui/app.dart:1642"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -954,7 +1010,7 @@
       "codepoint": 58657,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1685"
+        "lib/ui/app.dart:1640"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -968,10 +1024,10 @@
       "codepoint": 58710,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1343",
-        "lib/ui/library_views.dart:245",
-        "lib/ui/playback_settings_views.dart:89",
-        "lib/ui/playback_settings_views.dart:359",
+        "lib/ui/app.dart:1280",
+        "lib/ui/library_views.dart:239",
+        "lib/ui/playback_settings_views.dart:105",
+        "lib/ui/playback_settings_views.dart:443",
         "lib/ui/settings_views.dart:207"
       ],
       "designUses": [
@@ -987,7 +1043,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -1008,12 +1069,17 @@
       "codepoint": 58785,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1684"
+        "lib/ui/app.dart:1639"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {
@@ -1024,7 +1090,7 @@
       "codepoint": 58835,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/library_views.dart:246"
+        "lib/ui/library_views.dart:240"
       ],
       "designUses": []
     },
@@ -1036,8 +1102,8 @@
       "codepoint": 58848,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/playback_settings_views.dart:89",
-        "lib/ui/playback_settings_views.dart:359",
+        "lib/ui/playback_settings_views.dart:105",
+        "lib/ui/playback_settings_views.dart:443",
         "lib/ui/settings_views.dart:200"
       ],
       "designUses": [
@@ -1053,7 +1119,12 @@
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-19/review-v19/index.html",
+        "design-review/2026-10-19/review-v20/index.html",
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-19/review-v22/index.html"
       ]
     },
     {

@@ -43,23 +43,17 @@ class BilibiliLinkLauncher {
   }
 
   Future<bool> openLogin(Uri uri) async {
-    if (uri.scheme != 'https' || uri.host != 'passport.bilibili.com') {
+    if (uri.scheme != 'https' ||
+        uri.host != 'passport.bilibili.com' ||
+        !uri.path.contains('login')) {
       return false;
     }
+    // Match BBPlayer's QR handoff: open the exact session URL in the system
+    // browser. A client-specific browser deep link can launch without ever
+    // presenting the official confirmation page.
     try {
-      if (Platform.isAndroid) {
-        return await channel.invokeMethod<bool>('openBilibiliLogin', {
-              'url': uri.toString(),
-            }) ??
-            false;
-      }
-      return await launchUrl(
-        uri,
-        mode: LaunchMode.externalNonBrowserApplication,
-      );
+      return await _openBrowser(uri);
     } on PlatformException {
-      return false;
-    } on MissingPluginException {
       return false;
     }
   }
