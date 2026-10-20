@@ -1,4 +1,4 @@
-![GitHub Release Downloads](https://img.shields.io/github/downloads/boyl/tingyu/total?label=Downloads&color=blue)
+[![Downloads](https://img.shields.io/github/downloads/boyl/tingyu/total?label=Downloads&color=blue)](https://github.com/boyl/tingyu/releases) [![Stars](https://img.shields.io/github/stars/boyl/tingyu?label=Stars)](https://github.com/boyl/tingyu/stargazers) [![Latest Release](https://img.shields.io/github/v/release/boyl/tingyu?label=Release)](https://github.com/boyl/tingyu/releases/latest) [![License](https://img.shields.io/github/license/boyl/tingyu?label=License)](https://github.com/boyl/tingyu/blob/HEAD/LICENSE)
 
 # tingyu · 本地优先音乐播放器
 
