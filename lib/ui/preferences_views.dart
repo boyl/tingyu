@@ -285,31 +285,7 @@ class _GlassPreferencesState extends ConsumerState<GlassPreferencesScreen>
                               slider('nav', '导航栏', p.navigationOpacity, false),
                               visible(Divider(height: 1, color: t.line)),
                               slider('mini', '播放栏', p.playerOpacity, false),
-                              visible(
-                                Text(
-                                  '0% 不透明 · 100% 背景透明\n文字与图标保持清晰',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    height: 1.8,
-                                    color: t.muted,
-                                  ),
-                                ),
-                              ),
-                            ] else
-                              visible(
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 24,
-                                  ),
-                                  child: Text(
-                                    '根据页面内容调节',
-                                    style: TextStyle(
-                                      color: t.muted,
-                                      height: 1.8,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -332,8 +308,9 @@ String storageSize(int bytes) => bytes < 1000000
     : '${(bytes / 1000000).toStringAsFixed(1)} MB';
 
 class StoragePanel extends StatefulWidget {
-  const StoragePanel(this.p, {super.key});
+  const StoragePanel(this.p, {super.key, this.fillViewport = false});
   final LibraryController p;
+  final bool fillViewport;
   @override
   State<StoragePanel> createState() => _StoragePanelState();
 }
@@ -432,10 +409,18 @@ class _StoragePanelState extends State<StoragePanel> {
                 ],
               ),
             ),
+          if (widget.fillViewport) const Spacer(),
+          const SizedBox(height: TingyuTokens.space * 3),
           Center(
             child: Pressable(
+              key: const ValueKey('storage-clear-temporary'),
               label: cleaning ? '正在清理' : '清理临时文件',
               color: t.tint,
+              radius: TingyuTokens.space * 2,
+              padding: const EdgeInsets.symmetric(
+                horizontal: TingyuTokens.space * 2,
+                vertical: TingyuTokens.space * 2,
+              ),
               onPressed: cleaning || data.temporary.isEmpty
                   ? null
                   : () async {
@@ -467,7 +452,25 @@ class _StoragePanelState extends State<StoragePanel> {
                         if (mounted) setState(() => cleaning = false);
                       }
                     },
-              child: Text(cleaning ? '正在清理…' : '清理临时文件'),
+              child: SizedBox(
+                width: double.infinity,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TingyuIcon(Icons.clear_all, color: t.accentInk),
+                    const SizedBox(width: TingyuTokens.space * 1.5),
+                    Text(
+                      cleaning ? '正在清理…' : '清理临时文件',
+                      style: TextStyle(color: t.accentInk),
+                    ),
+                    const SizedBox(width: TingyuTokens.space * 1.5),
+                    Text(
+                      storageSize(data.bytes['临时文件'] ?? 0),
+                      style: TextStyle(color: t.accentInk, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           if (data.installUnavailable)

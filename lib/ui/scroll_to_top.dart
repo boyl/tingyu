@@ -4,7 +4,13 @@ import 'icons.dart';
 
 /// Only the small overlay rebuilds as the scroll threshold changes.
 class ScrollToTop extends StatefulWidget {
-  const ScrollToTop({super.key, this.controller, required this.builder});
+  const ScrollToTop({
+    super.key,
+    this.controller,
+    this.enabled = true,
+    required this.builder,
+  });
+  final bool enabled;
   final ScrollController? controller;
   final Widget Function(ScrollController controller) builder;
   @override
@@ -25,6 +31,7 @@ class _ScrollToTopState extends State<ScrollToTop> {
 
   void update() {
     final show =
+        widget.enabled &&
         scroll.hasClients &&
         scroll.position.hasContentDimensions &&
         scroll.offset > scroll.position.viewportDimension;

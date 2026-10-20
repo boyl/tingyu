@@ -1,0 +1,8 @@
+{
+  "pageErrors": [],
+  "brokenImages": [],
+  "selectionArtworkStable": true,
+  "draftDidNotCountDown": true,
+  "closeStartsFullDuration": true,
+  "evidenceScope": "Browser prototype only; no Flutter or Android acceptance"
+}

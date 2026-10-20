@@ -47,13 +47,13 @@ class DesktopIntegration with TrayListener, WindowListener {
       await trayManager.setContextMenu(
         Menu(
           items: [
-            MenuItem(key: 'show', label: '打开tingyu'),
+            MenuItem(key: 'show', label: '打开 tingyu'),
             MenuItem.separator(),
             MenuItem(key: 'previous', label: '上一首'),
             MenuItem(key: 'toggle', label: '播放 / 暂停'),
             MenuItem(key: 'next', label: '下一首'),
             MenuItem.separator(),
-            MenuItem(key: 'quit', label: '退出tingyu'),
+            MenuItem(key: 'quit', label: '退出 tingyu'),
           ],
         ),
       );

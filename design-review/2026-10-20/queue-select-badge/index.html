@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tingyu · 队列、多选与播放标记</title>
+<style>
+  :root { --pink:#fb7299; --ink:#28252c; --muted:#726b75; --line:#ede8ec; --soft:#f7f3f5; --accent:#a93660; --sheet:#fff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eeeae8; color: var(--ink); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  main { max-width: 1320px; margin: auto; padding: 32px 24px 48px; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+  .intro { color: var(--muted); margin: 0 0 28px; max-width: 760px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 390px); gap: 28px 24px; }
+  article h2 { font-size: 15px; font-weight: 500; margin: 0 0 6px; }
+  article p { margin: 0 0 12px; color: var(--muted); font-size: 12px; min-height: 36px; }
+  .phone { width: 390px; height: 780px; background: #fff; border-radius: 28px; overflow: hidden; position: relative; box-shadow: 0 16px 40px #30203014; }
+  .status { height: 36px; padding: 12px 22px 0; display: flex; justify-content: space-between; font-size: 12px; }
+  .home { position: absolute; width: 120px; height: 4px; border-radius: 4px; bottom: 8px; left: calc(50% - 60px); background: #302a32; z-index: 5; }
+  .ico { width: 22px; height: 22px; display: block; }
+  .ib { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+  .stage { height: 250px; background: linear-gradient(180deg, #d7d3d6, #b9b4b8); position: relative; overflow: hidden; }
+  .stage:after { content: ""; position: absolute; inset: 0; background: #2a262c55; }
+  .disc { width: 168px; height: 168px; border-radius: 50%; position: absolute; left: 111px; top: 28px; z-index: 1;
+    background: radial-gradient(circle at 50% 50%, #3a383f 0 34%, #1b1b20 35% 100%);
+    box-shadow: inset 0 0 0 8px #2a292f, 0 10px 18px #00000030; }
+  .disc i { position: absolute; inset: 18px; border-radius: 50%; background: linear-gradient(145deg, #c45a4a, #1d2438 70%); }
+  .sheet { position: absolute; left: 0; right: 0; top: 214px; bottom: 0; background: var(--sheet); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; }
+  .qhead { display: flex; align-items: center; padding: 16px 8px 8px 20px; }
+  .qhead b { display: block; font-weight: 600; font-size: 16px; }
+  .qhead small { color: var(--muted); font-size: 11px; }
+  .qhead .grow { flex: 1; }
+  .qrow { height: 68px; display: flex; align-items: center; padding: 0 4px 0 8px; border-bottom: 1px solid var(--line); }
+  .qrow.now { background: #fb729912; }
+  .bars { width: 22px; height: 16px; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin-right: 2px; }
+  .bars i { width: 3px; border-radius: 2px; background: var(--pink); display: block; }
+  .bars i:nth-child(1) { height: 7px; } .bars i:nth-child(2) { height: 14px; } .bars i:nth-child(3) { height: 9px; }
+  .cover { width: 44px; height: 44px; border-radius: 4px; flex: none; position: relative; }
+  .c1 { background: linear-gradient(160deg, #e7b089, #7d3b3a 60%, #1c2438); }
+  .c2 { background: linear-gradient(160deg, #f0d2a8, #c46b4a 45%, #2a1d28); }
+  .c3 { background: linear-gradient(160deg, #d9c2b0, #8d5a62 50%, #243044); }
+  .c4 { background: linear-gradient(160deg, #f3c1b8, #a14d55 40%, #1e2740); }
+  .c5 { background: linear-gradient(160deg, #e8d7c4, #6d7f92); }
+  .meta { flex: 1; min-width: 0; margin-left: 12px; }
+  .meta b { display: block; font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta small, .song small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qrow.now .meta b { color: var(--pink); }
+
+  .page { padding: 8px 16px 120px; }
+  .title { font-size: 28px; font-weight: 700; margin: 4px 4px 12px; }
+  .tools { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; color: var(--accent); }
+  .tools span { font-size: 13px; }
+  .tools div { display: flex; gap: 4px; }
+  .tools button { height: 36px; padding: 0 8px; }
+  .song { height: 68px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+  .song .meta b { font-size: 14px; }
+  .check { width: 44px; height: 44px; display: grid; place-items: center; flex: none; }
+  .check img { width: 22px; height: 22px; }
+  .dock { position: absolute; left: 12px; right: 12px; bottom: 22px; }
+  .mini { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #f6eff3cc; border-radius: 18px; backdrop-filter: blur(8px); }
+  .mini .cover { width: 36px; height: 36px; }
+  nav { display: flex; justify-content: space-around; padding: 8px 0 0; font-size: 11px; color: var(--muted); }
+  nav b { color: var(--accent); font-weight: 500; }
+
+  .search { height: 44px; margin: 0 4px 16px; background: #f3f1f2; border-radius: 12px; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--muted); }
+  .tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .tabs b { color: var(--accent); border-bottom: 2px solid var(--pink); padding-bottom: 8px; }
+  .tabs span { color: var(--muted); }
+  .count { color: var(--muted); font-size: 12px; margin: 0 4px 8px; }
+  .badge { position: absolute; right: 3px; bottom: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(255,255,255,.22); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 0 .5px rgba(255,255,255,.4);
+    display: flex; align-items: flex-end; justify-content: center; gap: 1.5px; padding-bottom: 4px; }
+  .badge i { width: 1.5px; background: rgba(255,255,255,.92); border-radius: 2px; display: block; }
+  .badge i:nth-child(1) { height: 4px; } .badge i:nth-child(2) { height: 8px; } .badge i:nth-child(3) { height: 5px; }
+  .song.dim .cover { box-shadow: none; }
+
+  .legend { margin-top: 28px; background: #fff; border-radius: 20px; padding: 20px 24px; display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .legend h2 { margin: 0; font-size: 15px; font-weight: 500; width: 100%; }
+  .pair { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+  .swatch { width: 44px; height: 44px; display: grid; place-items: center; background: var(--soft); border-radius: 12px; }
+  .swatch img, .swatch svg { width: 24px; height: 24px; }
+  .pair b { display: block; font-weight: 500; font-size: 13px; }
+  .pair small { color: var(--muted); }
+  .oldmark, .newmark { width: 48px; height: 48px; border-radius: 6px; position: relative; background: linear-gradient(160deg, #f0d2a8, #c46b4a 45%, #2a1d28); }
+  .oldmark span { position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; border-radius: 50%; background: #fff; display: flex; align-items: flex-end; justify-content: center; gap: 1px; padding-bottom: 4px; }
+  .oldmark i { background: var(--pink); }
+  .oldmark i { width: 2px; display: block; border-radius: 1px; }
+  .oldmark i:nth-child(1) { height: 4px; } .oldmark i:nth-child(2) { height: 8px; } .oldmark i:nth-child(3) { height: 5px; }
+  .newmark .badge { right: 3px; bottom: 3px; }
+  .newmark .badge i { background: rgba(255,255,255,.92); }
+  footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+</style>
+<main>
+  <h1>队列、多选与播放标记</h1>
+  <p class="intro">确认稿。队列去掉底部简易栏；音乐库和喜欢的多选在封面左侧，选中是粉色圆圈勾，与已下载复用现有圆圈勾；已下载的当前曲目只用一枚贴在封面上的淡色音柱。示意数据，尚未改正式应用。</p>
+  <div class="grid">
+    <article>
+      <h2>01 队列只保留列表</h2>
+      <p>当前歌曲仍是粉色标题和音柱。点这一行暂停或继续，底部不再叠一条播放栏。</p>
+      <section class="phone" id="queue">
+        <div class="status">9:38 <span>5G</span></div>
+        <div class="stage"><div class="disc"><i></i></div></div>
+        <div class="sheet">
+          <div class="qhead">
+            <div class="grow"><b>播放队列 · 78 首</b><small>长按歌曲或拖动手柄排序</small></div>
+            <button class="ib" aria-label="定位当前歌曲"><img class="ico" src="../../../resources/icons/svg/locate.svg" alt=""></button>
+            <button class="ib" aria-label="队列更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button>
+            <button class="ib" aria-label="关闭队列"><img class="ico" src="../../../resources/icons/svg/down.svg" alt=""></button>
+          </div>
+          <div class="qrow"><span class="bars" style="visibility:hidden"><i></i><i></i><i></i></span><div class="cover c1"></div><div class="meta"><b>「塞尔达传说」萌新向</b><small>Grey魔王灰灰</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+          <div class="qrow"><span class="bars" style="visibility:hidden"><i></i><i></i><i></i></span><div class="cover c2"></div><div class="meta"><b>在百万豪装录音棚大声听</b><small>JLRS-LeoFM</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+          <div class="qrow now"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><div class="cover c3"></div><div class="meta"><b>在百万豪装录音棚大声听</b><small>JLRS-LeoFM</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+          <div class="qrow"><span class="bars" style="visibility:hidden"><i></i><i></i><i></i></span><div class="cover c4"></div><div class="meta"><b>李翊君《雨蝶》百万豪装</b><small>JLRS-LeoFM</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+          <div class="qrow"><span class="bars" style="visibility:hidden"><i></i><i></i><i></i></span><div class="cover c5"></div><div class="meta"><b>孙楠&amp;那英《只要有你》</b><small>JLRS-LeoFM</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+          <div class="qrow"><span class="bars" style="visibility:hidden"><i></i><i></i><i></i></span><div class="cover c2"></div><div class="meta"><b>王力宏 录音棚现场</b><small>JLRS-LeoFM</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button><span class="ib" aria-hidden="true"><img class="ico" src="../../../resources/icons/svg/grip.svg" alt=""></span></div>
+        </div>
+        <div class="home"></div>
+      </section>
+    </article>
+    <article>
+      <h2>02 音乐库多选 · 左侧圆圈</h2>
+      <p>喜欢和歌单详情用同一行。选中是粉色圆圈勾，不复用下载完成的圆圈勾。</p>
+      <section class="phone" id="library">
+        <div class="status">9:42 <span>5G</span></div>
+        <div class="page">
+          <div class="title">音乐库</div>
+          <div class="tools"><span id="lib-label">已选 2 首</span><div><button type="button" id="lib-all">全选</button><button type="button">退出</button></div></div>
+          <div class="song" data-pick="lib" data-on="1"><button class="check" aria-label="取消选择" aria-pressed="true"><img src="select-box-on.svg" alt=""></button><div class="cover c1"></div><div class="meta"><b>归途的光</b><small>MusicPool</small></div></div>
+          <div class="song" data-pick="lib" data-on="1"><button class="check" aria-label="取消选择" aria-pressed="true"><img src="select-box-on.svg" alt=""></button><div class="cover c2"></div><div class="meta"><b>风经过的地方</b><small>MusicPool</small></div></div>
+          <div class="song" data-pick="lib" data-on="0"><button class="check" aria-label="选择" aria-pressed="false"><img src="select-box.svg" alt=""></button><div class="cover c3"></div><div class="meta"><b>日落之前</b><small>MusicPool</small></div></div>
+          <div class="song" data-pick="lib" data-on="0"><button class="check" aria-label="选择" aria-pressed="false"><img src="select-box.svg" alt=""></button><div class="cover c4"></div><div class="meta"><b>慢慢喜欢你</b><small>MusicPool</small></div></div>
+        </div>
+        <div class="dock"><div class="mini"><div class="cover c1"></div><div class="meta"><b>归途的光</b><small>MusicPool</small></div><img class="ico" src="../../../resources/icons/svg/pause.svg" alt=""></div><nav><b>音乐库</b><span>搜索</span><span>喜欢</span><span>下载</span></nav></div>
+        <div class="home"></div>
+      </section>
+    </article>
+    <article>
+      <h2>03 喜欢多选 · 同一圆圈</h2>
+      <p>第二处多选。位置和选中图形与音乐库一致，行尾不再出现勾。</p>
+      <section class="phone" id="likes">
+        <div class="status">9:42 <span>5G</span></div>
+        <div class="page">
+          <div class="title">喜欢</div>
+          <div class="tools"><span id="like-label">已选 1 首</span><div><button type="button" id="like-all">全选</button><button type="button">退出</button></div></div>
+          <div class="song" data-pick="like" data-on="0"><button class="check" aria-label="选择" aria-pressed="false"><img src="select-box.svg" alt=""></button><div class="cover c5"></div><div class="meta"><b>原声大碟</b><small>莉香的丸子</small></div></div>
+          <div class="song" data-pick="like" data-on="1"><button class="check" aria-label="取消选择" aria-pressed="true"><img src="select-box-on.svg" alt=""></button><div class="cover c4"></div><div class="meta"><b>日语经典歌曲</b><small>80音乐分享</small></div></div>
+          <div class="song" data-pick="like" data-on="0"><button class="check" aria-label="选择" aria-pressed="false"><img src="select-box.svg" alt=""></button><div class="cover c3"></div><div class="meta"><b>狼戈经典歌曲</b><small>tonybjzheng</small></div></div>
+          <div class="song" data-pick="like" data-on="0"><button class="check" aria-label="选择" aria-pressed="false"><img src="select-box.svg" alt=""></button><div class="cover c2"></div><div class="meta"><b>丫蛋儿翻唱</b><small>夕照影音</small></div></div>
+        </div>
+        <div class="dock"><div class="mini"><div class="cover c4"></div><div class="meta"><b>日语经典歌曲</b><small>80音乐分享</small></div><img class="ico" src="../../../resources/icons/svg/play.svg" alt=""></div><nav><span>音乐库</span><span>搜索</span><b>喜欢</b><span>下载</span></nav></div>
+        <div class="home"></div>
+      </section>
+    </article>
+    <article>
+      <h2>04 已下载 · 当前曲目</h2>
+      <p>标记收在封面里，淡底短音柱，不压过封面。点整行才播放。</p>
+      <section class="phone" id="downloads">
+        <div class="status">9:42 <span>5G</span></div>
+        <div class="page">
+          <div class="title">离线随行</div>
+          <div class="search"><img class="ico" src="../../../resources/icons/svg/search.svg" alt=""><span>搜索已下载歌曲</span></div>
+          <div class="tabs"><b>已下载</b><span>下载任务 1</span></div>
+          <div class="count">52 首 · 386.8 MB</div>
+          <div class="song"><div class="cover c1" style="margin-left:8px"></div><div class="meta"><b>原声大碟</b><small>莉香的丸子</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button></div>
+          <div class="song"><div class="cover c2" style="margin-left:8px"><span class="badge" aria-label="正在播放"><i></i><i></i><i></i></span></div><div class="meta"><b>日语经典歌曲</b><small>80音乐分享</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button></div>
+          <div class="song"><div class="cover c3" style="margin-left:8px"></div><div class="meta"><b>狼戈经典歌曲</b><small>tonybjzheng</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button></div>
+          <div class="song"><div class="cover c4" style="margin-left:8px"></div><div class="meta"><b>丫蛋儿翻唱</b><small>夕照影音</small></div><button class="ib" aria-label="更多"><img class="ico" src="../../../resources/icons/svg/more.svg" alt=""></button></div>
+        </div>
+        <div class="dock"><div class="mini"><div class="cover c2"></div><div class="meta"><b>日语经典歌曲</b><small>80音乐分享</small></div><img class="ico" src="../../../resources/icons/svg/pause.svg" alt=""></div><nav><span>音乐库</span><span>搜索</span><span>喜欢</span><b>下载</b></nav></div>
+        <div class="home"></div>
+      </section>
+    </article>
+  </div>
+  <section class="legend">
+    <h2>图标对照</h2>
+    <div class="pair"><div class="swatch"><img src="../../../resources/icons/svg/download.svg" alt=""></div><div><b>下载</b><small>托盘箭头，表示去下载</small></div></div>
+    <div class="pair"><div class="swatch"><img src="../../../resources/icons/svg/done.svg" alt=""></div><div><b>已下载</b><small>圆圈勾，只表示完成</small></div></div>
+    <div class="pair"><div class="swatch"><img src="select-box.svg" alt=""></div><div><b>未选择</b><small>同尺寸的空圆圈</small></div></div>
+    <div class="pair"><div class="swatch"><img src="select-box-on.svg" alt=""></div><div><b>已选择</b><small>粉色圆圈勾</small></div></div>
+    <div class="pair"><div class="oldmark"><span><i></i><i></i><i></i></span></div><div><b>现在的标记</b><small>白底细音柱，容易看成暂停</small></div></div>
+    <div class="pair"><div class="newmark"><span class="badge"><i></i><i></i><i></i></span></div><div><b>建议的标记</b><small>贴在封面上的淡色音柱</small></div></div>
+  </section>
+  <footer>可点击两处多选的圆圈切换。完整说明见同目录 PROPOSAL.md。确认前不改 Flutter 应用。</footer>
+</main>
+<script>
+function count(name) {
+  const rows = document.querySelectorAll('[data-pick="' + name + '"]');
+  let n = 0;
+  rows.forEach(r => { if (r.dataset.on === '1') n++; });
+  document.getElementById(name === 'lib' ? 'lib-label' : 'like-label').textContent = '已选 ' + n + ' 首';
+}
+document.querySelectorAll('.check').forEach(button => {
+  button.onclick = () => {
+    const row = button.closest('.song');
+    const on = row.dataset.on !== '1';
+    row.dataset.on = on ? '1' : '0';
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    button.setAttribute('aria-label', on ? '取消选择' : '选择');
+    button.querySelector('img').src = on ? 'select-box-on.svg' : 'select-box.svg';
+    count(row.dataset.pick);
+  };
+});
+function selectAll(name) {
+  document.querySelectorAll('[data-pick="' + name + '"]').forEach(row => {
+    row.dataset.on = '1';
+    const button = row.querySelector('.check');
+    button.setAttribute('aria-pressed', 'true');
+    button.querySelector('img').src = 'select-box-on.svg';
+  });
+  count(name);
+}
+document.getElementById('lib-all').onclick = () => selectAll('lib');
+document.getElementById('like-all').onclick = () => selectAll('like');
+</script>
+</html>

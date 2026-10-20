@@ -9,41 +9,85 @@ String timerLabel(LibraryController p) {
   return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 }
 
+/// The route owns the draft; only a completed user dismissal applies it.
+class SleepTimerDraft {
+  SleepTimerDraft(LibraryController p)
+    : minutes = p.sleepTimer.active
+          ? (p.sleepTimer.remaining.inSeconds / 60).ceil().clamp(1, 180)
+          : null,
+      finish = p.sleepTimer.finishTrack;
+  int? minutes;
+  bool finish;
+  bool changed = false;
+}
+
 Future<void> showPlaybackSettings(
   BuildContext context,
   LibraryController p, {
   required bool timer,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  backgroundColor: context.tokens.surface,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(
-      top: Radius.circular(TingyuTokens.detailRadius),
+}) async {
+  final draft = SleepTimerDraft(p);
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.tokens.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(TingyuTokens.detailRadius),
+      ),
     ),
-  ),
-  builder: (ctx) => PlaybackSettingsPanel(p, timer: timer),
-);
+    builder: (ctx) => PlaybackSettingsPanel(p, timer: timer, draft: draft),
+  );
+  final lifecycle = WidgetsBinding.instance.lifecycleState;
+  if (timer &&
+      draft.changed &&
+      context.mounted &&
+      (lifecycle == null || lifecycle == AppLifecycleState.resumed)) {
+    p.setSleepTimer(
+      draft.minutes == null ? null : Duration(minutes: draft.minutes!),
+      finishTrack: draft.finish,
+    );
+  }
+}
 
 class PlaybackSettingsPanel extends StatefulWidget {
-  const PlaybackSettingsPanel(this.p, {super.key, required this.timer});
+  const PlaybackSettingsPanel(
+    this.p, {
+    super.key,
+    required this.timer,
+    this.draft,
+  });
   final LibraryController p;
   final bool timer;
+  final SleepTimerDraft? draft;
   @override
   State<PlaybackSettingsPanel> createState() => _PlaybackSettingsPanelState();
 }
 
 class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
-  late int minutes = widget.p.sleepTimer.active
-      ? (widget.p.sleepTimer.remaining.inSeconds / 60).ceil().clamp(1, 180)
-      : 30;
-  late bool finish = widget.p.sleepTimer.finishTrack;
+  late final SleepTimerDraft draft = widget.draft ?? SleepTimerDraft(widget.p);
+  int get minutes => draft.minutes ?? 30;
+  bool get finish => draft.finish;
   late final FixedExtentScrollController hoursWheel =
       FixedExtentScrollController(initialItem: minutes ~/ 60);
   late final FixedExtentScrollController minutesWheel =
       FixedExtentScrollController(initialItem: minutes % 60);
   bool movingWheels = false;
   bool customDuration = false;
+  late bool customSelection =
+      draft.minutes != null && ![15, 30, 45, 60].contains(minutes);
+  String get customLabel {
+    if (draft.minutes == null || !(customSelection || customDuration)) {
+      return '未选择';
+    }
+    final h = minutes ~/ 60, m = minutes % 60;
+    return h == 0
+        ? '$m 分钟'
+        : m == 0
+        ? '$h 小时'
+        : '$h 小时 $m 分钟';
+  }
+
   @override
   void dispose() {
     hoursWheel.dispose();
@@ -51,9 +95,14 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
     super.dispose();
   }
 
-  void start(int value) {
-    minutes = value;
-    widget.p.setSleepTimer(Duration(minutes: value), finishTrack: finish);
+  void start(int value, {bool fromWheel = false, bool syncWheels = true}) {
+    draft.minutes = value;
+    draft.changed = true;
+    customSelection = fromWheel;
+    if (!syncWheels) {
+      setState(() {});
+      return;
+    }
     movingWheels = true;
     if (hoursWheel.hasClients && hoursWheel.selectedItem != minutes ~/ 60) {
       hoursWheel.jumpToItem(minutes ~/ 60);
@@ -72,6 +121,9 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
     listenable: widget.p,
     builder: (context, _) {
       final p = widget.p, t = context.tokens;
+      final hasTimer = draft.changed
+          ? draft.minutes != null
+          : p.sleepTimer.active || p.waitingForTrack;
       return SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -105,7 +157,7 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                       widget.timer ? Icons.schedule : Icons.speed,
                       color: t.muted,
                     ),
-                  const SizedBox(width: TingyuTokens.space),
+                  if (!widget.timer) const SizedBox(width: TingyuTokens.space),
                   Expanded(
                     child: Text(
                       widget.timer ? '定时关闭' : '播放倍速',
@@ -211,72 +263,147 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                   ),
                 ),
               ] else ...[
-                Center(
-                  child: Text.rich(
-                    TextSpan(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final running = !draft.changed && p.sleepTimer.active;
+                    final status = !hasTimer
+                        ? '定时已关闭'
+                        : !draft.changed && p.waitingForTrack
+                        ? '本首结束后暂停'
+                        : running
+                        ? timerLabel(p)
+                        : '$minutes 分钟后';
+                    final note = !hasTimer
+                        ? ''
+                        : !draft.changed && p.waitingForTrack
+                        ? ''
+                        : running
+                        ? '剩余时间'
+                        : '';
+                    final stacked =
+                        constraints.maxWidth < 300 ||
+                        MediaQuery.textScalerOf(
+                              context,
+                            ).scale(TingyuTokens.timerStatusSize) >
+                            20;
+                    final statusRow = Row(
                       children: [
-                        TextSpan(
-                          text: '$minutes',
-                          style: const TextStyle(
-                            fontSize: 64,
-                            fontWeight: FontWeight.w500,
+                        TingyuIcon(
+                          Icons.schedule,
+                          color: !hasTimer ? t.muted : t.accentInk,
+                        ),
+                        const SizedBox(width: TingyuTokens.space * 1.5),
+                        Expanded(
+                          child: Text(
+                            status,
+                            key: const ValueKey('timer-status'),
+                            style: TextStyle(
+                              fontSize: !draft.changed && p.waitingForTrack
+                                  ? TingyuTokens.timerWaitingSize
+                                  : TingyuTokens.timerStatusSize,
+                              color: !hasTimer ? t.muted : t.text,
+                            ),
                           ),
                         ),
-                        TextSpan(
-                          text: ' 分钟后',
-                          style: TextStyle(fontSize: 14, color: t.muted),
+                        if (!stacked && note.isNotEmpty)
+                          Text(
+                            note,
+                            style: TextStyle(fontSize: 12, color: t.muted),
+                          ),
+                        SizedBox(
+                          width: TingyuTokens.controlSize,
+                          height: TingyuTokens.controlSize,
+                          child: hasTimer
+                              ? Tooltip(
+                                  message: '关闭定时',
+                                  child: Pressable(
+                                    key: const ValueKey('timer-off'),
+                                    label: '关闭定时',
+                                    selectionFill: false,
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () => setState(() {
+                                      draft.minutes = null;
+                                      draft.changed = true;
+                                      customSelection = false;
+                                    }),
+                                    child: const Center(
+                                      child: TingyuIcon(
+                                        Icons.timer_off_outlined,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    p.waitingForTrack
-                        ? '本首结束后暂停'
-                        : finish
-                        ? '播完本首'
-                        : '到时暂停',
-                    style: TextStyle(color: t.muted, fontSize: 13),
-                  ),
-                ),
-                const SizedBox(height: TingyuTokens.space * 3),
-                Row(
-                  children: [
-                    for (final value in [15, 30, 45, 60])
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: TingyuTokens.space / 2,
-                          ),
-                          child: Pressable(
-                            key: ValueKey('timer-$value'),
-                            label: '$value分钟',
-                            selected: p.sleepTimer.active && minutes == value,
-                            color: t.tint,
-                            radius: TingyuTokens.collectionRadius,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: TingyuTokens.space,
+                    );
+                    return SizedBox(
+                      height: stacked
+                          ? TingyuTokens.controlSize * 1.5
+                          : TingyuTokens.controlSize,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          statusRow,
+                          if (stacked && note.isNotEmpty)
+                            Text(
+                              note,
+                              style: TextStyle(fontSize: 12, color: t.muted),
                             ),
-                            onPressed: () => start(value),
-                            child: Center(
-                              child: Text(
-                                '$value\n分钟',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontWeight:
-                                      p.sleepTimer.active && minutes == value
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                  fontSize: 16,
-                                  height: 1.5,
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: TingyuTokens.space * 2),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns =
+                        constraints.maxWidth < 300 ||
+                            MediaQuery.textScalerOf(context).scale(14) > 18
+                        ? 2
+                        : 4;
+                    return Wrap(
+                      spacing: TingyuTokens.space,
+                      runSpacing: TingyuTokens.space,
+                      children: [
+                        for (final value in [15, 30, 45, 60])
+                          SizedBox(
+                            width:
+                                (constraints.maxWidth -
+                                    TingyuTokens.space * (columns - 1)) /
+                                columns,
+                            child: Pressable(
+                              key: ValueKey('timer-$value'),
+                              label: '$value分钟',
+                              selected: hasTimer && draft.minutes == value,
+                              selectionFill: false,
+                              color: hasTimer && draft.minutes == value
+                                  ? t.selectionSurface
+                                  : t.sidebar,
+                              radius: TingyuTokens.radius,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: TingyuTokens.space / 2,
+                              ),
+                              onPressed: () => start(value),
+                              child: Center(
+                                child: Text(
+                                  '$value 分钟',
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: hasTimer && draft.minutes == value
+                                        ? t.accentInk
+                                        : t.text,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: TingyuTokens.space * 2),
                 Pressable(
@@ -288,7 +415,7 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                   child: Row(
                     children: [
                       const Expanded(child: Text('自定义时长')),
-                      Text('$minutes 分钟', style: TextStyle(color: t.muted)),
+                      Text(customLabel, style: TextStyle(color: t.muted)),
                       const SizedBox(width: TingyuTokens.space),
                       const TingyuIcon(Icons.chevron_right),
                     ],
@@ -310,7 +437,11 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                             onSelectedItemChanged: (h) {
                               if (movingWheels) return;
                               final total = h * 60 + minutes % 60;
-                              start(total.clamp(1, 180));
+                              start(
+                                total.clamp(1, 180),
+                                fromWheel: true,
+                                syncWheels: total < 1 || total > 180,
+                              );
                             },
                             childDelegate: ListWheelChildListDelegate(
                               children: [
@@ -336,7 +467,11 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                             onSelectedItemChanged: (m) {
                               if (movingWheels) return;
                               final total = minutes ~/ 60 * 60 + m;
-                              start(total.clamp(1, 180));
+                              start(
+                                total.clamp(1, 180),
+                                fromWheel: true,
+                                syncWheels: total < 1 || total > 180,
+                              );
                             },
                             childDelegate: ListWheelChildListDelegate(
                               children: [
@@ -354,12 +489,22 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                       ],
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: TingyuTokens.space,
+                  ),
+                  child: Text(
+                    '结束方式',
+                    style: TextStyle(color: t.muted, fontSize: 13),
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.all(TingyuTokens.space / 2),
+                  height: TingyuTokens.controlSize,
+                  clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    color: t.tint,
+                    color: t.sidebar,
                     borderRadius: BorderRadius.circular(
-                      TingyuTokens.collectionRadius,
+                      TingyuTokens.segmentRadius,
                     ),
                   ),
                   child: Row(
@@ -368,35 +513,32 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                         Expanded(
                           child: Pressable(
                             key: ValueKey('timer-finish-$value'),
+                            padding: EdgeInsets.zero,
+                            radius: TingyuTokens.segmentRadius,
                             selected: finish == value,
                             selectionFill: false,
                             color: finish == value
-                                ? t.surface
+                                ? t.selectionSurface
                                 : Colors.transparent,
                             label: value ? '播完本首' : '到时暂停',
                             onPressed: () {
-                              setState(() => finish = value);
-                              p.sleepTimer.finishTrack = value;
-                              if (p.sleepTimer.active) start(minutes);
+                              setState(() {
+                                draft.finish = value;
+                                if (draft.minutes != null) draft.changed = true;
+                              });
                             },
-                            child: Text(value ? '播完本首' : '到时暂停'),
+                            child: Center(
+                              child: Text(
+                                value ? '播完本首' : '到时暂停',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: finish == value ? t.accentInk : t.text,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: TingyuTokens.space * 2),
-                Pressable(
-                  key: const ValueKey('timer-off'),
-                  label: '关闭定时',
-                  selected: !p.sleepTimer.active && !p.waitingForTrack,
-                  selectionFill: false,
-                  onPressed: () => p.setSleepTimer(null),
-                  child: Center(
-                    child: Text(
-                      '关闭定时',
-                      style: TextStyle(color: t.muted, fontSize: 14),
-                    ),
                   ),
                 ),
               ],

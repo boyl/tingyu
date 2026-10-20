@@ -12,6 +12,7 @@ import 'package:tingyu/services/downloads.dart';
 import 'package:tingyu/services/bilibili_link.dart';
 import 'package:tingyu/services/storage.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/icons.dart';
 import 'package:tingyu/ui/theme.dart';
 import 'package:tingyu/ui/playing_indicator.dart';
 import '../test/support/fakes.dart';
@@ -213,6 +214,7 @@ void main() {
         await tap('批量选择');
         await tap('select-${firstTrack.id}');
         await binding.takeScreenshot('collection-selection');
+        await tap('批量更多');
         await tap('批量移出歌单');
         await tap('取消');
         expect(p.playlists.single.trackIds, [firstTrack.id]);
@@ -282,7 +284,14 @@ void main() {
         await tap('返回设置');
         await tap('settings-about');
         await binding.takeScreenshot('about-019');
-        Navigator.of(tester.element(find.text('关于 tingyu'))).pop();
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.text('关于 tingyu'),
+          ),
+          findsOneWidget,
+        );
+        Navigator.of(tester.element(find.byType(BottomSheet))).pop();
         await settleAnimations();
         await tap('返回');
         await tap('展开播放器');
@@ -317,12 +326,10 @@ void main() {
         await tap('收起设置');
         await tap('player-sleep-timer');
         await tap('timer-30');
-        expect(p.sleepTimer.active, true);
+        expect(p.sleepTimer.active, false);
         await binding.takeScreenshot('sleep-timer-panel');
         await tap('timer-off');
-        Navigator.of(
-          tester.element(find.byKey(const ValueKey('timer-off'))),
-        ).pop();
+        Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
         await settleAnimations();
         final beforeLyrics = p.position;
         final beforeTrack = p.current!.id;
@@ -418,18 +425,27 @@ void main() {
         expect(find.byType(TrackDownloadAction), findsNothing);
         await binding.takeScreenshot('minimal-player-downloaded');
         await tap('歌曲操作');
-        final downloadedButton = find.byKey(
-          ValueKey('download-${firstTrack.id}'),
-        );
-        expect(tester.widget<Pressable>(downloadedButton).selected, isTrue);
+        final downloadedButton = find.byKey(const ValueKey('menu-downloaded'));
+        expect(downloadedButton, findsOneWidget);
         expect(
-          find.descendant(of: downloadedButton, matching: find.byType(Text)),
+          find.descendant(
+            of: downloadedButton,
+            matching: find.byType(Pressable),
+          ),
           findsNothing,
         );
+        final completedIcon = tester.widget<TingyuIcon>(
+          find.descendant(
+            of: downloadedButton,
+            matching: find.byType(TingyuIcon),
+          ),
+        );
+        expect(
+          completedIcon.color,
+          tester.element(downloadedButton).tokens.text,
+        );
         expect(find.text('已下载'), findsWidgets);
-        expect(downloadedButton.hitTestable(), findsOneWidget);
         await binding.takeScreenshot('player-download-menu');
-        expect(tester.widget<Pressable>(downloadedButton).onPressed, isNull);
         expect(find.byType(PlayerScreen), findsOneWidget);
         Navigator.of(tester.element(downloadedButton)).pop();
         await settleAnimations();
@@ -624,9 +640,9 @@ void main() {
         );
         libraryScroll.position.jumpTo(libraryScroll.position.maxScrollExtent);
         await settleAnimations();
-        expect(find.byKey(const ValueKey('scroll-to-top')), findsOneWidget);
-        await tap('scroll-to-top');
-        expect(libraryScroll.position.pixels, 0);
+        expect(find.byKey(const ValueKey('scroll-to-top')), findsNothing);
+        libraryScroll.position.jumpTo(0);
+        await settleAnimations();
         await tester.scrollUntilVisible(
           find.byKey(const ValueKey('搜索本地歌曲')),
           -400,
@@ -697,6 +713,10 @@ void main() {
         expect(coverRequests, 1, reason: '歌曲行、下载、切页与不同尺寸必须复用同一 URL 封面');
         await binding.takeScreenshot('cover-cache-tab-revisit');
         await p.setTheme('bili');
+        await tap('批量选择');
+        await tap('全选');
+        await binding.takeScreenshot('library-all-selected-clean');
+        await tap('退出多选');
         await p.play(covered);
         await waitFor(() => p.playing && !p.opening);
         p.lyricText =
@@ -706,12 +726,113 @@ void main() {
         await tap('展开播放器');
         await settleAnimations();
         await binding.takeScreenshot('full-cover-player-22');
+        await p.playback.seek(const Duration(seconds: 22));
+        await waitFor(
+          () =>
+              p.position.inSeconds >= 22 &&
+              tester.widget<Text>(find.text('让每一次归途都有光')).style?.fontWeight ==
+                  FontWeight.w600,
+        );
+        await settleAnimations();
+        await settleAnimations();
+        final lastLyric = tester.getRect(find.text('让每一次归途都有光'));
+        final contentRect = tester.getRect(
+          find.byKey(const ValueKey('player-content')),
+        );
+        expect(lastLyric.top, greaterThanOrEqualTo(contentRect.top));
+        expect(
+          lastLyric.bottom,
+          lessThanOrEqualTo(contentRect.bottom),
+          reason:
+              'last=$lastLyric content=$contentRect panel=${tester.getRect(find.byType(LyricPanel))} disc=${tester.getRect(find.byType(RecordDisc).last)} source=${p.lyricSource} parts=${p.parts.length}',
+        );
+        await binding.takeScreenshot('player-last-lyric-complete');
+
+        double marqueeOffset() => tester
+            .widget<Transform>(
+              find.byKey(const ValueKey('player-status-marquee')),
+            )
+            .transform
+            .storage[12];
+        final firstOffset = marqueeOffset();
+        await binding.takeScreenshot('header-marquee-first');
+        await tester.pump(const Duration(seconds: 1));
+        expect(marqueeOffset(), isNot(firstOffset));
+        await binding.takeScreenshot('header-marquee-later');
+        await tap('歌曲操作');
+        await tap('播放音量');
+        tester
+            .widget<Slider>(find.byKey(const ValueKey('player-volume-slider')))
+            .onChanged!(.4);
+        await waitFor(
+          () =>
+              (p.playback.player.volume - .4).abs() < .001 &&
+              find.text('40%').evaluate().isNotEmpty,
+        );
+        expect(
+          tester
+              .widget<Slider>(
+                find.byKey(const ValueKey('player-volume-slider')),
+              )
+              .value,
+          .4,
+        );
+        await p.play(firstTrack);
+        await waitFor(() => p.current?.id == firstTrack.id && !p.opening);
+        expect(p.playback.player.volume, .4);
+        await p.playDownloaded(covered);
+        await waitFor(() => p.current?.id == covered.id && !p.opening);
+        expect(p.playback.player.volume, .4);
+        await p.playback.pause();
+        await tester.pump();
+        await binding.takeScreenshot('player-volume-40');
+        await tap('恢复正常音量');
+        await waitFor(
+          () =>
+              p.playback.player.volume == 1 &&
+              find.text('100%').evaluate().isNotEmpty,
+        );
+        Navigator.of(tester.element(find.byType(PlayerVolumePanel))).pop();
+        await settleAnimations();
+        p.setSleepTimer(null);
         await tap('player-sleep-timer');
+        expect(find.text('定时已关闭'), findsOneWidget);
+        await binding.takeScreenshot('sleep-timer-off-compact');
+        await tap('timer-custom');
+        FixedExtentScrollController timerWheel(String key) =>
+            tester
+                    .widget<ListWheelScrollView>(find.byKey(ValueKey(key)))
+                    .controller!
+                as FixedExtentScrollController;
+        timerWheel('timer-minutes').jumpToItem(40);
+        await settleAnimations();
+        expect(find.text('40 分钟后'), findsOneWidget);
+        expect(p.sleepTimer.active, isFalse);
+        await binding.takeScreenshot('sleep-timer-custom-40');
+        timerWheel('timer-hours').jumpToItem(1);
+        await settleAnimations();
+        timerWheel('timer-minutes').jumpToItem(20);
+        await settleAnimations();
+        expect(find.text('80 分钟后'), findsOneWidget);
+        expect(find.text('1 小时 20 分钟'), findsOneWidget);
+        await binding.takeScreenshot('sleep-timer-custom-80');
+        await tester.drag(
+          find.byKey(const ValueKey('timer-minutes')),
+          const Offset(0, -48),
+        );
+        await settleAnimations();
+        final wheelMinutes = 60 + timerWheel('timer-minutes').selectedItem;
+        expect(find.text('$wheelMinutes 分钟后'), findsOneWidget);
+        expect(p.sleepTimer.active, isFalse);
+        await tap('timer-custom');
         await tap('timer-30');
         await binding.takeScreenshot('sleep-timer-pink-22');
-        Navigator.of(
-          tester.element(find.byKey(const ValueKey('timer-off'))),
-        ).pop();
+        Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
+        await settleAnimations();
+        await tap('player-sleep-timer');
+        expect(find.text('剩余时间'), findsOneWidget);
+        await binding.takeScreenshot('sleep-timer-running-compact');
+        Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
         await settleAnimations();
       } finally {
         await p.playback.pause();

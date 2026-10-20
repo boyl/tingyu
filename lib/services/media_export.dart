@@ -121,7 +121,7 @@ String sanitizeFileName(String title) {
   if (clean.toLowerCase().endsWith('.m4a')) {
     clean = clean.substring(0, clean.length - 4);
   }
-  if (clean.isEmpty) clean = 'tingyu音频';
+  if (clean.isEmpty) clean = 'tingyu 音频';
   if (RegExp(
     r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])$',
     caseSensitive: false,

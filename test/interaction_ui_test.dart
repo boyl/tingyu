@@ -33,6 +33,10 @@ void main() {
     if (tester
             .widgetList<RecordDisc>(find.byType(RecordDisc))
             .any((disc) => disc.playing) ||
+        find
+            .byKey(const ValueKey('player-status-marquee'))
+            .evaluate()
+            .isNotEmpty ||
         find.byType(QueuePanel).evaluate().isNotEmpty ||
         find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
         tester
@@ -639,9 +643,11 @@ void main() {
       await tap(tester, '批量选择');
       await tap(tester, 'select-${firstTrack.id}');
       expect(find.text('已选 1 首'), findsOneWidget);
+      await tap(tester, '批量更多');
       await tap(tester, '批量移出歌单');
       await tap(tester, '取消');
       expect(p.playlists.single.trackIds.length, 2);
+      await tap(tester, '批量更多');
       await tap(tester, '批量移出歌单');
       await tap(tester, '确认');
       expect(p.playlists.single.trackIds, [secondTrack.id]);
@@ -1021,7 +1027,14 @@ void main() {
       await tap(tester, '返回设置');
       expect(find.byType(SettingsScreen), findsOneWidget);
       await tap(tester, 'settings-about');
-      Navigator.of(tester.element(find.text('关于 tingyu'))).pop();
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('关于 tingyu'),
+        ),
+        findsOneWidget,
+      );
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
       await settle(tester);
       await tap(tester, '返回');
       expect(find.byType(SettingsScreen), findsNothing);
@@ -1172,7 +1185,7 @@ void main() {
       final files = position(0);
       files.jumpTo(1200);
       await settle(tester);
-      expect(find.byKey(const ValueKey('scroll-to-top')), findsOneWidget);
+      expect(find.byKey(const ValueKey('scroll-to-top')), findsNothing);
       await tap(tester, 'downloads-tab-tasks');
       final tasks = position(1);
       tasks.jumpTo(800);
@@ -1181,8 +1194,8 @@ void main() {
       expect(position(0).pixels, 1200);
       await tap(tester, 'downloads-tab-tasks');
       expect(position(1).pixels, 800);
-      await tap(tester, 'scroll-to-top');
-      expect(tasks.pixels, 0);
+      expect(find.byKey(const ValueKey('scroll-to-top')), findsNothing);
+      expect(tasks.pixels, 800);
       await tap(tester, 'downloads-tab-completed');
       expect(files.pixels, 1200);
       await unmount(tester);
@@ -1205,6 +1218,15 @@ void main() {
         task.total = 100;
         fixture.controller.clearError();
         await tester.pump();
+        if (status == DownloadStatus.completed) {
+          final statusRow = find.byKey(const ValueKey('menu-downloaded'));
+          expect(statusRow, findsOneWidget);
+          expect(
+            find.descendant(of: statusRow, matching: find.byType(Pressable)),
+            findsNothing,
+          );
+          continue;
+        }
         final button = find.byKey(ValueKey('download-${firstTrack.id}'));
         expect(button.hitTestable(), findsOneWidget);
         expect(
@@ -1236,14 +1258,7 @@ void main() {
       task.status = DownloadStatus.completed;
       fixture.controller.clearError();
       await tester.pump();
-      expect(
-        tester
-            .widget<Pressable>(
-              find.byKey(ValueKey('download-${firstTrack.id}')),
-            )
-            .onPressed,
-        isNull,
-      );
+      expect(find.byKey(const ValueKey('menu-downloaded')), findsOneWidget);
       expect(find.byType(PlayerScreen), findsOneWidget);
       expect(find.byType(DownloadsPanel), findsNothing);
       await unmount(tester);

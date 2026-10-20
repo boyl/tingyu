@@ -73,7 +73,7 @@ Future<void> runTingyu({
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Text(
-                'tingyu暂时无法启动，请检查系统播放器及本地存储配置。\n错误类型：${e.runtimeType}',
+                'tingyu 暂时无法启动，请检查系统播放器及本地存储配置。\n错误类型：${e.runtimeType}',
               ),
             ),
           ),

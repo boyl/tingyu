@@ -6,9 +6,9 @@
 
 ## 当前阶段
 
-当前发布为 **0.1.21+22**，Android 只提供 arm64-v8a 开发签名包。歌曲详情改为全封面唱片，下载和定时按第22版确认稿使用。Mac 新设计和桌面打包暂停。
+当前发布为 **0.1.22+23**，Android 只提供 arm64-v8a 开发签名包。歌曲详情使用无中心装饰的完整封面与黑胶外圈，播放、多选与定时采用最新确认修订。Mac 新设计和桌面打包暂停。
 
-0.1.21 把下载收进歌曲更多菜单，顶部轮播播放模式和序号，歌词按实际文字换行，定时使用大号时长，首页增加整库操作，登录二维码改为把同一次会话交给系统浏览器。模拟器无声用本机运行时处理，不能写成播放器修复，详见 [本轮 Spec](docs/specs/playback-experience-v18.md) 和 [0.1.21 验收](docs/ACCEPTANCE-2026-10-19-021.md)。
+0.1.22 汇总已确认的多选、定时和播放详情修订：多选数量不挤动按钮，顶部连续跑马灯，唱片放大并保留外圈质感、移除中心装饰；修复末句歌词裁切，播放音量从更多菜单进入。定时面板简化，自定义时间实时显示，品牌统一为 tingyu。详见 [本轮 Spec](docs/specs/feedback-2026-10-20.md) 和 [0.1.22 验收](docs/ACCEPTANCE-2026-10-20-022.md)。
 
 已有实现还包括：四种播放模式（含播完暂停）、0.5–2× 倍速、全局歌词显示与独立歌词页、逐字/翻译/罗马音、队列拖拽、底栏透明度、唯一账号入口，以及 tingyu 与包版本启动画面。工程通过和真机全验以版本验收记录为准。
 
@@ -16,19 +16,19 @@
 
 | 设备／场景 | 应下载的文件 | 说明 |
 |---|---|---|
-| 支持 arm64-v8a 的 Android 设备 | [tingyu-0.1.21-android-arm64-v8a-release.apk](https://github.com/boyl/tingyu/releases/download/v0.1.21/tingyu-0.1.21-android-arm64-v8a-release.apk) | 本次唯一安装包。不提供其他架构或桌面包。 |
+| 支持 arm64-v8a 的 Android 设备 | [tingyu-0.1.22-android-arm64-v8a-release.apk](https://github.com/boyl/tingyu/releases/download/v0.1.22/tingyu-0.1.22-android-arm64-v8a-release.apk) | 本次唯一安装包。不提供其他架构或桌面包。 |
 
-只构建及提供 arm64-v8a，不提供 armeabi-v7a、x86_64 或通用 Release。当前为开发/debug 签名，同签名覆盖升级保留数据，不要求卸载或清空数据。SHA-256：`a195f15614b97649cb5a907b5031f60852ef5359753f2f2f190f6cb3545e943a`。
+只构建及提供 arm64-v8a，不提供 armeabi-v7a、x86_64 或通用 Release。当前为开发/debug 签名，同签名覆盖升级保留数据，不要求卸载或清空数据。SHA-256：`31731955c493b677816127fb995afe25f603fe50a40d7ea0f4a5cc5f17ba8174`。
 
 ## 本版验证与运行截图
 
-离线测试、原生导航、交互、导出、滚动专项和匿名 B 站真实音频下载及断网回放的结果见 [0.1.21 验收记录](docs/ACCEPTANCE-2026-10-19-021.md)。开发签名包不表示真机全验。
+离线测试、原生导航、交互、导出、滚动专项和匿名 B 站真实音频下载及断网回放的结果见 [0.1.22 验收记录](docs/ACCEPTANCE-2026-10-20-022.md)。开发签名包不表示真机全验。
 
 截图为同版界面的测试夹具，不使用真实曲库。真实账号授权、物理设备听感及厂商后台仍待验。
 
-| 全封面详情 | 定时关闭 | 下载在更多里 |
+| 全封面详情 | 定时关闭 | 播放音量 |
 |---|---|---|
-| ![全封面详情](docs/screenshots/0.1.21/full-cover-player.png) | ![定时关闭](docs/screenshots/0.1.21/sleep-timer.png) | ![下载在更多里](docs/screenshots/0.1.21/player-download-menu.png) |
+| ![全封面详情](docs/screenshots/0.1.22/full-cover-player.png) | ![定时关闭](docs/screenshots/0.1.22/sleep-timer.png) | ![播放音量](docs/screenshots/0.1.22/player-volume.png) |
 
 ## 工具链与运行
 
@@ -107,7 +107,7 @@ sh tool/flutterw.sh test --dart-define=RUN_LIVE_PROBE=true --reporter expanded
 
 - 0.1.6 修复列表点歌没有建立完整队列、随机重复与上一首错误；增加随机周期/历史恢复、优先下一首和异步切歌稳定性，见 [播放专项验收](docs/ACCEPTANCE-2026-10-16-PLAYBACK.md)。旧手工队列保留，从曲库重新点歌才采用当前列表范围。
 
-- Android 0.1.21 只构建、发布 arm64-v8a 安装包，附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.21)。不再附带 x86_64 与 armeabi-v7a。仍为开发签名，不是应用商店上架包；真机听感、真实账号与桌面验收未完成。上一公开发布为 [0.1.20](https://github.com/boyl/tingyu/releases/tag/v0.1.20)。
+- Android 0.1.22 只构建、发布 arm64-v8a 安装包，附在 [GitHub Release](https://github.com/boyl/tingyu/releases/tag/v0.1.22)。不再附带 x86_64 与 armeabi-v7a。仍为开发签名，不是应用商店上架包；真机听感、真实账号与桌面验收未完成。上一公开发布为 [0.1.21](https://github.com/boyl/tingyu/releases/tag/v0.1.21)。
 - 本轮改为独立设置页，账号与收藏夹收在顶部卡片；主题、音质、下载管理和关于集中展示，移除抽屉与重复入口。验收见 [0.1.5 设置页](docs/ACCEPTANCE-2026-10-16-SETTINGS.md)。此前曲库/歌单图标、排序与批量整理、直接模式切换及下载反馈见 [0.1.4 验收](docs/ACCEPTANCE-2026-10-16-MINIMAL.md)；交互稳定性基础见 [0.1.3 交互验收](docs/ACCEPTANCE-2026-10-16-INTERACTIONS.md)：覆盖全部共享页面、播放模式、队列、歌单、下载故障恢复、登录状态和歌词竞态。真实公共 BV 的 Android 解码与离线回放单独记录，真实账号与物理设备仍待验。
 - 当前拆分包大小、SHA-256 和 ABI 记录于 `tool/release-apks.json`；旧调试包的历史记录在 `tool/verification.json`。
 - macOS 构建因 Xcode 许可尚未确认而被拦截；Windows 尚未在 Windows 主机构建。

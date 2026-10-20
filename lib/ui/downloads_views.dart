@@ -149,6 +149,7 @@ class _DownloadsWorkspaceState extends State<DownloadsWorkspace> {
               children: [
                 for (var i = 0; i < 2; i++)
                   ScrollToTop(
+                    enabled: false,
                     key: ValueKey('downloads-scroll-$i'),
                     controller: scrolls[i],
                     builder: (scroll) => CustomScrollView(

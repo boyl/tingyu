@@ -3,7 +3,7 @@
 最终发布结论见 [0.1.21 验收](ACCEPTANCE-2026-10-19-021.md)。下文保留当天排查顺序。
 
 ## 范围
-对应 `specs/playback-experience-v18.md` 的十项修订。Android自动原生回归仅tingyu-regression/5558；5556不安装测试、不清理数据。未执行提交、推送或发布。
+对应 `specs/playback-experience-v18.md` 的十项修订。Android自动原生回归仅 tingyu-regression/5558；5556不安装测试、不清理数据。未执行提交、推送或发布。
 
 ## 当前记录
 - 静态检查：阶段性PASS，最终同源验收运行中。

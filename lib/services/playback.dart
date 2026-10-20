@@ -61,7 +61,7 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
       builder: () => PlaybackHandler(),
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'app.tingyu.playback',
-        androidNotificationChannelName: 'tingyu音乐播放',
+        androidNotificationChannelName: 'tingyu 音乐播放',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: true,
       ),

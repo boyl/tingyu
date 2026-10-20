@@ -55,13 +55,28 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
   static const pillRadius = 100.0;
   static const detailBlur = 18.0;
   static const detailRadius = 22.0;
+  static const recordBase = Color(0xff18181e);
+  static const recordGroove = Color(0xff45434a);
+  static const recordGlint = Color(0xffddd8db);
+  static const recordCoverRatio = .84;
   static const recordPeek = .79;
   static const swipeThreshold = 45.0;
-  static const recordDiameterRatio = 246.0 / 390;
+  static const recordDiameterRatio = .74;
   static const toggleWidth = 36.0, toggleHeight = 22.0, toggleThumb = 16.0;
   static const lyricMin = 16.0, lyricMax = 32.0, lyricDefault = 24.0;
   static const lyricFontSizes = [20.0, 24.0, 28.0];
   static const brandPink = Color(0xfffb7299);
+  Color get downloadBadgeFill => playerShadow.withValues(alpha: .52);
+  Color get downloadBadgeEdge => onArtwork.withValues(alpha: .48);
+  Color get selectionSurface => accent.withValues(alpha: isDark ? .14 : .10);
+  static const marqueeSpeed = 28.0;
+  static const marqueeGap = 40.0;
+  static const segmentRadius = 8.0;
+  static const timerStatusSize = 16.0;
+  static const timerWaitingSize = 16.0;
+  static const downloadBadgeSize = 20.0;
+  static const downloadBadgeRadius = 7.0;
+  static const downloadBadgeInset = 2.0;
   static const glassBlur = 5.0;
   static const space = 8.0,
       radius = 12.0,

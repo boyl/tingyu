@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.21';
+const tingyuVersion = '0.1.22';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -16,9 +16,10 @@ class SettingsStorageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => SettingsPageFrame(
     title: '存储空间',
+    fillViewport: true,
     backLabel: '返回设置',
     fallback: '/settings',
-    child: StoragePanel(ref.watch(libraryProvider)),
+    child: StoragePanel(ref.watch(libraryProvider), fillViewport: true),
   );
 }
 
@@ -29,8 +30,10 @@ class SettingsPageFrame extends StatelessWidget {
     required this.child,
     this.backLabel = '返回',
     this.fallback = '/',
+    this.fillViewport = false,
   });
   final String title, backLabel, fallback;
+  final bool fillViewport;
   final Widget child;
   @override
   Widget build(BuildContext context) {
@@ -67,10 +70,19 @@ class SettingsPageFrame extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      key: PageStorageKey('settings-$title'),
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                      child: child,
+                    child: LayoutBuilder(
+                      builder: (context, box) => SingleChildScrollView(
+                        key: PageStorageKey('settings-$title'),
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                        child: fillViewport
+                            ? ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: math.max(0, box.maxHeight - 40),
+                                ),
+                                child: IntrinsicHeight(child: child),
+                              )
+                            : child,
+                      ),
                     ),
                   ),
                 ],
@@ -130,7 +142,7 @@ class SettingsPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${p.profile?['uname'] ?? (connected ? '已连接' : '登录tingyu')}',
+                      '${p.profile?['uname'] ?? (connected ? '已连接' : '登录 tingyu')}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -153,39 +165,7 @@ class SettingsPanel extends StatelessWidget {
         ),
         Divider(height: TingyuTokens.space * 2, color: t.line),
         heading('外观'),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final width = shelfCardWidth(
-              constraints.maxWidth,
-            ).clamp(110.0, 184.0);
-            return SingleChildScrollView(
-              key: const ValueKey('theme-shelf'),
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final item in TingyuTokens.themes)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        right: TingyuTokens.space * 1.5,
-                      ),
-                      child: SizedBox(
-                        width: width,
-                        child: ThemePreview(
-                          name: item.$2,
-                          tokens: item.$3,
-                          selected: p.theme == item.$1,
-                          themeId: item.$1,
-                          onPressed: () =>
-                              report(context, () => p.setTheme(item.$1)),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
+        ThemeShelf(p),
         const SizedBox(height: TingyuTokens.space * 3),
         Divider(height: 1, color: t.line),
         SettingsRow(
@@ -251,22 +231,90 @@ class SettingsPanel extends StatelessWidget {
         Divider(height: TingyuTokens.space * 3, color: t.line),
         SettingsRow(
           icon: Icons.info_outline,
-          title: '关于tingyu',
+          title: '关于 tingyu',
           keyName: 'settings-about',
           onPressed: () => showAboutTingyu(context),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 4),
-          child: Center(
-            child: Text(
-              'tingyu  $tingyuVersion',
-              style: TextStyle(color: t.muted, fontSize: 12),
-            ),
-          ),
         ),
       ],
     );
   }
+}
+
+/// Reveal only the selected theme; vertical settings scroll is untouched.
+class ThemeShelf extends StatefulWidget {
+  const ThemeShelf(this.p, {super.key});
+  final LibraryController p;
+  @override
+  State<ThemeShelf> createState() => _ThemeShelfState();
+}
+
+class _ThemeShelfState extends State<ThemeShelf> {
+  final scroll = ScrollController();
+  String? revealed;
+  double? lastWidth;
+  @override
+  void dispose() {
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final width = shelfCardWidth(constraints.maxWidth).clamp(110.0, 184.0);
+      if (revealed != widget.p.theme || lastWidth != constraints.maxWidth) {
+        final initial = revealed == null;
+        revealed = widget.p.theme;
+        lastWidth = constraints.maxWidth;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !scroll.hasClients) return;
+          final index = TingyuTokens.themes.indexWhere(
+            (item) => item.$1 == widget.p.theme,
+          );
+          final target =
+              (index * (width + TingyuTokens.space * 1.5) -
+                      (constraints.maxWidth - width) / 2)
+                  .clamp(0.0, scroll.position.maxScrollExtent);
+          if (initial || MediaQuery.disableAnimationsOf(context)) {
+            scroll.jumpTo(target);
+          } else {
+            scroll.animateTo(
+              target,
+              duration: TingyuTokens.transition,
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
+      }
+      return SingleChildScrollView(
+        key: const ValueKey('theme-shelf'),
+        controller: scroll,
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final item in TingyuTokens.themes)
+              Padding(
+                padding: const EdgeInsets.only(right: TingyuTokens.space * 1.5),
+                child: SizedBox(
+                  width: width,
+                  child: ThemePreview(
+                    name: item.$2,
+                    tokens: item.$3,
+                    selected: widget.p.theme == item.$1,
+                    themeId: item.$1,
+                    onPressed: () async {
+                      await report(context, () => widget.p.setTheme(item.$1));
+                      if (mounted) setState(() {});
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class SettingsChevron extends StatelessWidget {

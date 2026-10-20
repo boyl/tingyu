@@ -1,0 +1,11 @@
+{
+  "status": "design-unconfirmed",
+  "revision": "用户取消独立选择图标，左侧布局保留",
+  "candidates": [],
+  "reuse": [
+    "resources/icons/svg/circle.svg",
+    "resources/icons/svg/done.svg",
+    "resources/icons/svg/download.svg"
+  ],
+  "runtimeChanged": false
+}

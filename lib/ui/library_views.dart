@@ -184,7 +184,7 @@ class CollectionToolbar extends ConsumerWidget {
       );
     }
 
-    return Wrap(
+    final leading = Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: TingyuTokens.space,
       runSpacing: TingyuTokens.space,
@@ -212,6 +212,11 @@ class CollectionToolbar extends ConsumerWidget {
             style: TextStyle(color: context.tokens.muted, fontSize: 12),
           ),
         if (list != null) PlaylistDownloadAction(list!),
+      ],
+    );
+    final trailing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         action(
           Icons.swap_vert,
           '歌曲排序',
@@ -221,6 +226,32 @@ class CollectionToolbar extends ConsumerWidget {
         ),
         action(Icons.checklist, '批量选择', ids.isEmpty ? null : onSelect),
       ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (selectionToolbarCompact(context, constraints.maxWidth)) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: TingyuTokens.controlSize,
+                child: Align(alignment: Alignment.centerLeft, child: leading),
+              ),
+              SizedBox(
+                height: TingyuTokens.controlSize,
+                child: Align(alignment: Alignment.centerRight, child: trailing),
+              ),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: leading),
+            const SizedBox(width: TingyuTokens.space),
+            trailing,
+          ],
+        );
+      },
     );
   }
 }
@@ -352,13 +383,144 @@ class SelectionTrackRow extends StatelessWidget {
   );
 }
 
+bool selectionToolbarCompact(BuildContext context, double width) =>
+    width < 320 || MediaQuery.textScalerOf(context).scale(12) > 15;
+
+({double countWidth, bool compact}) measuredSelectionToolbar(
+  BuildContext context,
+  double width,
+  int total,
+  bool hasList,
+) {
+  final style = DefaultTextStyle.of(
+    context,
+  ).style.merge(const TextStyle(fontSize: 12));
+  double measure(String value) {
+    final painter = TextPainter(
+      text: TextSpan(text: value, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
+  }
+
+  final digits = total.toString().length;
+  final widest = List.generate(10, (i) => measure('$i')).reduce(math.max);
+  final countWidth = (measure('已选  首') + widest * digits).ceilToDouble();
+  final requiredWidth =
+      countWidth + TingyuTokens.controlSize * (hasList ? 5 : 4) + 1;
+  return (
+    countWidth: countWidth,
+    compact: selectionToolbarCompact(context, width) || width < requiredWidth,
+  );
+}
+
+class SelectionToolbar extends StatelessWidget {
+  const SelectionToolbar({
+    super.key,
+    required this.selectedIds,
+    required this.allSelected,
+    required this.totalCount,
+    this.list,
+    required this.onSelectAll,
+    required this.onDone,
+  });
+  final List<String> selectedIds;
+  final bool allSelected;
+  final int totalCount;
+  final Playlist? list;
+  final VoidCallback onSelectAll, onDone;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final layout = measuredSelectionToolbar(
+        context,
+        constraints.maxWidth,
+        totalCount,
+        list != null,
+      );
+      final countWidth = layout.countWidth, compact = layout.compact;
+      Widget count() => Text(
+        '已选 ${selectedIds.length} 首',
+        maxLines: 1,
+        style: TextStyle(color: context.tokens.accentInk, fontSize: 12),
+      );
+      Widget all() => Pressable(
+        key: const ValueKey('全选'),
+        label: '全选',
+        selected: allSelected,
+        selectionFill: false,
+        padding: const EdgeInsets.symmetric(horizontal: TingyuTokens.space),
+        onPressed: onSelectAll,
+        child: const Center(child: Text('全选', style: TextStyle(fontSize: 13))),
+      );
+      Widget done() => Pressable(
+        key: const ValueKey('退出多选'),
+        label: '退出多选',
+        selectionFill: false,
+        onPressed: onDone,
+        padding: const EdgeInsets.symmetric(horizontal: TingyuTokens.space),
+        child: Center(
+          child: Text(
+            '完成',
+            style: TextStyle(color: context.tokens.accentInk, fontSize: 13),
+          ),
+        ),
+      );
+      Widget actions() => SelectionBar(
+        inline: true,
+        ids: selectedIds,
+        list: list,
+        onDone: onDone,
+      );
+      if (compact) {
+        return Column(
+          children: [
+            SizedBox(
+              height: TingyuTokens.controlSize,
+              child: Row(
+                children: [
+                  Expanded(child: count()),
+                  all(),
+                  done(),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: TingyuTokens.controlSize,
+              child: Align(alignment: Alignment.centerLeft, child: actions()),
+            ),
+          ],
+        );
+      }
+      return Row(
+        children: [
+          SizedBox(width: countWidth, child: count()),
+          all(),
+          Expanded(child: actions()),
+          Container(
+            width: 1,
+            height: TingyuTokens.space * 3,
+            color: context.tokens.line,
+          ),
+          done(),
+        ],
+      );
+    },
+  );
+}
+
 class SelectionBar extends ConsumerWidget {
   const SelectionBar({
     super.key,
     required this.ids,
     this.list,
     required this.onDone,
+    this.inline = false,
   });
+  final bool inline;
   final List<String> ids;
   final Playlist? list;
   final VoidCallback onDone;
@@ -367,11 +529,14 @@ class SelectionBar extends ConsumerWidget {
     final p = ref.watch(libraryProvider);
     return Container(
       decoration: BoxDecoration(
-        color: context.tokens.surface,
-        border: Border(top: BorderSide(color: context.tokens.line)),
+        color: inline ? Colors.transparent : context.tokens.surface,
+        border: inline
+            ? null
+            : Border(top: BorderSide(color: context.tokens.line)),
       ),
-      padding: const EdgeInsets.all(8),
+      padding: inline ? EdgeInsets.zero : const EdgeInsets.all(8),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           action(
@@ -428,19 +593,27 @@ class SelectionBar extends ConsumerWidget {
           ),
           if (list != null)
             action(
-              Icons.remove_circle_outline,
-              '批量移出歌单',
+              Icons.more_horiz,
+              '批量更多',
               ids.isEmpty
                   ? null
-                  : () async {
-                      if (await confirm(
-                        context,
-                        '从歌单移除所选 ${ids.length} 首歌？已下载文件会保留。',
-                      )) {
-                        await p.removeFromPlaylist(list!, ids.toSet());
-                        onDone();
-                      }
-                    },
+                  : () => showContentActions(
+                      context,
+                      (ctx) => SimpleDialog(
+                        children: [
+                          labelButton('批量移出歌单', () async {
+                            Navigator.pop(ctx);
+                            if (await confirm(
+                              context,
+                              '从歌单移除所选 ${ids.length} 首歌？已下载文件会保留。',
+                            )) {
+                              await p.removeFromPlaylist(list!, ids.toSet());
+                              onDone();
+                            }
+                          }, icon: Icons.remove_circle_outline),
+                        ],
+                      ),
+                    ),
             ),
         ],
       ),

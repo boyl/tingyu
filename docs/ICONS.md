@@ -51,3 +51,13 @@ python3 tool/icon_catalog.py --check
 0.1.19：关于使用 `assets/branding/ribbon-outline.png` 主题着色版，不使用音柱代替应用标识；目录类图标及选择状态通过现有 Material/Tingyu 映射登记。最新机器清单为41个SVG与31项Material字形；本轮未重画既有播放、下载、随机与循环字形。
 
 第十六版确认补充：返回图标必须匹配独立页导航，底部面板优先既有把手/手势，不重复添加下箭头。恢复字号归入字号标题行并明确作用域；“图标优先”不等于隐藏动作对象。移除关于页冗余关闭图标时保留应用品牌母版。
+
+## 2026-10-20 用户修订
+歌曲更多菜单中的“已下载”沿用 done 圆圈勾选，调整为与同层级图标一致的 text 中性色、18dp 和左对齐；仅此菜单例外，其他位置的 accent 完成态不变。清理按钮复用 eraser，不新增图标形状。
+
+## 多选与定时第四版
+继续复用circle/done作为左侧选择，schedule用于定时状态，checklist用于全选，folderPlus/download用于批量动作，more承载歌单移出。无新增字形；selectionSurface仅为主题派生选择底色。完成用文字保留无障碍退出语义。
+
+第五版：关闭定时迁至状态行右侧Material timer_off_outlined，原生字体字形由登记工具导出登记，不手绘替代；屏幕无常驻关闭文字但保留读屏名称与提示。多选仍复用circle/done。
+
+播放音量使用已登记Material volume_up/volume_off字形；恢复音量复用refresh。新增两个字体使用项，目录为41SVG/34Material；不新增手绘图形。跑马灯仅文字，唱片材质不改业务图标。

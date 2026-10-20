@@ -176,47 +176,63 @@ void main() {
     expect(find.text('你'), findsNothing);
   });
 
-  testWidgets('phone player keeps the current lyric fully above the seek bar', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1;
-    tester.view.padding = const FakeViewPadding(top: 68, bottom: 24);
-    addTearDown(tester.view.resetPadding);
-    providerOwnsController = true;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    fixture.controller.current = firstTrack;
-    fixture.controller.lyricSource = 'bilibili-ai-subtitle';
-    fixture.controller.lyricText = [
-      '[00:00.00]第一句完整歌词',
-      '[00:10.00]第二句完整歌词',
-      '[00:20.00]第三句完整歌词',
-    ].join('\n');
-    fixture.controller.position = const Duration(seconds: 10);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [libraryProvider.overrideWith((_) => fixture.controller)],
-        child: MaterialApp(
-          theme: tingyuTheme('bili'),
-          home: const PlayerScreen(),
-        ),
-      ),
+  for (final second in [0, 10, 20]) {
+    testWidgets(
+      'phone player keeps lyric at $second fully above the seek bar',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        tester.view.padding = const FakeViewPadding(top: 68, bottom: 24);
+        addTearDown(tester.view.resetPadding);
+        providerOwnsController = true;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        fixture.controller.current = firstTrack;
+        fixture.controller.lyricSource = 'bilibili-ai-subtitle';
+        fixture.controller.lyricText = [
+          '[00:00.00]第一句完整歌词',
+          '[00:10.00]第二句完整歌词',
+          '[00:20.00]第三句完整歌词',
+        ].join('\n');
+        fixture.controller.position = Duration(seconds: second);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              libraryProvider.overrideWith((_) => fixture.controller),
+            ],
+            child: MaterialApp(
+              theme: tingyuTheme('bili'),
+              home: const PlayerScreen(),
+            ),
+          ),
+        );
+        await tester.pump();
+        final line = tester.getRect(
+          find.text(['第一句完整歌词', '第二句完整歌词', '第三句完整歌词'][second ~/ 10]),
+        );
+        final panel = tester.getRect(find.byType(LyricPanel));
+        final visible = tester.getRect(
+          find.byKey(const ValueKey('player-content')),
+        );
+        expect(line.top, greaterThanOrEqualTo(visible.top));
+        expect(line.bottom, lessThanOrEqualTo(visible.bottom));
+        final seek = tester
+            .getTopLeft(find.text('00:${second.toString().padLeft(2, '0')}'))
+            .dy;
+        expect(line.height, greaterThan(15));
+        final lyricViewport = tester.getRect(
+          find.descendant(
+            of: find.byType(LyricPanel),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        expect(line.center.dy, closeTo(lyricViewport.center.dy, 1));
+        expect(line.top, greaterThanOrEqualTo(panel.top));
+        expect(line.bottom, lessThanOrEqualTo(panel.bottom));
+        expect(line.bottom, lessThan(seek));
+      },
     );
-    await tester.pump();
-    final line = tester.getRect(find.text('第二句完整歌词'));
-    final panel = tester.getRect(find.byType(LyricPanel));
-    final visible = tester.getRect(
-      find.byKey(const ValueKey('player-content')),
-    );
-    expect(line.top, greaterThanOrEqualTo(visible.top));
-    expect(line.bottom, lessThanOrEqualTo(visible.bottom));
-    final seek = tester.getTopLeft(find.text('00:10')).dy;
-    expect(line.height, greaterThan(15));
-    expect(line.top, greaterThanOrEqualTo(panel.top));
-    expect(line.bottom, lessThanOrEqualTo(panel.bottom));
-    expect(line.bottom, lessThan(seek));
-  });
+  }
 
   testWidgets(
     'record keeps turning while playing and holds still when paused',

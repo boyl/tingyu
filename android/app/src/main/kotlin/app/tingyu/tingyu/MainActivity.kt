@@ -88,7 +88,7 @@ class MainActivity : AudioServiceActivity() {
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "audio/mp4"
-                putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "tingyu音频.m4a")
+                putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "tingyu 音频.m4a")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     putExtra(DocumentsContract.EXTRA_INITIAL_URI,
                         DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download"))

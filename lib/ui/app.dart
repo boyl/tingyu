@@ -24,6 +24,8 @@ import 'playing_indicator.dart';
 import 'scroll_to_top.dart';
 part 'library_views.dart';
 part 'home_views.dart';
+part 'status_marquee.dart';
+part 'volume_views.dart';
 part 'settings_views.dart';
 part 'playlist_add_views.dart';
 part 'downloads_views.dart';
@@ -303,24 +305,127 @@ class _RecordDiscState extends State<RecordDisc>
   Widget build(BuildContext context) {
     final size = widget.size;
     return RepaintBoundary(
-      child: RotationTransition(
-        turns: spin,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: context.tokens.playerShadow.withValues(alpha: .16),
-                blurRadius: TingyuTokens.space * 2,
-                offset: const Offset(0, TingyuTokens.space),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: context.tokens.playerShadow.withValues(alpha: .20),
+              blurRadius: TingyuTokens.space * 3,
+              offset: const Offset(0, TingyuTokens.space),
+            ),
+          ],
+        ),
+        child: SizedBox.square(
+          dimension: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Positioned.fill(
+                child: CustomPaint(painter: RecordGrooves()),
+              ),
+              RotationTransition(
+                turns: spin,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ClipOval(
+                      child: Artwork(
+                        widget.track,
+                        size: size * TingyuTokens.recordCoverRatio,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: RecordSheen()),
+                ),
               ),
             ],
           ),
-          child: ClipOval(child: Artwork(widget.track, size: size)),
         ),
       ),
     );
   }
+}
+
+class RecordSheen extends CustomPainter {
+  const RecordSheen();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero), radius = size.shortestSide / 2;
+    final ring = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addOval(Rect.fromCircle(center: center, radius: radius))
+      ..addOval(
+        Rect.fromCircle(
+          center: center,
+          radius: radius * TingyuTokens.recordCoverRatio,
+        ),
+      );
+    canvas.save();
+    canvas.clipPath(ring);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = SweepGradient(
+          colors: [
+            TingyuTokens.recordGlint.withValues(alpha: 0),
+            TingyuTokens.recordGlint.withValues(alpha: .22),
+            TingyuTokens.recordGlint.withValues(alpha: 0),
+            TingyuTokens.recordGlint.withValues(alpha: .04),
+            TingyuTokens.recordGlint.withValues(alpha: 0),
+          ],
+          stops: const [0, .18, .29, .68, 1],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawCircle(
+      center,
+      radius - .7,
+      Paint()
+        ..color = TingyuTokens.recordGlint.withValues(alpha: .30)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = .7,
+    );
+    canvas.drawCircle(
+      center,
+      radius * TingyuTokens.recordCoverRatio + .8,
+      Paint()
+        ..color = TingyuTokens.recordGlint.withValues(alpha: .12)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = .6,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant RecordSheen oldDelegate) => false;
+}
+
+class RecordGrooves extends CustomPainter {
+  const RecordGrooves();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero), radius = size.shortestSide / 2;
+    canvas.drawCircle(center, radius, Paint()..color = TingyuTokens.recordBase);
+    final groove = Paint()
+      ..color = TingyuTokens.recordGroove.withValues(alpha: .5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .45;
+    for (
+      double r = radius * TingyuTokens.recordCoverRatio;
+      r < radius - 1;
+      r += 1.6
+    ) {
+      canvas.drawCircle(center, r, groove);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant RecordGrooves oldDelegate) => false;
 }
 
 class EmptyView extends StatelessWidget {
@@ -518,21 +623,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       'playlist' => list?.name ?? '歌单不存在',
       _ => '随心听',
     };
+    if (selecting) selection.retainAll(visibleIds(p, list));
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            if (selecting)
-              action(
-                Icons.arrow_back,
-                '退出多选',
-                () => setState(() {
-                  selecting = false;
-                  selection.clear();
-                }),
-              )
-            else if (widget.page == 'search' && widget.playlistId != null)
+            if (widget.page == 'search' && widget.playlistId != null)
               action(
                 Icons.arrow_back,
                 '返回选歌',
@@ -542,7 +639,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               )
             else if (widget.page == 'playlist')
               action(Icons.arrow_back, '返回音乐库', () => navigate('library')),
-            if (!desktop && !selecting && widget.page == 'library')
+            if (!desktop && widget.page == 'library')
               Tooltip(
                 message: '打开设置',
                 child: Pressable(
@@ -559,12 +656,12 @@ class _AppShellState extends ConsumerState<AppShell> {
                   ),
                 ),
               ),
-            if (!desktop && !selecting && widget.page == 'library')
+            if (!desktop && widget.page == 'library')
               const SizedBox(width: TingyuTokens.space),
             Expanded(
               child: Text(
-                selecting ? '已选 ${selection.length} 首' : title,
-                textAlign: !desktop && !selecting && widget.page == 'library'
+                title,
+                textAlign: !desktop && widget.page == 'library'
                     ? TextAlign.right
                     : TextAlign.left,
                 style: widget.page == 'library'
@@ -574,7 +671,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                     : Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            if (!selecting && !['search', 'library'].contains(widget.page))
+            if (!['search', 'library'].contains(widget.page))
               action(
                 Icons.search,
                 '搜索本地歌曲',
@@ -583,19 +680,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   if (!localSearchOpen) localSearch.clear();
                 }),
               ),
-            if (selecting)
-              labelButton(
-                '全选',
-                () => setState(() {
-                  final ids = visibleIds(p, list);
-                  if (selection.containsAll(ids)) {
-                    selection.clear();
-                  } else {
-                    selection.addAll(ids);
-                  }
-                }),
-              )
-            else if (widget.page == 'playlist' && list != null)
+            if (widget.page == 'playlist' && list != null)
               action(
                 Icons.more_horiz,
                 '歌单更多',
@@ -670,7 +755,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 if (name != null && context.mounted) await p.addPlaylist(name);
               },
             ),
-          if (!selecting && widget.page == 'library')
+          if (widget.page == 'library')
             Row(
               children: [
                 Expanded(
@@ -694,16 +779,68 @@ class _AppShellState extends ConsumerState<AppShell> {
             localSearchField(),
           ],
           if (list != null) PlaylistSummary(list),
-          CollectionToolbar(
-            ids: visibleIds(p, list),
-            list: list,
-            collectionKey: collectionKey,
-            compact: widget.page == 'library',
-            selecting: selecting,
-            onSelect: () => setState(() {
-              selecting = true;
-              selection.clear();
-            }),
+          SizedBox(
+            width: double.infinity,
+            child: Stack(
+              children: [
+                Visibility(
+                  visible: !selecting,
+                  maintainState: true,
+                  maintainAnimation: true,
+                  maintainSize: true,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SizedBox(
+                      height:
+                          measuredSelectionToolbar(
+                            context,
+                            constraints.maxWidth,
+                            visibleIds(p, list).length,
+                            list != null,
+                          ).compact
+                          ? TingyuTokens.controlSize * 2
+                          : TingyuTokens.controlSize,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: CollectionToolbar(
+                          ids: visibleIds(p, list),
+                          list: list,
+                          collectionKey: collectionKey,
+                          compact: widget.page == 'library',
+                          selecting: false,
+                          onSelect: () => setState(() {
+                            selecting = true;
+                            selection.clear();
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (selecting)
+                  Positioned.fill(
+                    child: SelectionToolbar(
+                      selectedIds: selection
+                          .where(visibleIds(p, list).contains)
+                          .toList(),
+                      totalCount: visibleIds(p, list).length,
+                      allSelected:
+                          visibleIds(p, list).isNotEmpty &&
+                          selection.containsAll(visibleIds(p, list)),
+                      list: list,
+                      onSelectAll: () => setState(() {
+                        final ids = visibleIds(p, list);
+                        selection.containsAll(ids)
+                            ? selection.clear()
+                            : selection.addAll(ids);
+                      }),
+                      onDone: () => setState(() {
+                        selecting = false;
+                        selection.clear();
+                      }),
+                    ),
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -812,6 +949,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                                               ).bottom,
                                       )
                                     : ScrollToTop(
+                                        enabled: widget.playlistId != null,
                                         controller: pageScroll,
                                         builder: (scroll) => CustomScrollView(
                                           controller: scroll,
@@ -879,19 +1017,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                             ],
                           ),
                         ),
-                        if (desktop && selecting)
-                          SelectionBar(
-                            ids: selection
-                                .where(p.library.containsKey)
-                                .toList(),
-                            list: list,
-                            onDone: () => setState(() {
-                              selecting = false;
-                              selection.clear();
-                            }),
-                          )
-                        else if (desktop)
-                          RepaintBoundary(child: MiniPlayer(p)),
+                        if (desktop) RepaintBoundary(child: MiniPlayer(p)),
                       ],
                     ),
                   ),
@@ -906,19 +1032,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (selecting)
-                            SelectionBar(
-                              ids: selection
-                                  .where(p.library.containsKey)
-                                  .toList(),
-                              list: list,
-                              onDone: () => setState(() {
-                                selecting = false;
-                                selection.clear();
-                              }),
-                            )
-                          else
-                            MiniPlayer(p),
+                          MiniPlayer(p),
                           CompactNavigation(
                             controller: p,
                             selected: widget.page == 'playlist'
@@ -965,19 +1079,16 @@ class _AppShellState extends ConsumerState<AppShell> {
       // A lazy row can be built while async canonicalization awaits persistence.
       // Keep the immutable track from this collection snapshot until notified.
       final track = p.library[id]!;
-      return (BuildContext _) => selecting
-          ? SelectionTrackRow(
-              track,
-              selected: selection.contains(id),
-              first: id == ids.first,
-              last: id == ids.last,
-              onPressed: () => setState(() {
-                selection.contains(id)
-                    ? selection.remove(id)
-                    : selection.add(id);
-              }),
-            )
-          : TrackRow(track, playlist: list, sourceIds: ids);
+      return (BuildContext _) => TrackRow(
+        track,
+        playlist: list,
+        sourceIds: ids,
+        selecting: selecting,
+        selected: selection.contains(id),
+        onSelect: () => setState(() {
+          selection.contains(id) ? selection.remove(id) : selection.add(id);
+        }),
+      );
     }).toList();
   }
 
@@ -1313,7 +1424,12 @@ class TrackRow extends ConsumerWidget {
     this.playlist,
     this.sourceIds,
     this.addToPlaylist,
+    this.selecting = false,
+    this.selected = false,
+    this.onSelect,
   });
+  final bool selecting, selected;
+  final VoidCallback? onSelect;
   final Playlist? addToPlaylist;
   final Track track;
   final Playlist? playlist;
@@ -1325,18 +1441,52 @@ class TrackRow extends ConsumerWidget {
         liked = p.likes.contains(track.id);
     return Container(
       decoration: BoxDecoration(
-        color: p.current?.id == track.id ? context.tokens.tint : null,
+        color: !selecting && p.current?.id == track.id
+            ? context.tokens.tint
+            : null,
         borderRadius: BorderRadius.circular(TingyuTokens.radius),
       ),
       child: Row(
         children: [
+          AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : TingyuTokens.transition,
+            width: selecting ? TingyuTokens.controlSize : 0,
+            height: TingyuTokens.controlSize,
+            clipBehavior: Clip.hardEdge,
+            decoration: const BoxDecoration(),
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: TingyuTokens.controlSize,
+              maxWidth: TingyuTokens.controlSize,
+              child: ExcludeFocus(
+                excluding: !selecting,
+                child: ExcludeSemantics(
+                  excluding: !selecting,
+                  child: action(
+                    selected ? Icons.check_box : Icons.check_box_outline_blank,
+                    '选择 ${track.title}',
+                    onSelect,
+                    selected: selected,
+                  ),
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: Pressable(
-              key: ValueKey('play-${track.id}'),
-              label: '播放 ${track.title}',
-              onPressed: () => sourceIds == null
-                  ? p.play(track)
-                  : p.playFromCollection(track, sourceIds!),
+              key: ValueKey(
+                selecting ? 'select-${track.id}' : 'play-${track.id}',
+              ),
+              label: selecting ? '选择 ${track.title}' : '播放 ${track.title}',
+              selected: selecting && selected,
+              selectionFill: false,
+              onPressed: selecting
+                  ? onSelect
+                  : () => sourceIds == null
+                        ? p.play(track)
+                        : p.playFromCollection(track, sourceIds!),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
               child: Row(
                 children: [
@@ -1350,12 +1500,16 @@ class TrackRow extends ConsumerWidget {
                           track.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.tokens.text,
+                          ),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           track.artist,
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
                             color: context.tokens.muted,
@@ -1368,7 +1522,7 @@ class TrackRow extends ConsumerWidget {
               ),
             ),
           ),
-          if (!desktop && liked)
+          if (!selecting && !desktop && liked)
             Semantics(
               label: '已喜欢',
               child: TingyuIcon(
@@ -1377,7 +1531,7 @@ class TrackRow extends ConsumerWidget {
                 color: context.tokens.accent,
               ),
             ),
-          if (desktop) ...[
+          if (!selecting && desktop) ...[
             Text(
               clock(Duration(seconds: track.duration)),
               style: TextStyle(fontSize: 11, color: context.tokens.muted),
@@ -1390,18 +1544,30 @@ class TrackRow extends ConsumerWidget {
               selected: liked,
             ),
           ],
-          if (addToPlaylist != null)
+          if (selecting && p.current?.id == track.id)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: TingyuTokens.space,
+              ),
+              child: PlayingIndicator(
+                playing:
+                    p.playing &&
+                    p.playback.player.processingState == ProcessingState.ready,
+              ),
+            ),
+          if (!selecting && addToPlaylist != null)
             PlaylistAddTrackAction(track: track, playlist: addToPlaylist!)
-          else
+          else if (!selecting)
             TrackDownloadAction(
               track,
               key: ValueKey('download-action-${track.id}'),
             ),
-          action(
-            Icons.more_horiz,
-            '更多 ${track.title}',
-            () => showTrackActions(context, p, track, playlist),
-          ),
+          if (!selecting)
+            action(
+              Icons.more_horiz,
+              '更多 ${track.title}',
+              () => showTrackActions(context, p, track, playlist),
+            ),
         ],
       ),
     );
@@ -1412,8 +1578,9 @@ Future<void> showTrackActions(
   BuildContext context,
   LibraryController p,
   Track track,
-  Playlist? list,
-) async {
+  Playlist? list, {
+  bool includeVolume = false,
+}) async {
   await showContentActions(
     context,
     (ctx) => SimpleDialog(
@@ -1423,6 +1590,11 @@ Future<void> showTrackActions(
         style: const TextStyle(fontSize: 17),
       ),
       children: [
+        if (includeVolume)
+          labelButton('播放音量', () async {
+            Navigator.pop(ctx);
+            await showPlayerVolume(context, p);
+          }, icon: Icons.volume_up),
         labelButton('下一首播放', () async {
           await p.enqueue(track, next: true);
           if (ctx.mounted) Navigator.pop(ctx);
@@ -1446,6 +1618,28 @@ Future<void> showTrackActions(
           builder: (context, ref, _) {
             ref.watch(libraryProvider);
             final task = trackDownload(p, track);
+            if (task?.status == DownloadStatus.completed) {
+              return Padding(
+                key: const ValueKey('menu-downloaded'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: TingyuTokens.space * 1.5,
+                ),
+                child: SizedBox(
+                  height: TingyuTokens.controlSize,
+                  child: Row(
+                    children: [
+                      TingyuIcon(
+                        Icons.check_circle_outline,
+                        size: 18,
+                        color: context.tokens.text,
+                      ),
+                      const SizedBox(width: TingyuTokens.space),
+                      const Text('已下载'),
+                    ],
+                  ),
+                ),
+              );
+            }
             return Row(
               children: [
                 const SizedBox(width: TingyuTokens.space * 2),
@@ -1980,7 +2174,8 @@ class PlayerScreen extends ConsumerWidget {
                   ? ''
                   : '正在播放 · ${p.queue.indexOf(track.id) + 1} / ${p.queue.length}'),
         transparent: !desktop,
-        onMore: () => showTrackActions(context, p, track, null),
+        onMore: () =>
+            showTrackActions(context, p, track, null, includeVolume: true),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -2052,6 +2247,21 @@ class PlayerScreen extends ConsumerWidget {
               )
             : LayoutBuilder(
                 builder: (context, box) {
+                  final lyricExtent = detailLyricExtent(
+                    context,
+                    p,
+                    box.maxWidth - 48,
+                  );
+                  final lyricHeight = math.max(144.0, lyricExtent + 40);
+                  // Budget for the focused line, rather than reserving the whole timeline.
+                  final lyricVisible =
+                      lyricHeight / 2 +
+                      (p.lines.isEmpty
+                          ? MediaQuery.textScalerOf(context).scale(16)
+                          : lyricExtent / 2 +
+                                (p.lyricSource.startsWith('bilibili-')
+                                    ? MediaQuery.textScalerOf(context).scale(14)
+                                    : 0));
                   Widget recordAndMeta() => Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -2061,7 +2271,19 @@ class PlayerScreen extends ConsumerWidget {
                           p.error,
                           () => p.play(track, at: p.position),
                         ),
-                      RecordCarousel(p, size: phoneArtMax),
+                      RecordCarousel(
+                        p,
+                        size: math.min(
+                          phoneArtMax,
+                          math.max(
+                            100,
+                            box.maxHeight -
+                                lyricVisible -
+                                TingyuTokens.space * 3 -
+                                MediaQuery.textScalerOf(context).scale(106),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -2072,10 +2294,7 @@ class PlayerScreen extends ConsumerWidget {
                   Widget stableLyrics() => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: SizedBox(
-                      height: math.max(
-                        144,
-                        detailLyricExtent(context, p, box.maxWidth - 48) + 40,
-                      ),
+                      height: lyricHeight,
                       child: IgnorePointer(
                         ignoring: !p.showPlayerLyrics,
                         child: ExcludeSemantics(
@@ -2109,8 +2328,7 @@ class PlayerScreen extends ConsumerWidget {
   }
 }
 
-/// On constrained screens keep the lyric end of the shared content visible.
-/// The record retains its size; users can scroll upward to inspect the artwork.
+/// Start with the whole record visible; constrained content scrolls from the top.
 class PlayerContentViewport extends StatefulWidget {
   const PlayerContentViewport({
     super.key,
@@ -2138,7 +2356,7 @@ class _PlayerContentViewportState extends State<PlayerContentViewport> {
       fitted = widget.layoutIdentity;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && scroll.hasClients) {
-          scroll.jumpTo(scroll.position.maxScrollExtent);
+          scroll.jumpTo(0);
         }
       });
     }
@@ -2214,57 +2432,6 @@ class PlayerHeaderStatus extends StatefulWidget {
   final bool hold;
   @override
   State<PlayerHeaderStatus> createState() => _PlayerHeaderStatusState();
-}
-
-class _PlayerHeaderStatusState extends State<PlayerHeaderStatus> {
-  Timer? timer;
-  bool showMode = false;
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    timer?.cancel();
-    if (!MediaQuery.disableAnimationsOf(context)) {
-      timer = Timer.periodic(const Duration(seconds: 4), (_) {
-        if (mounted) setState(() => showMode = !showMode);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mode = switch (widget.mode) {
-      'shuffle' => '随机播放',
-      'repeat' => '单曲循环',
-      'once' => '播完暂停',
-      _ => '列表循环',
-    };
-    return Semantics(
-      label: '${widget.status}，$mode',
-      child: ExcludeSemantics(
-        child: AnimatedSwitcher(
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? Duration.zero
-              : TingyuTokens.transition,
-          child: Text(
-            !widget.hold && showMode && widget.status.startsWith('正在播放')
-                ? mode
-                : widget.status,
-            key: ValueKey(!widget.hold && showMode),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.tokens.muted, fontSize: 13),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 double detailLyricExtent(
@@ -2346,6 +2513,7 @@ class _LyricPanelState extends State<LyricPanel> {
         lineExtent: extent,
         viewport: metrics.viewportDimension,
         maxScroll: metrics.maxScrollExtent,
+        padding: math.max(12, (metrics.viewportDimension - extent) / 2),
       );
       if ((metrics.pixels - target).abs() < 1) return;
       final jump =
@@ -2407,65 +2575,71 @@ class _LyricPanelState extends State<LyricPanel> {
             ),
           ),
         Expanded(
-          child: ListView.builder(
-            controller: scroll,
-            itemCount: lines.length,
-            itemExtent: extent,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            itemBuilder: (ctx, i) {
-              final line = lines[i];
-              final active = i == index;
-              final secondary =
-                  active &&
-                  ((p.showLyricTranslation && line.translation.isNotEmpty) ||
-                      (p.showLyricRomaji && line.romaji.isNotEmpty));
-              final style = TextStyle(
-                color: active ? context.tokens.accentInk : context.tokens.muted,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                fontSize: active ? 19 : 14,
-                height: 1.45,
-              );
-              final main = LyricWordLine(
-                line: line,
-                milliseconds: p.position.inMilliseconds + p.lyricOffset,
-                style: style,
-                sung: context.tokens.accentInk,
-                unsung: context.tokens.muted,
-                animate: active && !MediaQuery.disableAnimationsOf(context),
-                maxLines: null,
-              );
-              if (!secondary) return Center(child: main);
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    main,
-                    if (p.showLyricTranslation && line.translation.isNotEmpty)
-                      Text(
-                        line.translation,
-                        textAlign: TextAlign.center,
+          child: LayoutBuilder(
+            builder: (context, box) => ListView.builder(
+              controller: scroll,
+              itemCount: lines.length,
+              itemExtent: extent,
+              padding: EdgeInsets.symmetric(
+                vertical: math.max(12, (box.maxHeight - extent) / 2),
+              ),
+              itemBuilder: (ctx, i) {
+                final line = lines[i];
+                final active = i == index;
+                final secondary =
+                    active &&
+                    ((p.showLyricTranslation && line.translation.isNotEmpty) ||
+                        (p.showLyricRomaji && line.romaji.isNotEmpty));
+                final style = TextStyle(
+                  color: active
+                      ? context.tokens.accentInk
+                      : context.tokens.muted,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: active ? 19 : 14,
+                  height: 1.45,
+                );
+                final main = LyricWordLine(
+                  line: line,
+                  milliseconds: p.position.inMilliseconds + p.lyricOffset,
+                  style: style,
+                  sung: context.tokens.accentInk,
+                  unsung: context.tokens.muted,
+                  animate: active && !MediaQuery.disableAnimationsOf(context),
+                  maxLines: null,
+                );
+                if (!secondary) return Center(child: main);
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      main,
+                      if (p.showLyricTranslation && line.translation.isNotEmpty)
+                        Text(
+                          line.translation,
+                          textAlign: TextAlign.center,
 
-                        style: TextStyle(
-                          color: context.tokens.muted,
-                          fontSize: 12,
-                          height: 1.45,
+                          style: TextStyle(
+                            color: context.tokens.muted,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
                         ),
-                      ),
-                    if (p.showLyricRomaji && line.romaji.isNotEmpty)
-                      Text(
-                        line.romaji,
-                        textAlign: TextAlign.center,
+                      if (p.showLyricRomaji && line.romaji.isNotEmpty)
+                        Text(
+                          line.romaji,
+                          textAlign: TextAlign.center,
 
-                        style: TextStyle(
-                          color: context.tokens.muted,
-                          fontSize: 11,
-                          height: 1.45,
+                          style: TextStyle(
+                            color: context.tokens.muted,
+                            fontSize: 11,
+                            height: 1.45,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -2765,44 +2939,6 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                       ),
                     ),
             ),
-            if (p.current != null)
-              Padding(
-                padding: const EdgeInsets.all(TingyuTokens.space * 1.5),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: t.playerSurface,
-                    borderRadius: BorderRadius.circular(
-                      TingyuTokens.collectionRadius,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(TingyuTokens.space),
-                    child: Row(
-                      children: [
-                        Artwork(p.current!, size: 40),
-                        const SizedBox(width: TingyuTokens.space * 1.5),
-                        Expanded(
-                          child: Text(
-                            p.current!.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: t.onPlayer, fontSize: 13),
-                          ),
-                        ),
-                        Pressable(
-                          key: const ValueKey('queue-toggle'),
-                          label: p.playing ? '暂停队列播放' : '继续队列播放',
-                          onPressed: () => p.toggle(),
-                          child: TingyuIcon(
-                            p.playing ? Icons.pause : Icons.play_arrow,
-                            color: t.onPlayer,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -2873,19 +3009,42 @@ class DownloadsPanel extends StatelessWidget {
                           Artwork(d.track),
                           if (p.current?.id == d.track.id)
                             Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: context.tokens.background,
-                                  shape: BoxShape.circle,
+                              right: TingyuTokens.downloadBadgeInset,
+                              bottom: TingyuTokens.downloadBadgeInset,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  TingyuTokens.downloadBadgeRadius,
                                 ),
-                                child: PlayingIndicator(
-                                  playing:
-                                      p.playing &&
-                                      p.playback.player.processingState ==
-                                          ProcessingState.ready,
+                                child: BackdropFilter(
+                                  filter: ui.ImageFilter.blur(
+                                    sigmaX: TingyuTokens.glassBlur,
+                                    sigmaY: TingyuTokens.glassBlur,
+                                  ),
+                                  child: Container(
+                                    key: ValueKey(
+                                      'download-playing-${d.track.id}',
+                                    ),
+                                    width: TingyuTokens.downloadBadgeSize,
+                                    height: TingyuTokens.downloadBadgeSize,
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: context.tokens.downloadBadgeFill,
+                                      borderRadius: BorderRadius.circular(
+                                        TingyuTokens.downloadBadgeRadius,
+                                      ),
+                                      border: Border.all(
+                                        color: context.tokens.downloadBadgeEdge,
+                                        width: .5,
+                                      ),
+                                    ),
+                                    child: PlayingIndicator(
+                                      color: TingyuTokens.onArtwork,
+                                      playing:
+                                          p.playing &&
+                                          p.playback.player.processingState ==
+                                              ProcessingState.ready,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -3081,7 +3240,7 @@ Future<void> showAboutTingyu(BuildContext context) => showContentActions(
               width: 64,
               height: 64,
               color: ctx.tokens.accent,
-              semanticLabel: 'tingyu应用图标',
+              semanticLabel: 'tingyu 应用图标',
             ),
             const SizedBox(height: 16),
             const Text(
@@ -3313,8 +3472,8 @@ class _AccountPanelState extends State<AccountPanel> {
         if (!mounted) return;
         setState(
           () => message = opened
-              ? '请在 B 站 App 确认，返回后自动检查登录状态'
-              : '未能打开 B 站 App，请使用二维码扫码',
+              ? '已打开登录链接，请完成 B 站确认；返回后自动检查登录状态'
+              : '未能打开登录链接，请使用二维码扫码',
         );
       }
       timer = Timer.periodic(const Duration(seconds: 2), (_) async {

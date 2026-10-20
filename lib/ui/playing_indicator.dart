@@ -4,8 +4,9 @@ import 'theme.dart';
 
 /// Paint-only animation, isolated from queue layout and playback position.
 class PlayingIndicator extends StatefulWidget {
-  const PlayingIndicator({super.key, this.playing = true});
+  const PlayingIndicator({super.key, this.playing = true, this.color});
   final bool playing;
+  final Color? color;
   @override
   State<PlayingIndicator> createState() => _PlayingIndicatorState();
 }
@@ -54,7 +55,7 @@ class _PlayingIndicatorState extends State<PlayingIndicator>
         size: const Size(18, 18),
         painter: _PlayingBars(
           phase,
-          context.tokens.accent,
+          widget.color ?? context.tokens.accent,
           playing: widget.playing,
         ),
       ),
