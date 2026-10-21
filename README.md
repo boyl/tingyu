@@ -10,13 +10,64 @@
 
 ## 界面预览
 
-<p align="center">
-  <img src="docs/screenshots/0.1.23/player.png" alt="tingyu 歌曲详情：唱片、同步歌词与播放控制" width="240">
-  <img src="docs/screenshots/0.1.23/account.png" alt="tingyu 账号登录与步骤时间线" width="240">
-  <img src="docs/screenshots/0.1.23/timer.png" alt="tingyu 定时关闭与自定义时长滚轮" width="240">
-</p>
+### Android 手机
 
-截图展示已发布的 0.1.23 界面，使用示例曲目。
+月影蓝主题的 Android 手机界面截图，按以下顺序介绍各功能页面。
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <h4>1. 音乐库 · 随心听</h4>
+      <p>继续收听最近播放的内容，浏览我的歌单，随时控制当前播放。</p>
+      <img src="docs/screenshots/android-phone/01-library.jpg" alt="tingyu Android 手机：音乐库 · 随心听" width="240">
+    </td>
+    <td align="center" width="50%">
+      <h4>2. 账号与收藏</h4>
+      <p>打开 B 站确认登录，或使用二维码；登录后可导入收藏夹，保留本地歌单。</p>
+      <img src="docs/screenshots/android-phone/02-account.jpg" alt="tingyu Android 手机：账号与收藏" width="240">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <h4>3. 设置</h4>
+      <p>切换主题与玻璃透明度，调整默认倍速、定时关闭、音质和存储选项。</p>
+      <img src="docs/screenshots/android-phone/03-settings.jpg" alt="tingyu Android 手机：设置" width="240">
+    </td>
+    <td align="center" width="50%">
+      <h4>4. 搜索 · 听点新鲜的</h4>
+      <p>通过歌曲、UP 主、BV / AV 号或链接查找内容，也可浏览主题推荐。</p>
+      <img src="docs/screenshots/android-phone/04-search.jpg" alt="tingyu Android 手机：搜索 · 听点新鲜的" width="240">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <h4>5. 歌曲操作菜单</h4>
+      <p>调整音量、安排下一首、加入队列或歌单，管理喜欢与下载，并在 B 站打开。</p>
+      <img src="docs/screenshots/android-phone/05-track-actions.jpg" alt="tingyu Android 手机：歌曲操作菜单" width="240">
+    </td>
+    <td align="center" width="50%">
+      <h4>6. 歌曲详情 · 播放器</h4>
+      <p>唱片与同步歌词同屏展示，支持进度、倍速、定时、播放模式及队列控制。</p>
+      <img src="docs/screenshots/android-phone/06-player.jpg" alt="tingyu Android 手机：歌曲详情 · 播放器" width="240">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <h4>7. 喜欢 · 心动收藏</h4>
+      <p>集中收听喜欢的歌曲，支持列表内搜索、排序、多选，并显示下载状态。</p>
+      <img src="docs/screenshots/android-phone/07-favorites.jpg" alt="tingyu Android 手机：喜欢 · 心动收藏" width="240">
+    </td>
+    <td align="center" width="50%">
+      <h4>8. 下载 · 离线随行</h4>
+      <p>查看已下载歌曲、数量与占用空间，切换下载任务，管理离线音乐。</p>
+      <img src="docs/screenshots/android-phone/08-downloads.jpg" alt="tingyu Android 手机：下载 · 离线随行" width="240">
+    </td>
+  </tr>
+</table>
+
+### macOS
+
+### Windows
 
 ## 下载与安装
 
