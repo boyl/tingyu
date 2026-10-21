@@ -65,6 +65,15 @@
   </tr>
 </table>
 
+**0.1.25 修复**：歌词切到中间句或末句时，不再推动外层播放页，保持唱片位置稳定。
+
+<p align="center">
+  <img src="docs/screenshots/2026-10-21-lyric-stability/player-middle.png" alt="0.1.25 隔离 Android 夹具：中间句唱片完整可见" width="240">
+  <img src="docs/screenshots/2026-10-21-lyric-stability/player-last.png" alt="0.1.25 隔离 Android 夹具：末句切换后唱片位置保持" width="240">
+</p>
+
+以上两图为 0.1.25 隔离 Android 模拟器的本地夹具运行截图，用于复核歌词切句前后唱片位置。
+
 **0.1.24 更新**：点击“我的歌单”标题即可进入带封面的全部歌单列表；透明度调节与底栏预览分区，拖动时完整露出播放栏和导航栏。
 
 <p align="center">
@@ -80,11 +89,11 @@
 
 ## 下载与安装
 
-当前发布版本为 **0.1.24**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+当前发布版本为 **0.1.25**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.24/tingyu-0.1.24-android-arm64-v8a-release.apk) |
+| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.25/tingyu-0.1.25-android-arm64-v8a-release.apk) |
 | macOS / Windows | 暂无安装包 |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
@@ -92,9 +101,9 @@ Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可�
 <details>
 <summary>校验安装包</summary>
 
-文件：`tingyu-0.1.24-android-arm64-v8a-release.apk`
+文件：`tingyu-0.1.25-android-arm64-v8a-release.apk`
 
-SHA-256：`d754f067edd3c3955db15833d5e1be15564dd978224ec737f1ad0ffeb54ac615`
+SHA-256：`c16c6c63821357228c1b7ebaf700945406cea1dd26822633e48014f0903991f6`
 
 </details>
 
@@ -123,7 +132,7 @@ SHA-256：`d754f067edd3c3955db15833d5e1be15564dd978224ec737f1ad0ffeb54ac615`
 
 [功能清单](docs/FEATURES.md) · [界面规范](docs/UI.md) · [验收标准](docs/ACCEPTANCE.md) · [发布准则](docs/RELEASE.md) · [版本记录](https://github.com/boyl/tingyu/releases)
 
-0.1.24 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-21-024.md)。真实账号授权与重启登录保持仍待验。
+0.1.25 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-21-025.md)。真实账号授权与重启登录保持仍待验。
 
 ## 许可
 

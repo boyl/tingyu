@@ -176,6 +176,60 @@ void main() {
     expect(find.text('你'), findsNothing);
   });
 
+  testWidgets('lyric progression never scrolls the outer record viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 68, bottom: 24);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+    providerOwnsController = true;
+    fixture.controller.current = firstTrack;
+    fixture.controller.lyricSource = 'bilibili-ai-subtitle';
+    fixture.controller.lyricText = List.generate(
+      12,
+      (i) => '[00:${(i * 5).toString().padLeft(2, '0')}.00]第$i句完整歌词',
+    ).join('\n');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [libraryProvider.overrideWith((_) => fixture.controller)],
+        child: MaterialApp(
+          theme: tingyuTheme('bili'),
+          home: const PlayerScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    final record = tester.getRect(find.byType(RecordCarousel));
+    final outer = tester
+        .widget<SingleChildScrollView>(
+          find.byKey(const ValueKey('player-content')),
+        )
+        .controller!;
+    expect(outer.offset, 0);
+    for (final second in [5, 10, 30, 55, 0]) {
+      fixture.controller.position = Duration(seconds: second);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(outer.offset, 0, reason: 'playhead $second');
+      expect(tester.getRect(find.byType(RecordCarousel)), record);
+      final lyricViewport = tester.getRect(
+        find.descendant(
+          of: find.byType(LyricPanel),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(
+        tester.getCenter(find.text('第${second ~/ 5}句完整歌词')).dy,
+        closeTo(lyricViewport.center.dy, 1),
+      );
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   for (final second in [0, 10, 20]) {
     testWidgets(
       'phone player keeps lyric at $second fully above the seek bar',

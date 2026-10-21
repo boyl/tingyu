@@ -928,8 +928,8 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3948",
-        "lib/ui/app.dart:4227"
+        "lib/ui/app.dart:3938",
+        "lib/ui/app.dart:4217"
       ],
       "designUses": []
     },
@@ -941,7 +941,7 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3291"
+        "lib/ui/app.dart:3281"
       ],
       "designUses": []
     },
@@ -953,7 +953,7 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4132"
+        "lib/ui/app.dart:4122"
       ],
       "designUses": []
     },
@@ -977,7 +977,7 @@
       "codepoint": 58389,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3953",
+        "lib/ui/app.dart:3943",
         "lib/ui/preferences_views.dart:148"
       ],
       "designUses": []
@@ -1016,7 +1016,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4407"
+        "lib/ui/app.dart:4397"
       ],
       "designUses": []
     },
@@ -1028,7 +1028,7 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4249"
+        "lib/ui/app.dart:4239"
       ],
       "designUses": []
     },
@@ -1040,7 +1040,7 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4249"
+        "lib/ui/app.dart:4239"
       ],
       "designUses": []
     },

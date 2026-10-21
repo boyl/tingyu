@@ -261,3 +261,8 @@
 - 首页标题入口→全部歌单→详情→返回目录→返回首页；封面/空封面、空目录新建、长名称与多歌单滚动分别验证；保留原横向架及播放状态。
 - 320×640、390×844 与 1.6 文字缩放下，三项透明度滑杆拖动前后位置相同，活动控件不与实际播放栏/导航栏相交；松开、取消、后台恢复，自动模式行为保持。
 - 专项记录与实际验证结果见 [Spec](specs/playlist-entry-glass-preview.md)。原生导航仅在隔离的 emulator-5558 运行。
+
+### 歌词跟随不挤动唱片（2026-10-21）
+
+- 连续播放从首句经过中间句、末句并回退时，歌词列表独立定位，外层播放页滚动偏移与唱片几何保持不变。
+- 自动回归见 `test/lyric_panel_test.dart` 的 `lyric progression never scrolls the outer record viewport`；工程与设备验证分开记录于 [专项记录](acceptance/lyric-record-stability-2026-10-21.md)。

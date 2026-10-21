@@ -757,6 +757,14 @@ void main() {
         await tap('展开播放器');
         await settleAnimations();
         await capture('full-cover-player-22');
+        final stableRecord = tester.getRect(find.byType(RecordCarousel));
+        final playerScroll = tester
+            .widget<SingleChildScrollView>(
+              find.byKey(const ValueKey('player-content')),
+            )
+            .controller!;
+        final stablePlayerOffset = playerScroll.offset;
+
         await p.playback.seek(const Duration(seconds: 22));
         await waitFor(
           () =>
@@ -777,6 +785,8 @@ void main() {
           reason:
               'last=$lastLyric content=$contentRect panel=${tester.getRect(find.byType(LyricPanel))} disc=${tester.getRect(find.byType(RecordDisc).last)} source=${p.lyricSource} parts=${p.parts.length}',
         );
+        expect(playerScroll.offset, stablePlayerOffset);
+        expect(tester.getRect(find.byType(RecordCarousel)), stableRecord);
         await capture('player-last-lyric-complete');
 
         double marqueeOffset() => tester

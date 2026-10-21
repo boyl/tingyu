@@ -2608,7 +2608,6 @@ class _LyricPanelState extends State<LyricPanel> {
   double measuredExtent = 48;
   int last = -1;
   int? pending;
-  final focusedText = GlobalKey();
   @override
   void dispose() {
     scroll.dispose();
@@ -2642,16 +2641,8 @@ class _LyricPanelState extends State<LyricPanel> {
         maxScroll: metrics.maxScrollExtent,
         padding: math.max(12, (metrics.viewportDimension - extent) / 2),
       );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || focusedText.currentContext == null) return;
-        unawaited(
-          Scrollable.ensureVisible(
-            focusedText.currentContext!,
-            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-            duration: Duration.zero,
-          ),
-        );
-      });
+      // Only move this lyric list. Scrollable.ensureVisible also scrolls the
+      // enclosing player viewport and pushes the record under the header.
       if ((metrics.pixels - target).abs() < 1) return;
       final jump =
           previous < 0 ||
@@ -2736,7 +2727,6 @@ class _LyricPanelState extends State<LyricPanel> {
                   height: 1.45,
                 );
                 final main = LyricWordLine(
-                  key: active ? focusedText : null,
                   line: line,
                   milliseconds: p.position.inMilliseconds + p.lyricOffset,
                   style: style,
