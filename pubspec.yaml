@@ -1,7 +1,7 @@
 name: tingyu
 description: 本地优先的 B 站音乐播放器。
 publish_to: none
-version: 0.1.22+23
+version: 0.1.23+24
 environment:
   sdk: '>=3.10.0 <4.0.0'
 dependencies:
@@ -38,6 +38,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/audio/wheel-tick.wav
+    - assets/audio/LICENSE.txt
+    - assets/audio/NOTICE.txt
     - assets/tray.png
     - assets/tray.ico
     - assets/branding/ribbon-outline.png

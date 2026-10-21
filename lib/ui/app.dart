@@ -18,6 +18,7 @@ import '../controllers/library_controller.dart';
 import '../models/music.dart';
 import '../services/media_export.dart';
 import '../services/bilibili_link.dart';
+import '../services/wheel_tick.dart';
 import 'theme.dart';
 import 'icons.dart';
 import 'playing_indicator.dart';
@@ -34,6 +35,7 @@ part 'lyrics_views.dart';
 part 'lyrics_preferences_views.dart';
 part 'playback_settings_views.dart';
 part 'preferences_views.dart';
+part 'operation_feedback.dart';
 
 String normalizedFolderName(String value) => String.fromCharCodes(
   value.runes.map(
@@ -1186,39 +1188,66 @@ Future<void> showPlaylistActions(
   BuildContext context,
   LibraryController p,
   Playlist list,
-) => showContentActions(
-  context,
-  (ctx) => SimpleDialog(
-    title: Text(list.name),
-    children: [
-      labelButton('编辑歌单', () async {
-        Navigator.pop(ctx);
-        await showDialog<void>(
-          context: context,
-          builder: (_) => PlaylistEditDialog(list),
-        );
-      }, icon: Icons.edit_outlined),
-      labelButton('添加歌曲', () {
-        Navigator.pop(ctx);
-        context.push('/playlist/${list.id}/add');
-      }, icon: Icons.library_add_outlined),
-      labelButton('下载全部', () async {
-        Navigator.pop(ctx);
-        for (final id in list.trackIds) {
-          final track = p.library[id];
-          if (track != null) await p.download(track);
-        }
-      }, icon: Icons.download_outlined),
-      labelButton('删除歌单', () async {
-        Navigator.pop(ctx);
-        if (await confirm(context, '删除歌单？已下载音频和喜欢记录会保留。')) {
-          await p.editPlaylist(list, delete: true);
-          if (context.mounted) context.go('/');
-        }
-      }, icon: Icons.delete_outline),
-    ],
-  ),
-);
+) async {
+  final session = OperationFeedback();
+  try {
+    await showContentActions(
+      context,
+      (ctx) => SimpleDialog(
+        title: Text(
+          p.playlists.where((x) => x.id == list.id).firstOrNull?.name ??
+              list.name,
+        ),
+        children: [
+          session.status(ctx),
+          labelButton('编辑歌单', () async {
+            await showDialog<void>(
+              context: ctx,
+              builder: (_) => PlaylistEditDialog(
+                p.playlists.where((x) => x.id == list.id).firstOrNull ?? list,
+              ),
+            );
+          }, icon: Icons.edit_outlined),
+          labelButton('添加歌曲', () {
+            Navigator.pop(ctx);
+            context.push('/playlist/${list.id}/add');
+          }, icon: Icons.library_add_outlined),
+          labelButton(
+            '下载全部',
+            () => showBatchTransfer(
+              ctx,
+              p,
+              list.trackIds.toList(),
+              () {},
+              download: true,
+            ),
+            icon: Icons.download_outlined,
+          ),
+          labelButton(
+            '删除歌单',
+            session.busy
+                ? null
+                : () async {
+                    if (!await confirm(ctx, '删除歌单？已下载音频和喜欢记录会保留。')) return;
+                    final ok = await session.run(
+                      () => p.editPlaylist(list, delete: true),
+                      '已删除歌单',
+                    );
+                    if (ok && ctx.mounted) {
+                      Navigator.pop(ctx);
+                      if (context.mounted) context.go('/');
+                    }
+                  },
+            icon: Icons.delete_outline,
+          ),
+        ],
+      ),
+      listenable: Listenable.merge([p, session]),
+    );
+  } finally {
+    session.dispose();
+  }
+}
 
 Widget downloadProgress(BuildContext context, double? progress) => SizedBox(
   width: 24,
@@ -1581,124 +1610,207 @@ Future<void> showTrackActions(
   Playlist? list, {
   bool includeVolume = false,
 }) async {
-  await showContentActions(
-    context,
-    (ctx) => SimpleDialog(
-      title: Text(
-        track.title,
-        maxLines: 2,
-        style: const TextStyle(fontSize: 17),
-      ),
-      children: [
-        if (includeVolume)
-          labelButton('播放音量', () async {
-            Navigator.pop(ctx);
-            await showPlayerVolume(context, p);
-          }, icon: Icons.volume_up),
-        labelButton('下一首播放', () async {
-          await p.enqueue(track, next: true);
-          if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.playlist_play),
-        labelButton('加入播放队列', () async {
-          await p.enqueue(track);
-          if (ctx.mounted) Navigator.pop(ctx);
-        }, icon: Icons.add_to_queue),
-        labelButton(
-          p.likes.contains(track.id) ? '取消喜欢' : '喜欢',
-          () async {
-            await p.toggleLike(track);
-            if (ctx.mounted) Navigator.pop(ctx);
-          },
-          icon: p.likes.contains(track.id)
-              ? Icons.favorite
-              : Icons.favorite_border,
-          selected: p.likes.contains(track.id),
-        ),
-        Consumer(
-          builder: (context, ref, _) {
-            ref.watch(libraryProvider);
-            final task = trackDownload(p, track);
-            if (task?.status == DownloadStatus.completed) {
-              return Padding(
-                key: const ValueKey('menu-downloaded'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: TingyuTokens.space * 1.5,
-                ),
-                child: SizedBox(
-                  height: TingyuTokens.controlSize,
-                  child: Row(
-                    children: [
-                      TingyuIcon(
-                        Icons.check_circle_outline,
-                        size: 18,
-                        color: context.tokens.text,
-                      ),
-                      const SizedBox(width: TingyuTokens.space),
-                      const Text('已下载'),
-                    ],
-                  ),
-                ),
-              );
-            }
-            return Row(
-              children: [
-                const SizedBox(width: TingyuTokens.space * 2),
-                Expanded(
-                  child: Text(
-                    task?.status == DownloadStatus.completed ? '已下载' : '下载',
-                  ),
-                ),
-                TrackDownloadAction(track),
-                const SizedBox(width: TingyuTokens.space),
-              ],
-            );
-          },
-        ),
-        labelButton('加入歌单', () async {
-          Navigator.pop(ctx);
-          await showAddPlaylist(context, p, track);
-        }, icon: Icons.playlist_add),
-        if (list != null)
-          labelButton('移出歌单', () async {
-            Navigator.pop(ctx);
-            if (await confirm(context, '从歌单移除这首歌？已下载文件会保留。')) {
-              await p.editPlaylist(list, remove: track.id);
-            }
-          }, icon: Icons.remove_circle_outline),
-        labelButton('在 B 站打开', () async {
-          Navigator.pop(ctx);
-          await report(context, () => BilibiliLinkLauncher().openVideo(track));
-        }, icon: Icons.open_in_new),
-      ],
-    ),
-  );
+  // The originating list row can disappear after unliking/removing its item.
+  final feedbackContext = Navigator.of(context, rootNavigator: true).context;
+  final session = OperationFeedback();
+  final originalLikeIndex = p.likes.indexOf(track.id);
+  int? removedRevision;
+  var playlistChild = false;
+  void backToActions() => session.update(() => playlistChild = false);
+  try {
+    await showContentActions(
+      context,
+      (ctx) {
+        if (playlistChild) {
+          return playlistChoices(ctx, p, track, session, backToActions);
+        }
+        return SimpleDialog(
+          title: Text(
+            track.title,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 17),
+          ),
+          children: [
+            session.status(ctx),
+            if (includeVolume)
+              labelButton(
+                '播放音量',
+                () => showPlayerVolume(ctx, p),
+                icon: Icons.volume_up,
+              ),
+            labelButton(
+              '下一首播放',
+              session.busy
+                  ? null
+                  : () => session.run(
+                      () => p.enqueue(track, next: true),
+                      '已设为下一首',
+                    ),
+              icon: Icons.playlist_play,
+            ),
+            labelButton(
+              '加入播放队列',
+              session.busy
+                  ? null
+                  : () => session.run(() => p.enqueue(track), '已加入播放队列'),
+              icon: Icons.add_to_queue,
+            ),
+            labelButton(
+              p.likes.contains(track.id) ? '取消喜欢' : '喜欢',
+              session.busy
+                  ? null
+                  : () async {
+                      final liked = !p.likes.contains(track.id);
+                      await session.run(() async {
+                        await p.setLiked(track, liked);
+                        removedRevision = liked
+                            ? null
+                            : p.likeRevision(track.id);
+                      }, liked ? '已喜欢' : '已取消喜欢');
+                    },
+              icon: p.likes.contains(track.id)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              selected: p.likes.contains(track.id),
+            ),
+            TrackMenuDownload(track, feedback: session),
+            labelButton(
+              '加入歌单',
+              () => session.update(() => playlistChild = true),
+              icon: Icons.playlist_add,
+            ),
+            if (list != null)
+              labelButton(
+                '移出歌单',
+                session.busy
+                    ? null
+                    : () async {
+                        if (!await confirm(ctx, '从歌单移除这首歌？已下载文件会保留。')) return;
+                        final snapshot = list.trackIds.toList();
+                        final removed = await session.run(
+                          () => p.editPlaylist(list, remove: track.id),
+                          '已移出歌单',
+                        );
+                        if (removed && ctx.mounted) {
+                          Navigator.pop(ctx);
+                          if (feedbackContext.mounted) {
+                            offerUndo(feedbackContext, '已移出歌单', () async {
+                              final latest = p.playlists
+                                  .where((x) => x.id == list.id)
+                                  .firstOrNull;
+                              if (latest != null &&
+                                  !latest.trackIds.contains(track.id)) {
+                                await p.restorePlaylistTrack(
+                                  list.id,
+                                  track.id,
+                                  snapshot.indexOf(track.id),
+                                );
+                              }
+                            });
+                          }
+                        }
+                      },
+                icon: Icons.remove_circle_outline,
+              ),
+            labelButton(
+              '在 B 站打开',
+              session.busy
+                  ? null
+                  : () => session.run(
+                      () => BilibiliLinkLauncher().openVideo(track),
+                      '已请求打开 B 站',
+                    ),
+              icon: Icons.open_in_new,
+            ),
+          ],
+        );
+      },
+      listenable: Listenable.merge([p, session]),
+      isChild: () => playlistChild,
+      onBack: backToActions,
+    );
+    if (feedbackContext.mounted &&
+        originalLikeIndex >= 0 &&
+        !p.likes.contains(track.id) &&
+        removedRevision != null &&
+        removedRevision == p.likeRevision(track.id)) {
+      final revision = removedRevision;
+      offerUndo(feedbackContext, '已取消喜欢', () async {
+        if (p.likeRevision(track.id) == revision &&
+            !p.likes.contains(track.id)) {
+          await p.setLiked(track, true, restoreIndex: originalLikeIndex);
+        }
+      });
+    }
+  } finally {
+    session.dispose();
+  }
 }
+
+SimpleDialog playlistChoices(
+  BuildContext ctx,
+  LibraryController p,
+  Track track,
+  OperationFeedback session,
+  VoidCallback finish,
+) => SimpleDialog(
+  title: Row(
+    children: [
+      action(Icons.arrow_back, '返回歌曲操作', finish),
+      const Expanded(child: Text('添加至歌单')),
+    ],
+  ),
+  children: [
+    session.status(ctx),
+    for (final l in p.playlists)
+      labelButton(
+        l.name,
+        session.busy || l.trackIds.contains(track.id)
+            ? null
+            : () => session.run(
+                () => p.addToPlaylist(l, track),
+                '已添加至「${l.name}」',
+              ),
+        icon: l.trackIds.contains(track.id)
+            ? Icons.check_circle_outline
+            : Icons.playlist_add,
+      ),
+    labelButton(
+      '新建歌单',
+      session.busy
+          ? null
+          : () async {
+              final name = await nameDialog(ctx);
+              if (name != null) {
+                await session.run(
+                  () => p.addPlaylist(name, track: track),
+                  '已创建并添加',
+                );
+              }
+            },
+      icon: Icons.add,
+    ),
+    labelButton('完成', finish),
+  ],
+);
 
 Future<void> showAddPlaylist(
   BuildContext context,
   LibraryController p,
   Track track,
-) async => showDialog<void>(
-  context: context,
-  builder: (ctx) => SimpleDialog(
-    title: const Text('添加至歌单'),
-    children: [
-      ...p.playlists.map(
-        (l) => labelButton(l.name, () async {
-          await p.addToPlaylist(l, track);
-          if (ctx.mounted) Navigator.pop(ctx);
-        }),
-      ),
-      labelButton('新建歌单', () async {
-        Navigator.pop(ctx);
-        final name = await nameDialog(context);
-        if (name != null && context.mounted) {
-          await report(context, () => p.addPlaylist(name, track: track));
-        }
-      }, icon: Icons.add),
-    ],
-  ),
-);
+) async {
+  final session = OperationFeedback();
+  try {
+    await showContentActions(
+      context,
+      (ctx) =>
+          playlistChoices(ctx, p, track, session, () => Navigator.pop(ctx)),
+      listenable: Listenable.merge([p, session]),
+    );
+  } finally {
+    session.dispose();
+  }
+}
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer(this.p, {super.key});
@@ -2253,15 +2365,20 @@ class PlayerScreen extends ConsumerWidget {
                     box.maxWidth - 48,
                   );
                   final lyricHeight = math.max(144.0, lyricExtent + 40);
-                  // Budget for the focused line, rather than reserving the whole timeline.
-                  final lyricVisible =
-                      lyricHeight / 2 +
-                      (p.lines.isEmpty
-                          ? MediaQuery.textScalerOf(context).scale(16)
-                          : lyricExtent / 2 +
-                                (p.lyricSource.startsWith('bilibili-')
-                                    ? MediaQuery.textScalerOf(context).scale(14)
-                                    : 0));
+                  // Artwork geometry depends only on the viewport and text scale,
+                  // never on late lyric/part metadata or the current song.
+                  final reservedLyrics =
+                      MediaQuery.textScalerOf(context).scale(16) * 7;
+                  final artworkSize = math.min(
+                    phoneArtMax,
+                    math.max(
+                      100.0,
+                      box.maxHeight -
+                          reservedLyrics -
+                          TingyuTokens.space * 3 -
+                          MediaQuery.textScalerOf(context).scale(106),
+                    ),
+                  );
                   Widget recordAndMeta() => Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -2271,19 +2388,7 @@ class PlayerScreen extends ConsumerWidget {
                           p.error,
                           () => p.play(track, at: p.position),
                         ),
-                      RecordCarousel(
-                        p,
-                        size: math.min(
-                          phoneArtMax,
-                          math.max(
-                            100,
-                            box.maxHeight -
-                                lyricVisible -
-                                TingyuTokens.space * 3 -
-                                MediaQuery.textScalerOf(context).scale(106),
-                          ),
-                        ),
-                      ),
+                      RecordCarousel(p, size: artworkSize),
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -2443,7 +2548,9 @@ double detailLyricExtent(
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(fontSize: size, height: 1.45, fontWeight: weight),
+        style: DefaultTextStyle.of(context).style.merge(
+          TextStyle(fontSize: size, height: 1.45, fontWeight: weight),
+        ),
       ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
@@ -2456,7 +2563,16 @@ double detailLyricExtent(
   var extent = 48.0;
   for (final line in p.lines) {
     final height =
-        measured(line.text, 19, FontWeight.w600) +
+        measuredLyricHeight(
+          context,
+          line,
+          const TextStyle(
+            fontSize: 19,
+            height: 1.45,
+            fontWeight: FontWeight.w600,
+          ),
+          width,
+        ) +
         TingyuTokens.space * 2 +
         (p.showLyricTranslation && line.translation.isNotEmpty
             ? measured(line.translation, 12, FontWeight.normal)
@@ -2482,6 +2598,7 @@ class _LyricPanelState extends State<LyricPanel> {
   double measuredExtent = 48;
   int last = -1;
   int? pending;
+  final focusedText = GlobalKey();
   @override
   void dispose() {
     scroll.dispose();
@@ -2515,6 +2632,16 @@ class _LyricPanelState extends State<LyricPanel> {
         maxScroll: metrics.maxScrollExtent,
         padding: math.max(12, (metrics.viewportDimension - extent) / 2),
       );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || focusedText.currentContext == null) return;
+        unawaited(
+          Scrollable.ensureVisible(
+            focusedText.currentContext!,
+            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            duration: Duration.zero,
+          ),
+        );
+      });
       if ((metrics.pixels - target).abs() < 1) return;
       final jump =
           previous < 0 ||
@@ -2599,6 +2726,7 @@ class _LyricPanelState extends State<LyricPanel> {
                   height: 1.45,
                 );
                 final main = LyricWordLine(
+                  key: active ? focusedText : null,
                   line: line,
                   milliseconds: p.position.inMilliseconds + p.lyricOffset,
                   style: style,
@@ -3133,32 +3261,61 @@ Future<void> showDownloadActions(
   BuildContext context,
   LibraryController p,
   DownloadTask task,
-) => showContentActions(
-  context,
-  (ctx) => SimpleDialog(
-    title: Text(task.track.title),
-    children: [
-      labelButton('导出歌曲', () async {
-        Navigator.pop(ctx);
-        await report(context, () => exportTrack(context, p, task));
-      }, icon: Icons.ios_share_outlined),
-      if ([
-        DownloadLyricStatus.missing,
-        DownloadLyricStatus.failed,
-      ].contains(task.lyricStatus))
-        labelButton('补全歌词', () async {
-          Navigator.pop(ctx);
-          await p.downloads.retryLyrics(task);
-        }, icon: Icons.lyrics_outlined),
-      labelButton('移除下载', () async {
-        Navigator.pop(ctx);
-        if (await confirm(context, '删除音频和离线资料？歌单与喜欢记录会保留。')) {
-          await p.removeDownload(task);
-        }
-      }, icon: Icons.delete_outline),
-    ],
-  ),
-);
+) async {
+  final session = OperationFeedback();
+  try {
+    await showContentActions(
+      context,
+      (ctx) => SimpleDialog(
+        title: Text(task.track.title),
+        children: [
+          session.status(ctx),
+          labelButton(
+            '导出歌曲',
+            session.busy
+                ? null
+                : () => session.run(
+                    () => exportTrack(context, p, task),
+                    '导出流程已结束',
+                  ),
+            icon: Icons.ios_share_outlined,
+          ),
+          if ([
+            DownloadLyricStatus.missing,
+            DownloadLyricStatus.failed,
+          ].contains(task.lyricStatus))
+            labelButton(
+              '补全歌词',
+              session.busy
+                  ? null
+                  : () => session.run(
+                      () => p.downloads.retryLyrics(task),
+                      '歌词状态已更新',
+                    ),
+              icon: Icons.lyrics_outlined,
+            ),
+          labelButton(
+            '移除下载',
+            session.busy
+                ? null
+                : () async {
+                    if (!await confirm(ctx, '删除音频和离线资料？歌单与喜欢记录会保留。')) return;
+                    final ok = await session.run(
+                      () => p.removeDownload(task),
+                      '已移除下载',
+                    );
+                    if (ok && ctx.mounted) Navigator.pop(ctx);
+                  },
+            icon: Icons.delete_outline,
+          ),
+        ],
+      ),
+      listenable: Listenable.merge([p, session]),
+    );
+  } finally {
+    session.dispose();
+  }
+}
 
 Future<void> exportTrack(
   BuildContext context,
@@ -3266,65 +3423,85 @@ Future<void> showQueueTrackActions(
   BuildContext context,
   LibraryController p,
   String id,
-) => showContentActions(context, (ctx) {
-  final i = p.queue.indexOf(id);
-  return SimpleDialog(
-    title: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          p.library[id]?.title ?? '歌曲操作',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+) async {
+  final session = OperationFeedback();
+  try {
+    await showContentActions(context, (ctx) {
+      final i = p.queue.indexOf(id);
+      return SimpleDialog(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              p.library[id]?.title ?? '歌曲操作',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: TingyuTokens.space),
+            Text(
+              i >= 0 ? '队列第 ${i + 1} 首' : '已从队列移除',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
         ),
-        const SizedBox(height: TingyuTokens.space),
-        Text(
-          '队列第 ${i + 1} 首',
-          style: TextStyle(fontSize: 12, color: ctx.tokens.muted),
-        ),
-      ],
-    ),
-    children: [
-      labelButton(
-        '移至下一首',
-        i >= 0 && id != p.current?.id
-            ? () async {
-                Navigator.pop(ctx);
-                final track = p.library[id];
-                if (track != null) await p.enqueue(track, next: true);
-              }
-            : null,
-        icon: Icons.playlist_play,
-      ),
-      labelButton(
-        '上移一位',
-        i > 0
-            ? () async {
-                Navigator.pop(ctx);
-                final index = p.queue.indexOf(id);
-                if (index > 0) await p.moveQueue(index, -1);
-              }
-            : null,
-        icon: Icons.arrow_upward,
-      ),
-      labelButton(
-        '下移一位',
-        i >= 0 && i < p.queue.length - 1
-            ? () async {
-                Navigator.pop(ctx);
-                final index = p.queue.indexOf(id);
-                if (index >= 0) await p.moveQueue(index, 1);
-              }
-            : null,
-        icon: Icons.arrow_downward,
-      ),
-      labelButton('从队列移除', () async {
-        Navigator.pop(ctx);
-        await p.removeQueue(id);
-      }, icon: Icons.remove_circle_outline),
-    ],
-  );
-});
+        children: [
+          session.status(ctx),
+          labelButton(
+            '移至下一首',
+            session.busy || i < 0 || id == p.current?.id
+                ? null
+                : () => session.run(() async {
+                    final track = p.library[id];
+                    if (track == null) throw const AppFailure('歌曲已不存在');
+                    await p.enqueue(track, next: true);
+                  }, '已移至下一首'),
+            icon: Icons.playlist_play,
+          ),
+          labelButton(
+            '上移一位',
+            session.busy || i <= 0
+                ? null
+                : () => session.run(
+                    () => p.moveQueue(p.queue.indexOf(id), -1),
+                    '已上移一位',
+                  ),
+            icon: Icons.arrow_upward,
+          ),
+          labelButton(
+            '下移一位',
+            session.busy || i < 0 || i >= p.queue.length - 1
+                ? null
+                : () => session.run(
+                    () => p.moveQueue(p.queue.indexOf(id), 1),
+                    '已下移一位',
+                  ),
+            icon: Icons.arrow_downward,
+          ),
+          labelButton(
+            '从队列移除',
+            session.busy || i < 0
+                ? null
+                : () async {
+                    Future<void> Function()? undo;
+                    final ok = await session.run(() async {
+                      undo = await p.removeQueueUndoable(id);
+                    }, '已从队列移除');
+                    if (ok && ctx.mounted) {
+                      Navigator.pop(ctx);
+                      if (context.mounted && undo != null) {
+                        offerUndo(context, '已从队列移除', undo!);
+                      }
+                    }
+                  },
+            icon: Icons.remove_circle_outline,
+          ),
+        ],
+      );
+    }, listenable: Listenable.merge([p, session]));
+  } finally {
+    session.dispose();
+  }
+}
 
 Future<void> showAccount(BuildContext context, LibraryController p) async {
   final size = MediaQuery.sizeOf(context);
@@ -3359,9 +3536,14 @@ class AccountPanel extends StatefulWidget {
   State<AccountPanel> createState() => _AccountPanelState();
 }
 
-class _AccountPanelState extends State<AccountPanel> {
+class _AccountPanelState extends State<AccountPanel>
+    with WidgetsBindingObserver {
   String? qr, key;
-  String message = '扫码后可以导入你的 B 站收藏夹';
+  String message = '';
+  bool showQr = false, qrExpired = false;
+  int loginEpoch = 0;
+  DateTime? qrDeadline;
+  Future<void>? activePoll;
   bool busy = false, polling = false;
   Map<String, dynamic>? selectedFolder;
   final selectedFolders = <int>{};
@@ -3372,6 +3554,7 @@ class _AccountPanelState extends State<AccountPanel> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.p.api.hasSession || widget.p.profile != null) {
       unawaited(loadProfile());
     }
@@ -3379,7 +3562,9 @@ class _AccountPanelState extends State<AccountPanel> {
 
   @override
   void dispose() {
+    ++loginEpoch;
     timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     folderSearch.dispose();
     super.dispose();
   }
@@ -3453,64 +3638,314 @@ class _AccountPanelState extends State<AccountPanel> {
     }
   }
 
-  Future<void> generate({bool openApp = true}) async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     timer?.cancel();
+    if (state == AppLifecycleState.resumed && key != null && !qrExpired) {
+      startPolling(loginEpoch, key!);
+      unawaited(checkLogin(loginEpoch, key!));
+    }
+  }
+
+  void startPolling(int epoch, String sessionKey) {
+    timer?.cancel();
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    timer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => unawaited(checkLogin(epoch, sessionKey)),
+    );
+  }
+
+  Future<void> checkLogin(int epoch, String sessionKey) async {
+    if (!mounted || epoch != loginEpoch || polling || busy) return;
+    if (qrDeadline != null && DateTime.now().isAfter(qrDeadline!)) {
+      timer?.cancel();
+      setState(() {
+        qrExpired = true;
+        message = '二维码已过期，请刷新';
+      });
+      return;
+    }
+    polling = true;
+    final task = () async {
+      try {
+        final code = await widget.p.api.pollQr(
+          sessionKey,
+          isCurrent: () => mounted && epoch == loginEpoch,
+        );
+        if (!mounted || epoch != loginEpoch) return;
+        if (code == 0) {
+          timer?.cancel();
+          setState(() {
+            qr = null;
+            key = null;
+            showQr = false;
+          });
+          await loadProfile();
+        } else if (code == 86038) {
+          timer?.cancel();
+          setState(() {
+            qrExpired = true;
+            message = '二维码已过期，请刷新';
+          });
+        } else if (code == 86090) {
+          setState(() => message = '已扫码，请在 B 站 App 确认');
+        }
+      } on Exception catch (e) {
+        timer?.cancel();
+        if (mounted && epoch == loginEpoch) {
+          setState(
+            () => message = e is AppFailure ? e.message : '登录请求失败，请刷新重试',
+          );
+        }
+      } finally {
+        polling = false;
+      }
+    }();
+    activePoll = task;
+    await task;
+  }
+
+  Future<void> openLogin() async {
+    if (busy) return;
+    if (qr == null || qrExpired) {
+      await generate();
+      return;
+    }
     setState(() => busy = true);
     try {
-      final result = await widget.p.api.createQr();
+      final opened = await BilibiliLinkLauncher().openLogin(Uri.parse(qr!));
       if (!mounted) return;
+      setState(
+        () => message = opened ? '请在 B 站确认登录，返回后自动检查' : '未能打开 B 站，请重试或显示二维码',
+      );
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(
+          () => message = e is AppFailure ? e.message : '未能打开 B 站，请重试或显示二维码',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> generate({bool openApp = true}) async {
+    if (busy) return;
+    timer?.cancel();
+    final epoch = ++loginEpoch;
+    setState(() => busy = true);
+    try {
+      // Finish an already accepted credential write before starting another session.
+      await activePoll;
+      if (!mounted || epoch != loginEpoch) return;
+      final result = await widget.p.api.createQr();
+      if (!mounted || epoch != loginEpoch) return;
       setState(() {
         qr = result.url;
         key = result.key;
-        message = '请使用哔哩哔哩 App 扫码确认';
-        busy = false;
+        qrExpired = false;
+        qrDeadline = DateTime.now().add(const Duration(minutes: 3));
+        showQr = !openApp;
+        message = '等待 B 站确认登录';
       });
       if (openApp) {
         final opened = await BilibiliLinkLauncher().openLogin(
           Uri.parse(result.url),
         );
-        if (!mounted) return;
+        if (!mounted || epoch != loginEpoch) return;
         setState(
-          () => message = opened
-              ? '已打开登录链接，请完成 B 站确认；返回后自动检查登录状态'
-              : '未能打开登录链接，请使用二维码扫码',
+          () => message = opened ? '请在 B 站确认登录，返回后自动检查' : '未能打开 B 站，请重试或显示二维码',
         );
       }
-      timer = Timer.periodic(const Duration(seconds: 2), (_) async {
-        if (busy || polling || !mounted) return;
-        polling = true;
-        try {
-          final code = await widget.p.api.pollQr(key!);
-          if (!mounted) return;
-          if (code == 0) {
-            timer?.cancel();
-            setState(() => qr = null);
-            await loadProfile();
-          } else if (code == 86038) {
-            timer?.cancel();
-            setState(() => message = '二维码已过期，请刷新');
-          } else if (code == 86090) {
-            setState(() => message = '已扫码，请在 B 站 App 确认');
-          }
-        } on Exception catch (e) {
-          timer?.cancel();
-          if (mounted) {
-            setState(
-              () => message = e is AppFailure ? e.message : '登录请求失败，请刷新重试',
-            );
-          }
-        } finally {
-          polling = false;
-        }
-      });
+      if (mounted && epoch == loginEpoch) startPolling(epoch, result.key);
     } on Exception catch (e) {
-      if (mounted) {
-        setState(() {
-          busy = false;
-          message = e is AppFailure ? e.message : '无法生成二维码，请重试';
-        });
+      if (mounted && epoch == loginEpoch) {
+        setState(() => message = e is AppFailure ? e.message : '无法生成二维码，请重试');
       }
+    } finally {
+      if (mounted && epoch == loginEpoch) setState(() => busy = false);
     }
+  }
+
+  Widget loginCard(BuildContext context) {
+    final t = context.tokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 3),
+          child: Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: t.selectionSurface,
+                  borderRadius: BorderRadius.circular(
+                    TingyuTokens.collectionRadius,
+                  ),
+                ),
+                child: Image.asset(
+                  'assets/branding/ribbon-outline.png',
+                  color: t.accent,
+                ),
+              ),
+              const SizedBox(width: TingyuTokens.space * 2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '收藏，接着听',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '连接你的 B 站账号',
+                      style: TextStyle(color: t.muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(TingyuTokens.space * 3),
+          decoration: BoxDecoration(
+            color: t.selectionSurface.withValues(alpha: .4),
+            borderRadius: BorderRadius.circular(TingyuTokens.collectionRadius),
+            border: Border.all(color: t.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '登录哔哩哔哩',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '确认登录后，导入你的收藏夹',
+                style: TextStyle(color: t.muted, fontSize: 12),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Row(
+                  key: const ValueKey('login-timeline'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < 3; i++)
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: i == 0
+                                      ? const SizedBox()
+                                      : Container(
+                                          height: 1,
+                                          color: t.muted.withValues(alpha: .35),
+                                        ),
+                                ),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: t.muted,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: i == 2
+                                      ? const SizedBox()
+                                      : Container(
+                                          height: 1,
+                                          color: t.muted.withValues(alpha: .35),
+                                        ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: TingyuTokens.space),
+                            Text(
+                              const ['打开 B 站', '确认登录', '返回 tingyu'][i],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: t.muted, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Pressable(
+                key: const ValueKey('account-login'),
+                label: '打开 B 站确认登录',
+                radius: TingyuTokens.pillRadius,
+                color: t.accent,
+                onPressed: busy ? null : openLogin,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        qrExpired ? '刷新并打开 B 站' : '打开 B 站确认登录',
+                        style: TextStyle(
+                          color: t.onAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TingyuIcon(Icons.open_in_new, color: t.onAccent, size: 20),
+                  ],
+                ),
+              ),
+              labelButton(
+                showQr ? '隐藏二维码' : '显示二维码',
+                busy
+                    ? null
+                    : () async {
+                        if (qr == null || qrExpired) {
+                          await generate(openApp: false);
+                        } else {
+                          setState(() => showQr = !showQr);
+                        }
+                      },
+              ),
+              if (showQr && qr != null)
+                Center(
+                  child: ColoredBox(
+                    color: TingyuTokens.onArtwork,
+                    child: QrImageView(data: qr!, size: 210),
+                  ),
+                ),
+              if (qr != null)
+                labelButton(
+                  '刷新二维码',
+                  busy ? null : () => generate(openApp: false),
+                  icon: Icons.refresh,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        ListTile(
+          leading: const TingyuIcon(Icons.folder_outlined),
+          title: const Text('导入收藏夹'),
+          subtitle: const Text('选择想在 tingyu 收听的收藏'),
+        ),
+        ListTile(
+          leading: const TingyuIcon(Icons.music_note),
+          title: const Text('保留本地歌单'),
+          subtitle: const Text('继续收听你已经整理好的音乐'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -3687,21 +4122,7 @@ class _AccountPanelState extends State<AccountPanel> {
                       icon: Icons.logout,
                     ),
                   ] else ...[
-                    if (qr != null)
-                      Center(
-                        child: ColoredBox(
-                          color: Colors.white,
-                          child: QrImageView(data: qr!, size: 210),
-                        ),
-                      ),
-                    if (!busy)
-                      labelButton('使用二维码', () => generate(openApp: false)),
-                    if (!busy)
-                      labelButton(
-                        qr == null ? '登录' : '刷新二维码',
-                        () => generate(),
-                        icon: Icons.qr_code,
-                      ),
+                    loginCard(context),
                   ],
                 ],
               ),

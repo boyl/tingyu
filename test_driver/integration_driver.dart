@@ -30,7 +30,33 @@ Future<void> main() async {
       throw StateError('Screenshot bridge unavailable');
     }
     bridge.listen((request) async {
-      if (request.method != 'POST' ||
+      if (request.method == 'POST' &&
+          request.uri.path.startsWith('/capture/')) {
+        final name = request.uri.pathSegments.last;
+        if (!RegExp(r'^[a-z0-9-]+$').hasMatch(name)) {
+          request.response.statusCode = HttpStatus.badRequest;
+        } else {
+          final captured = await Process.run(adb, [
+            '-s',
+            device!,
+            'exec-out',
+            'screencap',
+            '-p',
+          ], stdoutEncoding: null);
+          if (captured.exitCode != 0) {
+            request.response.statusCode = HttpStatus.internalServerError;
+          } else {
+            final directory = Directory(
+              'artifacts/acceptance/screenshots-native',
+            );
+            await directory.create(recursive: true);
+            await File(
+              '${directory.path}/$name.png',
+            ).writeAsBytes(captured.stdout as List<int>);
+            request.response.statusCode = HttpStatus.ok;
+          }
+        }
+      } else if (request.method != 'POST' ||
           request.uri.path != '/system-screenshot') {
         request.response.statusCode = HttpStatus.notFound;
       } else {

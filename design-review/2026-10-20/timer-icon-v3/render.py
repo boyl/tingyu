@@ -35,7 +35,7 @@ def dock(x,y):
 material=ImageFont.truetype('/Users/dfq/works/repo/lw/tingyu/resources/icons/material/MaterialIcons-Regular.otf',28*S)
 def clock(x,y,c):
  d.text((x*S,y*S),chr(58710),font=material,fill=c)
-t(32,24,'听屿 · 定时状态轻量化',29)
+t(32,24,'tingyu · 定时状态轻量化',29)
 t(32,69,'时钟与时间同行 / 取消大号“未开启” / 静态设计确认稿，非设备截图',15,mut)
 for j in range(3):
  x=32+j*406;t(x,116,['01  未开启','02  已选时长 · 待收起生效','03  正在计时'][j],17);y=phone(x)

@@ -34,7 +34,7 @@ def dock(x,y):
 
 material=ImageFont.truetype('/Users/dfq/works/repo/lw/tingyu/resources/icons/material/MaterialIcons-Regular.otf',20*S)
 def clock(x,y,c):d.text((x*S,y*S),chr(58710),font=material,fill=c)
-t(32,24,'听屿 · 连续列表与自定义定时',29)
+t(32,24,'tingyu · 连续列表与自定义定时',29)
 t(32,69,'设计确认稿 05 / 多选取消底色与歌名染色 / 定时状态统一16字号 / 示例内容，非设备截图',15,mut)
 x=32;t(x,116,'01  全选 · 无背景图层',17);y=phone(x)
 t(x+20,y+57,'音乐库',28);t(x+20,y+120,'已选 78 首',14,accent)

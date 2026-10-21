@@ -483,6 +483,9 @@ void main() {
       await tap(tester, '定位当前歌曲');
       expect(state.position.pixels, greaterThan(3000));
       await tap(tester, '上移一位', queuePosition: 66);
+      expect(find.text('已上移一位'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       expect(p.queue[64], current.id);
       expect(tester.widget<Pressable>(row).selected, isTrue);
       await tap(tester, '关闭队列');
@@ -640,6 +643,9 @@ void main() {
       await tap(tester, '歌曲排序');
       await tap(tester, 'sort-recent');
       expect(p.collectionSort[p.playlists.single.id], 'recent');
+      expect(find.byKey(const ValueKey('sort-recent')), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, '批量选择');
       await tap(tester, 'select-${firstTrack.id}');
       expect(find.text('已选 1 首'), findsOneWidget);
@@ -647,7 +653,7 @@ void main() {
       await tap(tester, '批量移出歌单');
       await tap(tester, '取消');
       expect(p.playlists.single.trackIds.length, 2);
-      await tap(tester, '批量更多');
+      expect(find.byKey(const ValueKey('批量移出歌单')), findsOneWidget);
       await tap(tester, '批量移出歌单');
       await tap(tester, '确认');
       expect(p.playlists.single.trackIds, [secondTrack.id]);
@@ -678,6 +684,9 @@ void main() {
       await tap(tester, '加入歌单');
       await tap(tester, '晨间');
       expect(fixture.controller.playlists.single.trackIds, [firstTrack.id]);
+      await tap(tester, '完成');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, '晨间');
       await tap(tester, '歌单更多');
       await tap(tester, '编辑歌单');
@@ -698,6 +707,8 @@ void main() {
       await tap(tester, '保存');
       expect(fixture.controller.playlists.single.name, '新的歌单');
       expect(fixture.controller.playlists.single.description, '夜晚听的歌');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '移出歌单');
       await tap(tester, '确认');
@@ -706,7 +717,7 @@ void main() {
       await tap(tester, '删除歌单');
       await tap(tester, '取消');
       expect(fixture.controller.playlists.length, 1);
-      await tap(tester, '歌单更多');
+      expect(find.byKey(const ValueKey('删除歌单')), findsOneWidget);
       await tap(tester, '删除歌单');
       await tap(tester, '确认');
       expect(fixture.controller.playlists, isEmpty);
@@ -723,18 +734,29 @@ void main() {
       await mount(tester);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '喜欢');
+      expect(find.byKey(const ValueKey('取消喜欢')), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, 'tab-likes');
       expect(fixture.controller.likes, [firstTrack.id]);
       expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsNothing);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '取消喜欢');
+      expect(find.byKey(const ValueKey('喜欢')), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       expect(find.text('这里还很安静'), findsOneWidget);
       await tap(tester, 'tab-library');
       await tap(tester, 'play-${firstTrack.id}');
       await tap(tester, '更多 ${secondTrack.title}');
       await tap(tester, '加入播放队列');
+      expect(find.text('已加入播放队列'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, '播放队列');
       await tap(tester, '上移一位');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       expect(fixture.controller.queue, [secondTrack.id, firstTrack.id]);
       await tap(tester, '清空');
       await tap(tester, '取消');
@@ -881,7 +903,16 @@ void main() {
       await mount(tester);
       await tap(tester, '打开设置');
       await tap(tester, 'settings-account');
-      await tap(tester, '登录');
+      final timeline = find.byKey(const ValueKey('login-timeline'));
+      expect(timeline, findsOneWidget);
+      for (final label in ['打开 B 站', '确认登录', '返回 tingyu']) {
+        expect(
+          find.descendant(of: timeline, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
+      expect(find.text('1 打开 B 站'), findsNothing);
+      await tap(tester, 'account-login');
       fixture.api.qrCode = 86038;
       await tester.pump(const Duration(seconds: 2));
       await settle(tester);
@@ -916,7 +947,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tap(tester, '登录');
+      await tap(tester, 'account-login');
       await tester.pump(const Duration(seconds: 2));
       await settle(tester);
       await tap(tester, '退出账号');
@@ -1022,6 +1053,9 @@ void main() {
       await tap(tester, 'settings-quality');
       await tap(tester, 'quality-true');
       expect(fixture.controller.standard, isTrue);
+      expect(find.byKey(const ValueKey('quality-true')), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
       await tap(tester, 'settings-storage');
       expect(find.byType(StoragePanel), findsOneWidget);
       await tap(tester, '返回设置');
@@ -1203,7 +1237,7 @@ void main() {
   );
 
   testWidgets(
-    'download icons expose waiting progress completion pause and failure without visible text',
+    'song menu download states share icon placement and remain mutually exclusive',
     (tester) async {
       await fixture.controller.play(firstTrack);
       await mount(tester);
@@ -1231,8 +1265,9 @@ void main() {
         expect(button.hitTestable(), findsOneWidget);
         expect(
           find.descendant(of: button, matching: find.byType(Text)),
-          findsNothing,
+          findsOneWidget,
         );
+        expect(find.byKey(const ValueKey('menu-downloaded')), findsNothing);
         final control = tester.widget<Pressable>(button);
         if (status == DownloadStatus.downloading) {
           expect(control.label, contains('25%'));
@@ -1249,10 +1284,10 @@ void main() {
           expect(control.label, contains('已下载'));
         }
         if (status == DownloadStatus.failed) {
-          expect(control.label, contains('点击重试'));
+          expect(control.label, contains('重试下载'));
         }
         if (status == DownloadStatus.paused) {
-          expect(control.label, contains('点击继续'));
+          expect(control.label, contains('继续下载'));
         }
       }
       task.status = DownloadStatus.completed;

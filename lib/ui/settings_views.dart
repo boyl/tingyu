@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.22';
+const tingyuVersion = '0.1.23';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -206,7 +206,6 @@ class SettingsPanel extends StatelessWidget {
                     selected: p.standard == item.$1,
                     onPressed: () => report(ctx, () async {
                       await p.setStandard(item.$1);
-                      if (ctx.mounted) Navigator.pop(ctx);
                     }),
                     child: Row(
                       children: [
@@ -218,6 +217,7 @@ class SettingsPanel extends StatelessWidget {
                   ),
               ],
             ),
+            listenable: p,
           ),
         ),
         Divider(height: 1, color: t.line),

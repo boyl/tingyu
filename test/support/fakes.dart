@@ -58,8 +58,8 @@ class FixtureApi extends BilibiliClient {
   }
 
   @override
-  Future<int> pollQr(String key) async {
-    if (qrCode == 0) loggedIn = true;
+  Future<int> pollQr(String key, {bool Function()? isCurrent}) async {
+    if (qrCode == 0 && (isCurrent?.call() ?? true)) loggedIn = true;
     return qrCode;
   }
 

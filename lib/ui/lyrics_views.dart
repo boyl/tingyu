@@ -94,6 +94,42 @@ class LyricsScreen extends ConsumerWidget {
   }
 }
 
+double measuredLyricHeight(
+  BuildContext context,
+  LyricLine line,
+  TextStyle style,
+  double width,
+) {
+  final resolved = DefaultTextStyle.of(context).style.merge(style);
+  Size measure(String text) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: resolved),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: math.max(1, width));
+    final size = painter.size;
+    painter.dispose();
+    return size;
+  }
+
+  var height = measure(line.text).height;
+  if (line.words.isNotEmpty) {
+    var rowWidth = 0.0, rowHeight = 0.0, total = 0.0;
+    for (final word in line.words.where((w) => w.text.isNotEmpty)) {
+      final size = measure(word.text);
+      if (rowWidth > 0 && rowWidth + size.width > width + .01) {
+        total += rowHeight;
+        rowWidth = 0;
+        rowHeight = 0;
+      }
+      rowWidth += size.width;
+      rowHeight = math.max(rowHeight, size.height);
+    }
+    height = math.max(height, total + rowHeight);
+  }
+  return height;
+}
+
 /// Active line can reveal one word at a time. Plain lines stay a single
 /// [Text] so existing player tests can read `Text.data`.
 class LyricWordLine extends StatelessWidget {

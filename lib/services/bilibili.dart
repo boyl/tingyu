@@ -382,7 +382,7 @@ class BilibiliClient {
     return (url: d['url'] as String, key: d['qrcode_key'] as String);
   }
 
-  Future<int> pollQr(String key) async {
+  Future<int> pollQr(String key, {bool Function()? isCurrent}) async {
     final r = await http.get(
       'https://passport.bilibili.com/x/passport-login/web/qrcode/poll',
       queryParameters: {'qrcode_key': key},
@@ -390,7 +390,7 @@ class BilibiliClient {
     );
     if (r.data['code'] != 0) throw const AppFailure('扫码状态查询失败，请刷新二维码');
     final data = r.data['data'] as Map, code = data['code'] as int;
-    if (code == 0) {
+    if (code == 0 && (isCurrent?.call() ?? true)) {
       final cookies = r.headers['set-cookie'] ?? [];
       final value = cookies
           .map((v) => v.split(';').first)

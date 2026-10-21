@@ -784,23 +784,51 @@ class LibraryController extends ChangeNotifier {
     final t = await remember(input);
     if (next && current?.id == t.id) return;
     if (!next && queue.contains(t.id)) return;
-    queue.remove(t.id);
-    final index = queue.indexOf(current?.id ?? '');
-    queue.insert(next ? max(0, index + 1) : queue.length, t.id);
-    _playOrder.sync(queue);
-    if (next) {
-      _nextPriority.remove(t.id);
-      _nextPriority.insert(0, t.id);
-    }
-    notifyListeners();
-    await save();
+    await _changeQueue(() {
+      queue.remove(t.id);
+      final index = queue.indexOf(current?.id ?? '');
+      queue.insert(next ? max(0, index + 1) : queue.length, t.id);
+      if (next) {
+        _nextPriority.remove(t.id);
+        _nextPriority.insert(0, t.id);
+      }
+    });
   }
 
-  Future<void> toggleLike(Track input) async {
-    final t = await remember(input);
-    likes.contains(t.id) ? likes.remove(t.id) : likes.add(t.id);
-    notifyListeners();
-    await save();
+  final Map<String, int> _likeRevisions = {};
+  final Set<String> _likeBusy = {};
+  int likeRevision(String id) => _likeRevisions[id] ?? 0;
+
+  Future<void> toggleLike(Track input) =>
+      setLiked(input, !likes.contains(input.id));
+
+  Future<void> setLiked(Track input, bool liked, {int? restoreIndex}) async {
+    if (!_likeBusy.add(input.id)) return;
+    final before = likes.indexOf(input.id);
+    try {
+      final t = await remember(input);
+      if (likes.contains(t.id) == liked) return;
+      likes.remove(t.id);
+      if (liked) {
+        likes.insert(
+          (restoreIndex ?? likes.length).clamp(0, likes.length),
+          t.id,
+        );
+      }
+      _likeRevisions[t.id] = likeRevision(t.id) + 1;
+      notifyListeners();
+      try {
+        await save();
+      } catch (_) {
+        likes.remove(t.id);
+        if (before >= 0) likes.insert(before.clamp(0, likes.length), t.id);
+        _likeRevisions[t.id] = likeRevision(t.id) + 1;
+        if (!_disposed) notifyListeners();
+        rethrow;
+      }
+    } finally {
+      _likeBusy.remove(input.id);
+    }
   }
 
   Future<void> addPlaylist(String name, {Track? track}) async {
@@ -809,30 +837,25 @@ class LibraryController extends ChangeNotifier {
       throw const AppFailure('歌单名称需要 1–30 个字');
     }
     final stored = track == null ? null : await remember(track);
-    playlists.add(
-      Playlist(
-        DateTime.now().microsecondsSinceEpoch.toString(),
-        trimmed,
-        stored == null ? [] : [stored.id],
-      ),
+    final created = Playlist(
+      DateTime.now().microsecondsSinceEpoch.toString(),
+      trimmed,
+      stored == null ? [] : [stored.id],
     );
+    playlists.add(created);
     notifyListeners();
-    await save();
+    try {
+      await save();
+    } catch (_) {
+      playlists.remove(created);
+      if (!_disposed) notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> addToPlaylist(Playlist l, Track t) async {
     final stored = await remember(t);
-    final index = playlists.indexWhere((p) => p.id == l.id);
-    if (index < 0) throw const AppFailure('歌单已删除，请重新选择歌单');
-    final latest = playlists[index];
-    playlists[index] = Playlist(
-      latest.id,
-      latest.name,
-      {...latest.trackIds, stored.id}.toList(),
-      description: latest.description,
-    );
-    notifyListeners();
-    await save();
+    await addLibraryTracks(l.id, [stored.id]);
   }
 
   Future<void> addLibraryTracks(String playlistId, Iterable<String> ids) async {
@@ -864,6 +887,33 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> restorePlaylistTrack(
+    String playlistId,
+    String trackId,
+    int position,
+  ) async {
+    final i = playlists.indexWhere((x) => x.id == playlistId);
+    if (i < 0) throw const AppFailure('歌单已删除，无法撤销');
+    final before = playlists[i];
+    if (before.trackIds.contains(trackId)) return;
+    final ids = before.trackIds.toList()
+      ..insert(position.clamp(0, before.trackIds.length), trackId);
+    playlists[i] = Playlist(
+      before.id,
+      before.name,
+      ids,
+      description: before.description,
+    );
+    notifyListeners();
+    try {
+      await save();
+    } catch (_) {
+      playlists[i] = before;
+      if (!_disposed) notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> editPlaylist(
     Playlist l, {
     String? name,
@@ -891,8 +941,20 @@ class LibraryController extends ChangeNotifier {
         description: (description ?? latest.description).trim(),
       );
     }
-    notifyListeners();
-    await save();
+    final updated = delete ? null : playlists[i];
+    try {
+      await save();
+    } on Exception {
+      final at = playlists.indexWhere((x) => x.id == latest.id);
+      if (delete && at < 0) {
+        playlists.insert(i.clamp(0, playlists.length), latest);
+      } else if (!delete && at >= 0 && identical(playlists[at], updated)) {
+        playlists[at] = latest;
+      }
+      if (!_disposed) notifyListeners();
+      rethrow;
+    }
+    if (!_disposed) notifyListeners();
   }
 
   List<String> collectionIds(String key, Iterable<String> source) {
@@ -935,8 +997,16 @@ class LibraryController extends ChangeNotifier {
       latest.trackIds.where((id) => !ids.contains(id)).toList(),
       description: latest.description,
     );
-    notifyListeners();
-    await save();
+    final updated = playlists[i];
+    try {
+      await save();
+    } on Exception {
+      final at = playlists.indexWhere((x) => x.id == latest.id);
+      if (at >= 0 && identical(playlists[at], updated)) playlists[at] = latest;
+      if (!_disposed) notifyListeners();
+      rethrow;
+    }
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> reorderQueue(String id, String? beforeId) async {
@@ -945,21 +1015,98 @@ class LibraryController extends ChangeNotifier {
         (beforeId != null && !queue.contains(beforeId))) {
       return;
     }
-    queue.remove(id);
-    queue.insert(beforeId == null ? queue.length : queue.indexOf(beforeId), id);
-    _playOrder.sync(queue);
-    notifyListeners();
-    await save();
+    await _changeQueue(() {
+      queue.remove(id);
+      queue.insert(
+        beforeId == null ? queue.length : queue.indexOf(beforeId),
+        id,
+      );
+    });
   }
 
   Future<void> moveQueue(int i, int delta) async {
     final j = i + delta;
     if (i < 0 || i >= queue.length || j < 0 || j >= queue.length) return;
-    final t = queue.removeAt(i);
-    queue.insert(j, t);
+    await _changeQueue(() {
+      final t = queue.removeAt(i);
+      queue.insert(j, t);
+    });
+  }
+
+  Future<void> _changeQueue(VoidCallback change) async {
+    final before = queue.toList(), priority = _nextPriority.toList();
+    final order = _playOrder.toJson(), currentId = current?.id;
+    change();
     _playOrder.sync(queue);
+    final after = queue.toList(), afterPriority = _nextPriority.toList();
     notifyListeners();
-    await save();
+    try {
+      await save();
+    } catch (_) {
+      if (listEquals(queue, after) &&
+          listEquals(_nextPriority, afterPriority) &&
+          current?.id == currentId) {
+        queue
+          ..clear()
+          ..addAll(before);
+        _nextPriority
+          ..clear()
+          ..addAll(priority);
+        _playOrder.restore(order, queue, currentId);
+        if (!_disposed) notifyListeners();
+      }
+      rethrow;
+    }
+  }
+
+  Future<Future<void> Function()> removeQueueUndoable(String id) async {
+    final before = queue.toList(), priority = _nextPriority.toList();
+    final order = _playOrder.toJson();
+    try {
+      await removeQueue(id);
+    } catch (_) {
+      queue
+        ..clear()
+        ..addAll(before);
+      _nextPriority
+        ..clear()
+        ..addAll(priority);
+      _playOrder.restore(order, queue, current?.id);
+      if (!_disposed) notifyListeners();
+      rethrow;
+    }
+    final after = queue.toList(), afterCurrent = current?.id;
+    final afterPriority = _nextPriority.toList(),
+        afterOrder = _playOrder.toJson();
+    var used = false;
+    return () async {
+      if (used) return;
+      if (!listEquals(queue, after) || current?.id != afterCurrent) {
+        throw const AppFailure('队列已变化，无法撤销这次移除');
+      }
+      queue
+        ..clear()
+        ..addAll(before);
+      _nextPriority
+        ..clear()
+        ..addAll(priority);
+      _playOrder.restore(order, queue, current?.id);
+      notifyListeners();
+      try {
+        await save();
+        used = true;
+      } catch (_) {
+        queue
+          ..clear()
+          ..addAll(after);
+        _nextPriority
+          ..clear()
+          ..addAll(afterPriority);
+        _playOrder.restore(afterOrder, queue, current?.id);
+        if (!_disposed) notifyListeners();
+        rethrow;
+      }
+    };
   }
 
   Future<void> removeQueue(String id) async {
@@ -1009,7 +1156,7 @@ class LibraryController extends ChangeNotifier {
     await playFromCollection(track, tracks.map((item) => item.id).toList());
   }
 
-  Future<void> download(Track t) async {
+  Future<void> download(Track t, {bool propagateFailure = false}) async {
     try {
       final track = await canonical(t);
       final existing = downloads.tasks
@@ -1025,6 +1172,7 @@ class LibraryController extends ChangeNotifier {
     } on Exception catch (e) {
       error = e is AppFailure ? e.message : '无法添加下载任务，请重试';
       notifyListeners();
+      if (propagateFailure) rethrow;
     }
   }
 

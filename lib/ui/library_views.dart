@@ -1,8 +1,33 @@
 part of 'app.dart';
 
-Future<void> showContentActions(BuildContext context, WidgetBuilder builder) {
+Future<void> showContentActions(
+  BuildContext context,
+  WidgetBuilder builder, {
+  Listenable? listenable,
+  bool Function()? isChild,
+  VoidCallback? onBack,
+}) {
+  Widget reactive(BuildContext ctx, WidgetBuilder build) {
+    Widget content(BuildContext context) => PopScope(
+      canPop: !(isChild?.call() ?? false),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) onBack?.call();
+      },
+      child: build(context),
+    );
+    return listenable == null
+        ? Builder(builder: content)
+        : ListenableBuilder(
+            listenable: listenable,
+            builder: (context, _) => content(context),
+          );
+  }
+
   if (MediaQuery.sizeOf(context).width >= 960) {
-    return showDialog<void>(context: context, builder: builder);
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => reactive(ctx, builder),
+    );
   }
   return showModalBottomSheet<void>(
     context: context,
@@ -13,51 +38,49 @@ Future<void> showContentActions(BuildContext context, WidgetBuilder builder) {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(ctx).height * .85,
       ),
-      child: Builder(
-        builder: (ctx) {
-          final content = builder(ctx);
-          if (content is! SimpleDialog) return content;
-          return SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: context.tokens.line,
-                          borderRadius: BorderRadius.circular(
-                            TingyuTokens.radius,
-                          ),
+      child: reactive(ctx, (ctx) {
+        final content = builder(ctx);
+        if (content is! SimpleDialog) return content;
+        return SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.tokens.line,
+                        borderRadius: BorderRadius.circular(
+                          TingyuTokens.radius,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    if (content.title != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 12, bottom: 16),
-                        child: DefaultTextStyle(
-                          style: Theme.of(ctx).textTheme.titleMedium!,
-                          child: content.title!,
-                        ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (content.title != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, bottom: 16),
+                      child: DefaultTextStyle(
+                        style: Theme.of(ctx).textTheme.titleMedium!,
+                        child: content.title!,
                       ),
-                    ...?content.children,
-                  ],
-                ),
+                    ),
+                  ...?content.children,
+                ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
     ),
   );
 }
@@ -275,7 +298,6 @@ Future<void> showCollectionSort(
           key: ValueKey('sort-${option.$1}'),
           onPressed: () async {
             await p.setCollectionSort(collectionKey, option.$1);
-            if (ctx.mounted) Navigator.pop(ctx);
           },
           child: Row(
             children: [
@@ -289,6 +311,7 @@ Future<void> showCollectionSort(
         ),
     ],
   ),
+  listenable: p,
 );
 
 class SelectionSurface extends StatelessWidget {
@@ -544,52 +567,20 @@ class SelectionBar extends ConsumerWidget {
             '批量加入歌单',
             ids.isEmpty
                 ? null
-                : () => showContentActions(
-                    context,
-                    (ctx) => SimpleDialog(
-                      title: const Text('添加至歌单'),
-                      children: [
-                        for (final target in p.playlists)
-                          labelButton(target.name, () async {
-                            for (final id in ids) {
-                              final track = p.library[id];
-                              if (track != null) {
-                                await p.addToPlaylist(target, track);
-                              }
-                            }
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            onDone();
-                          }),
-                        labelButton('新建歌单', () async {
-                          Navigator.pop(ctx);
-                          final name = await nameDialog(context);
-                          if (name == null) return;
-                          await p.addPlaylist(name);
-                          final target = p.playlists.last;
-                          for (final id in ids) {
-                            final track = p.library[id];
-                            if (track != null) {
-                              await p.addToPlaylist(target, track);
-                            }
-                          }
-                          onDone();
-                        }, icon: Icons.playlist_add),
-                      ],
-                    ),
-                  ),
+                : () => showBatchTransfer(context, p, ids.toList(), onDone),
           ),
           action(
             Icons.download_outlined,
             '批量下载',
             ids.isEmpty
                 ? null
-                : () async {
-                    for (final id in ids) {
-                      final track = p.library[id];
-                      if (track != null) await p.download(track);
-                    }
-                    onDone();
-                  },
+                : () => showBatchTransfer(
+                    context,
+                    p,
+                    ids.toList(),
+                    onDone,
+                    download: true,
+                  ),
           ),
           if (list != null)
             action(
@@ -602,12 +593,12 @@ class SelectionBar extends ConsumerWidget {
                       (ctx) => SimpleDialog(
                         children: [
                           labelButton('批量移出歌单', () async {
-                            Navigator.pop(ctx);
                             if (await confirm(
-                              context,
+                              ctx,
                               '从歌单移除所选 ${ids.length} 首歌？已下载文件会保留。',
                             )) {
                               await p.removeFromPlaylist(list!, ids.toSet());
+                              if (ctx.mounted) Navigator.pop(ctx);
                               onDone();
                             }
                           }, icon: Icons.remove_circle_outline),

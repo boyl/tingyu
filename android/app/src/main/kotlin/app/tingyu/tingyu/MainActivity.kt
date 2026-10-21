@@ -19,11 +19,45 @@ class MainActivity : AudioServiceActivity() {
     private var exportResult: MethodChannel.Result? = null
     private var exportSource: File? = null
     private var spectrum: SpectrumCapture? = null
+    private var tickPool: android.media.SoundPool? = null
+    private var tickId = 0
+    private var tickReady = false
     private val exportRequest = 7018
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         spectrum?.release()
         spectrum = SpectrumCapture(flutterEngine.dartExecutor.binaryMessenger)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/feedback").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "prepareWheelTick" -> {
+                    if (tickPool == null) {
+                        val pool = android.media.SoundPool.Builder().setMaxStreams(3)
+                            .setAudioAttributes(android.media.AudioAttributes.Builder()
+                                .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
+                        tickPool = pool
+                        pool.setOnLoadCompleteListener { _, _, status -> tickReady = status == 0 }
+                        try {
+                            val key = io.flutter.FlutterInjector.instance().flutterLoader().getLookupKeyForAsset("assets/audio/wheel-tick.wav")
+                            assets.openFd(key).use { tickId = pool.load(it, 1) }
+                        } catch (_: java.io.IOException) {
+                            pool.release(); tickPool = null
+                            result.error("AUDIO_ASSET", "刻度音加载失败", null)
+                            return@setMethodCallHandler
+                        }
+                    }
+                    result.success(null)
+                }
+                "playWheelTick" -> {
+                    val manager = getSystemService(android.media.AudioManager::class.java)
+                    if (tickReady && manager.ringerMode == android.media.AudioManager.RINGER_MODE_NORMAL) {
+                        tickPool?.play(tickId, .55f, .55f, 1, 0, 1f)
+                    }
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.tingyu/storage").setMethodCallHandler { call, result ->
             if (call.method != "installedBytes") { result.notImplemented(); return@setMethodCallHandler }
             Thread {
@@ -44,7 +78,14 @@ class MainActivity : AudioServiceActivity() {
             if (call.method !in listOf("openBilibiliApp", "openBilibiliVideo", "openBilibiliLogin")) { result.notImplemented(); return@setMethodCallHandler }
             val login = call.method == "openBilibiliLogin"
             val loginUrl = call.argument<String>("url")
-            if (login && (loginUrl == null || android.net.Uri.parse(loginUrl).let { it.scheme != "https" || it.host != "passport.bilibili.com" || !it.path.orEmpty().contains("login") })) {
+            val loginUri = loginUrl?.let { android.net.Uri.parse(it) }
+            val loginPaths = mapOf(
+                "account.bilibili.com" to setOf("/h5/account-h5/auth/scan-web"),
+                "passport.bilibili.com" to setOf("/h5-app/passport/login/scan", "/qrcode/h5/login")
+            )
+            if (login && (loginUri == null || loginUri.scheme != "https" ||
+                !loginUri.userInfo.isNullOrEmpty() || (loginUri.port != -1 && loginUri.port != 443) ||
+                loginPaths[loginUri.host]?.contains(loginUri.path) != true)) {
                 result.error("INVALID_LOGIN", "登录地址无效", null); return@setMethodCallHandler
             }
             val bvid = call.argument<String>("bvid")
@@ -150,6 +191,9 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onDestroy() {
+        tickPool?.release()
+        tickPool = null
+        tickReady = false
         spectrum?.release()
         spectrum = null
         super.onDestroy()

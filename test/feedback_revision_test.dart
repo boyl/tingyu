@@ -420,24 +420,21 @@ void main() {
     expect(all, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('timer finish control is compact and both labels centered', (
-    tester,
-  ) async {
+  testWidgets('timer A keeps finish toggle in the title row', (tester) async {
     await mountTimer(tester);
     expect(find.byType(Divider), findsNothing);
-    for (final finish in [false, true]) {
-      final button = find.byKey(ValueKey('timer-finish-$finish'));
-      expect(tester.getSize(button).height, 48);
-      final label = find.text(finish ? '播完本首' : '到时暂停');
-      expect(
-        tester.getCenter(label).dx,
-        closeTo(tester.getCenter(button).dx, .1),
-      );
-      expect(
-        tester.getCenter(label).dy,
-        closeTo(tester.getCenter(button).dy, .1),
-      );
-    }
+    final toggle = find.byKey(const ValueKey('timer-finish-toggle'));
+    expect(toggle, findsOneWidget);
+    expect(find.text('结束方式'), findsNothing);
+    expect(
+      tester.getCenter(find.text('播完暂停')).dy,
+      closeTo(tester.getCenter(find.text('定时关闭')).dy, 2),
+    );
+    final before = tester.widget<TingyuToggle>(toggle).value;
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(tester.widget<TingyuToggle>(toggle).value, !before);
+    expect(f.controller.sleepTimer.active, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets('normal phone record is enlarged and remains fully visible', (

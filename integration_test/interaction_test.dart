@@ -58,6 +58,25 @@ void main() {
         await tester.pump();
       }
 
+      // Capture actual composed Android pixels; ImageView screenshots can lag
+      // behind the widget state on this emulator. Only the isolated driver
+      // exposes this localhost bridge, without changing accessibility services.
+      Future<void> capture(String name) async {
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+        final client = HttpClient();
+        try {
+          final request = await client.postUrl(
+            Uri.parse('http://127.0.0.1:47935/capture/$name'),
+          );
+          final response = await request.close();
+          await response.drain<void>();
+          expect(response.statusCode, HttpStatus.ok);
+        } finally {
+          client.close(force: true);
+        }
+      }
+
       final directory = await Directory.systemTemp.createTemp('tingyu-flow-');
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final wav = tone();
@@ -101,15 +120,11 @@ void main() {
       final p = ProviderScope.containerOf(
         tester.element(find.byType(app.TingyuApp)),
       ).read(app.libraryProvider);
-      // This isolated AVD intentionally has no official Bilibili app installed.
-      expect(
-        await BilibiliLinkLauncher.channel.invokeMethod<bool>(
-          'openBilibiliApp',
-        ),
-        isFalse,
-      );
+      // The regression AVD may also host the official client for handoff QA.
+      // Keep absence/fallback deterministic without launching another app.
       Uri? externalFallback;
       await BilibiliLinkLauncher(
+        openApp: () async => false,
         openBrowser: (uri) async {
           externalFallback = uri;
           return true;
@@ -176,9 +191,8 @@ void main() {
 
       try {
         await tap('tab-search');
-        await binding.convertFlutterSurfaceToImage();
         await tester.pump();
-        await binding.takeScreenshot('search-external-entry');
+        await capture('search-external-entry');
         await tester.enterText(find.byType(TextField), '音乐');
         await waitFor(() => p.results.length == 2);
         reject = false;
@@ -187,8 +201,10 @@ void main() {
         expect(p.playback.player.volume, 1);
         final libraryOrder = p.library.keys.toList();
         await tap('更多 ${firstTrack.title}');
-        await binding.takeScreenshot('track-actions-icons');
+        await capture('track-actions-icons');
         await tap('喜欢');
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('更多 ${firstTrack.title}');
         await tap('加入歌单');
         await tap('新建歌单');
@@ -196,31 +212,42 @@ void main() {
         await tap('保存');
         await waitFor(() => p.playlists.length == 1);
         expect(p.playlists.single.trackIds, [firstTrack.id]);
+        await tap('完成');
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('更多 ${secondTrack.title}');
         await tap('加入播放队列');
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('播放队列');
         await tap('上移一位');
         expect(p.queue, [secondTrack.id, firstTrack.id]);
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('关闭队列');
         await tap('tab-library');
         await tap('原生验收歌单');
         expect(find.byType(PlaylistSummary), findsOneWidget);
         await tester.pump();
-        await binding.takeScreenshot('collection-detail');
+        await capture('collection-detail');
         await tap('歌曲排序');
-        await binding.takeScreenshot('collection-sort');
+        await capture('collection-sort');
         await tap('sort-recent');
         expect(p.collectionSort[p.playlists.single.id], 'recent');
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('批量选择');
         await tap('select-${firstTrack.id}');
-        await binding.takeScreenshot('collection-selection');
+        await capture('collection-selection');
         await tap('批量更多');
         await tap('批量移出歌单');
         await tap('取消');
         expect(p.playlists.single.trackIds, [firstTrack.id]);
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('退出多选');
         await tap('歌单更多');
-        await binding.takeScreenshot('collection-more');
+        await capture('collection-more');
         await tap('编辑歌单');
         await tester.enterText(
           find.byKey(const ValueKey('playlist-description')),
@@ -228,19 +255,21 @@ void main() {
         );
         await tester.testTextInput.receiveAction(TextInputAction.done);
         await settleAnimations();
-        await binding.takeScreenshot('playlist-edit-description');
+        await capture('playlist-edit-description');
         await tap('保存');
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         expect(p.playlists.single.description, '夜晚听的歌');
         await tap('歌单更多');
         await tap('添加歌曲');
         expect(find.byType(PlaylistAddScreen), findsOneWidget);
         expect(find.byType(CompactNavigation), findsNothing);
-        await binding.takeScreenshot('playlist-add-songs');
+        await capture('playlist-add-songs');
         await tap('select-add-${secondTrack.id}');
         await tap('在线搜索');
         expect(find.byKey(const ValueKey('返回选歌')), findsOneWidget);
         expect(find.byType(CompactNavigation), findsNothing);
-        await binding.takeScreenshot('playlist-add-online');
+        await capture('playlist-add-online');
         await tap('返回选歌');
         expect(find.text('添加 1 首'), findsOneWidget);
         await tap('commit-add-tracks');
@@ -248,29 +277,31 @@ void main() {
         await p.editPlaylist(p.playlists.single, remove: secondTrack.id);
         await tap('返回音乐库');
         await tap('打开设置');
-        await binding.takeScreenshot('settings-page');
+        await capture('settings-page');
         expect(find.byType(CompactNavigation), findsNothing);
         expect(find.byType(MiniPlayer), findsNothing);
         expect(p.playing, isTrue);
         await tap('theme-night');
-        await binding.takeScreenshot('settings-page-dark');
+        await capture('settings-page-dark');
         await tap('theme-moon');
-        await binding.takeScreenshot('settings-page-pink');
+        await capture('settings-page-pink');
         await tap('theme-bili');
-        await binding.takeScreenshot('settings-page-bilibili');
+        await capture('settings-page-bilibili');
         await tap('theme-sunrise');
         await tap('settings-quality');
         await tap('quality-true');
         expect(p.standard, isTrue);
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         await tap('settings-storage');
         await waitFor(() => find.text('应用安装').evaluate().isNotEmpty);
-        await binding.takeScreenshot('storage-space-019');
+        await capture('storage-space-019');
         await tap('返回设置');
         await tap('settings-glass');
         await tap('segment-手动');
         final navSlider = find.byKey(const ValueKey('glass-slider-nav'));
         await settleAnimations();
-        await binding.takeScreenshot('glass-manual-019');
+        await capture('glass-manual-019');
         await tester.ensureVisible(navSlider);
         await settleAnimations();
         final sliderRect = tester.getRect(navSlider);
@@ -278,12 +309,12 @@ void main() {
         await drag.moveBy(const Offset(30, 0));
         await tester.pump();
         expect(tester.getRect(navSlider), sliderRect);
-        await binding.takeScreenshot('glass-preview-019');
+        await capture('glass-preview-019');
         await drag.up();
         await settleAnimations();
         await tap('返回设置');
         await tap('settings-about');
-        await binding.takeScreenshot('about-019');
+        await capture('about-019');
         expect(
           find.descendant(
             of: find.byType(BottomSheet),
@@ -321,13 +352,13 @@ void main() {
         await tap('player-speed');
         await tap('speed-1.25');
         expect(p.playback.player.speed, 1.25);
-        await binding.takeScreenshot('playback-speed-panel');
+        await capture('playback-speed-panel');
         await tap('恢复正常倍速');
         await tap('收起设置');
         await tap('player-sleep-timer');
         await tap('timer-30');
         expect(p.sleepTimer.active, false);
-        await binding.takeScreenshot('sleep-timer-panel');
+        await capture('sleep-timer-panel');
         await tap('timer-off');
         Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
         await settleAnimations();
@@ -342,14 +373,14 @@ void main() {
         expect(p.position, greaterThanOrEqualTo(beforeLyrics));
         await tap('player-lyrics-toggle');
         await tap('展开歌词 ›');
-        await binding.takeScreenshot('independent-lyrics-page');
+        await capture('independent-lyrics-page');
         await tap('歌曲操作');
         await tap('显示与排版');
-        await binding.takeScreenshot('lyrics-display-019');
+        await capture('lyrics-display-019');
         await tap('返回');
         await tap('歌曲操作');
         await tap('编辑歌词');
-        await binding.takeScreenshot('lyrics-editor-019');
+        await capture('lyrics-editor-019');
         await tester.enterText(
           find.byType(TextField).last,
           '[00:00.00]原生验收歌词\n[00:04.00]同步显示',
@@ -378,7 +409,7 @@ void main() {
           screenshotClient.close(force: true);
         }
         await tester.pump(const Duration(seconds: 3));
-        await binding.takeScreenshot('audit-native-player');
+        await capture('audit-native-player');
         expect(p.playing, isTrue, reason: '系统截图后应继续播放');
         expect(p.position, greaterThan(beforeScreenshot));
         expect(p.playback.player.volume, beforeGain, reason: '截图不得改变播放器增益');
@@ -403,7 +434,7 @@ void main() {
               .selected,
           isTrue,
         );
-        await binding.takeScreenshot('downloads-tasks-tab');
+        await capture('downloads-tasks-tab');
         reject = false;
         await tap('重试下载');
         await waitFor(
@@ -420,10 +451,10 @@ void main() {
         );
         expect(find.text('没有下载任务'), findsOneWidget);
         await tap('downloads-tab-completed');
-        await binding.takeScreenshot('audit-native-download-complete');
+        await capture('audit-native-download-complete');
         await tap('展开播放器');
         expect(find.byType(TrackDownloadAction), findsNothing);
-        await binding.takeScreenshot('minimal-player-downloaded');
+        await capture('minimal-player-downloaded');
         await tap('歌曲操作');
         final downloadedButton = find.byKey(const ValueKey('menu-downloaded'));
         expect(downloadedButton, findsOneWidget);
@@ -445,7 +476,7 @@ void main() {
           tester.element(downloadedButton).tokens.text,
         );
         expect(find.text('已下载'), findsWidgets);
-        await binding.takeScreenshot('player-download-menu');
+        await capture('player-download-menu');
         expect(find.byType(PlayerScreen), findsOneWidget);
         Navigator.of(tester.element(downloadedButton)).pop();
         await settleAnimations();
@@ -498,7 +529,7 @@ void main() {
         await waitFor(() => p.downloads.tasks.isEmpty);
         expect(p.playlists.single.trackIds, [firstTrack.id]);
         expect(p.likes, contains(firstTrack.id));
-        await binding.takeScreenshot('audit-native-download-removed');
+        await capture('audit-native-download-removed');
         await tap('tab-library');
         await tap('展开播放器');
         expect(find.byType(PlayerScreen), findsOneWidget);
@@ -558,7 +589,7 @@ void main() {
         expect(p.current!.id, isNot(last));
         await tap('下一首');
         expect(p.current!.id, last);
-        await binding.takeScreenshot('shuffle-51-track-player');
+        await capture('shuffle-51-track-player');
         await tap('播放队列');
         expect(find.text('播放队列 · 51 首'), findsOneWidget);
         final currentRow = find.byKey(ValueKey('queue-track-${p.current!.id}'));
@@ -576,9 +607,9 @@ void main() {
           ],
           'dpr': tester.view.devicePixelRatio,
         };
-        await binding.takeScreenshot('shuffle-51-track-queue');
+        await capture('shuffle-51-track-queue');
         await tester.pump(const Duration(milliseconds: 200));
-        await binding.takeScreenshot('queue-playing-indicator-next-frame');
+        await capture('queue-playing-indicator-next-frame');
         await p.toggle();
         await tester.pump(const Duration(milliseconds: 200));
         expect(
@@ -588,9 +619,9 @@ void main() {
           isFalse,
         );
         expect(tester.getRect(find.byType(PlayingIndicator)), indicatorRect);
-        await binding.takeScreenshot('queue-paused-indicator');
+        await capture('queue-paused-indicator');
         await tester.pump(const Duration(milliseconds: 200));
-        await binding.takeScreenshot('queue-paused-indicator-next-frame');
+        await capture('queue-paused-indicator-next-frame');
         await p.toggle();
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(PlayingIndicator), findsOneWidget);
@@ -604,9 +635,9 @@ void main() {
           isFalse,
         );
         expect(tester.getRect(find.byType(PlayingIndicator)), indicatorRect);
-        await binding.takeScreenshot('queue-stopped-indicator');
+        await capture('queue-stopped-indicator');
         await tester.pump(const Duration(milliseconds: 200));
-        await binding.takeScreenshot('queue-stopped-indicator-next-frame');
+        await capture('queue-stopped-indicator-next-frame');
         await p.play(stoppedTrack);
         await waitFor(() => p.playing && !p.opening);
         final queueScroll = tester.state<ScrollableState>(
@@ -628,7 +659,7 @@ void main() {
           isFalse,
           reason: '列表末尾操作不能被回顶按钮遮挡',
         );
-        await binding.takeScreenshot('queue-return-to-top');
+        await capture('queue-return-to-top');
         await tap('scroll-to-top');
         expect(queueScroll.position.pixels, 0);
         expect(find.byKey(const ValueKey('scroll-to-top')), findsNothing);
@@ -665,7 +696,7 @@ void main() {
           findsOneWidget,
         );
         expect(find.byKey(ValueKey('play-${firstTrack.id}')), findsNothing);
-        await binding.takeScreenshot('local-library-search');
+        await capture('local-library-search');
         await tap('清除本地搜索');
         await tap('搜索本地歌曲');
         final scroll = find.byType(Scrollable).first;
@@ -677,13 +708,13 @@ void main() {
         for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
           await p.setTheme(theme);
           await settleAnimations();
-          await binding.takeScreenshot('depth-library-$theme');
+          await capture('depth-library-$theme');
           await tap('tab-search');
-          await binding.takeScreenshot('depth-search-$theme');
+          await capture('depth-search-$theme');
           await tap('tab-downloads');
-          await binding.takeScreenshot('depth-downloads-$theme');
+          await capture('depth-downloads-$theme');
           await tap('downloads-tab-tasks');
-          await binding.takeScreenshot('depth-download-tasks-$theme');
+          await capture('depth-download-tasks-$theme');
           await tap('downloads-tab-completed');
           await tap('tab-library');
         }
@@ -711,11 +742,11 @@ void main() {
           await tap('tab-library');
         }
         expect(coverRequests, 1, reason: '歌曲行、下载、切页与不同尺寸必须复用同一 URL 封面');
-        await binding.takeScreenshot('cover-cache-tab-revisit');
+        await capture('cover-cache-tab-revisit');
         await p.setTheme('bili');
         await tap('批量选择');
         await tap('全选');
-        await binding.takeScreenshot('library-all-selected-clean');
+        await capture('library-all-selected-clean');
         await tap('退出多选');
         await p.play(covered);
         await waitFor(() => p.playing && !p.opening);
@@ -725,7 +756,7 @@ void main() {
         await p.playback.pause();
         await tap('展开播放器');
         await settleAnimations();
-        await binding.takeScreenshot('full-cover-player-22');
+        await capture('full-cover-player-22');
         await p.playback.seek(const Duration(seconds: 22));
         await waitFor(
           () =>
@@ -746,7 +777,7 @@ void main() {
           reason:
               'last=$lastLyric content=$contentRect panel=${tester.getRect(find.byType(LyricPanel))} disc=${tester.getRect(find.byType(RecordDisc).last)} source=${p.lyricSource} parts=${p.parts.length}',
         );
-        await binding.takeScreenshot('player-last-lyric-complete');
+        await capture('player-last-lyric-complete');
 
         double marqueeOffset() => tester
             .widget<Transform>(
@@ -755,10 +786,10 @@ void main() {
             .transform
             .storage[12];
         final firstOffset = marqueeOffset();
-        await binding.takeScreenshot('header-marquee-first');
+        await capture('header-marquee-first');
         await tester.pump(const Duration(seconds: 1));
         expect(marqueeOffset(), isNot(firstOffset));
-        await binding.takeScreenshot('header-marquee-later');
+        await capture('header-marquee-later');
         await tap('歌曲操作');
         await tap('播放音量');
         tester
@@ -785,7 +816,7 @@ void main() {
         expect(p.playback.player.volume, .4);
         await p.playback.pause();
         await tester.pump();
-        await binding.takeScreenshot('player-volume-40');
+        await capture('player-volume-40');
         await tap('恢复正常音量');
         await waitFor(
           () =>
@@ -794,10 +825,12 @@ void main() {
         );
         Navigator.of(tester.element(find.byType(PlayerVolumePanel))).pop();
         await settleAnimations();
+        await tester.binding.handlePopRoute();
+        await settleAnimations();
         p.setSleepTimer(null);
         await tap('player-sleep-timer');
         expect(find.text('定时已关闭'), findsOneWidget);
-        await binding.takeScreenshot('sleep-timer-off-compact');
+        await capture('sleep-timer-off-compact');
         await tap('timer-custom');
         FixedExtentScrollController timerWheel(String key) =>
             tester
@@ -808,14 +841,14 @@ void main() {
         await settleAnimations();
         expect(find.text('40 分钟后'), findsOneWidget);
         expect(p.sleepTimer.active, isFalse);
-        await binding.takeScreenshot('sleep-timer-custom-40');
+        await capture('sleep-timer-custom-40');
         timerWheel('timer-hours').jumpToItem(1);
         await settleAnimations();
         timerWheel('timer-minutes').jumpToItem(20);
         await settleAnimations();
         expect(find.text('80 分钟后'), findsOneWidget);
         expect(find.text('1 小时 20 分钟'), findsOneWidget);
-        await binding.takeScreenshot('sleep-timer-custom-80');
+        await capture('sleep-timer-custom-80');
         await tester.drag(
           find.byKey(const ValueKey('timer-minutes')),
           const Offset(0, -48),
@@ -826,12 +859,12 @@ void main() {
         expect(p.sleepTimer.active, isFalse);
         await tap('timer-custom');
         await tap('timer-30');
-        await binding.takeScreenshot('sleep-timer-pink-22');
+        await capture('sleep-timer-pink-22');
         Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
         await settleAnimations();
         await tap('player-sleep-timer');
         expect(find.text('剩余时间'), findsOneWidget);
-        await binding.takeScreenshot('sleep-timer-running-compact');
+        await capture('sleep-timer-running-compact');
         Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
         await settleAnimations();
       } finally {

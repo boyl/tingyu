@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/music.dart';
 
@@ -44,13 +45,35 @@ class BilibiliLinkLauncher {
 
   Future<bool> openLogin(Uri uri) async {
     if (uri.scheme != 'https' ||
-        uri.host != 'passport.bilibili.com' ||
-        !uri.path.contains('login')) {
+        uri.userInfo.isNotEmpty ||
+        uri.port != 443 ||
+        !(const {
+              'account.bilibili.com': {'/h5/account-h5/auth/scan-web'},
+              'passport.bilibili.com': {
+                '/h5-app/passport/login/scan',
+                '/qrcode/h5/login',
+              },
+            }[uri.host]?.contains(uri.path) ??
+            false)) {
       return false;
     }
-    // Match BBPlayer's QR handoff: open the exact session URL in the system
-    // browser. A client-specific browser deep link can launch without ever
-    // presenting the official confirmation page.
+    // The official scan page requires the client's native bridge and invokes
+    // this same browser deep link when opened outside BiliApp. Do not rely on
+    // the external browser to allow its automatic app redirect.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        if (await channel.invokeMethod<bool>('openBilibiliLogin', {
+              'url': uri.toString(),
+            }) ??
+            false) {
+          return true;
+        }
+      } on PlatformException {
+        // The caller keeps the QR session; browser is only a fallback.
+      } on MissingPluginException {
+        // Desktop/test embedders can still open the canonical session URL.
+      }
+    }
     try {
       return await _openBrowser(uri);
     } on PlatformException {

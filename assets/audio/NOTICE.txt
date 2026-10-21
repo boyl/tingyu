@@ -1,0 +1,5 @@
+wheel-tick.wav is derived from Effect_Tick.wav in the Android Open Source Project.
+Copyright The Android Open Source Project.
+Licensed under the Apache License, Version 2.0; see LICENSE.txt.
+Source: https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/data/sounds/effects/wav/Effect_Tick.wav
+Modified by the tingyu project, 2026-10-21: high-pass filtering and shortened transient envelope.

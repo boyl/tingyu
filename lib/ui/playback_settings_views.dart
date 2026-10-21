@@ -73,6 +73,8 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
   late final FixedExtentScrollController minutesWheel =
       FixedExtentScrollController(initialItem: minutes % 60);
   bool movingWheels = false;
+  bool userWheel = false;
+  int? lastDetent;
   bool customDuration = false;
   late bool customSelection =
       draft.minutes != null && ![15, 30, 45, 60].contains(minutes);
@@ -96,6 +98,11 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
   }
 
   void start(int value, {bool fromWheel = false, bool syncWheels = true}) {
+    if (fromWheel && userWheel && !movingWheels && lastDetent != value) {
+      unawaited(WheelTick.play());
+    }
+    lastDetent = value;
+    if (!fromWheel) userWheel = false;
     draft.minutes = value;
     draft.changed = true;
     customSelection = fromWheel;
@@ -167,6 +174,18 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                       ),
                     ),
                   ),
+                  if (widget.timer) ...[
+                    const Text('播完暂停', style: TextStyle(fontSize: 13)),
+                    TingyuToggle(
+                      key: const ValueKey('timer-finish-toggle'),
+                      label: '播完暂停',
+                      value: finish,
+                      onChanged: (value) => setState(() {
+                        draft.finish = value;
+                        if (draft.minutes != null) draft.changed = true;
+                      }),
+                    ),
+                  ],
                   if (!widget.timer)
                     action(
                       Icons.keyboard_arrow_down,
@@ -410,8 +429,11 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                   key: const ValueKey('timer-custom'),
                   label: '自定义时长',
                   selectionFill: false,
-                  onPressed: () =>
-                      setState(() => customDuration = !customDuration),
+                  onPressed: () => setState(() {
+                    userWheel = false;
+                    customDuration = !customDuration;
+                    if (customDuration) unawaited(WheelTick.prepare());
+                  }),
                   child: Row(
                     children: [
                       const Expanded(child: Text('自定义时长')),
@@ -421,125 +443,94 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                     ],
                   ),
                 ),
-                if (customDuration)
-                  SizedBox(
-                    height: TingyuTokens.space * 18,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ListWheelScrollView.useDelegate(
-                            key: const ValueKey('timer-hours'),
-                            controller: hoursWheel,
-                            itemExtent: 48,
-                            diameterRatio: 1.4,
-                            overAndUnderCenterOpacity: .25,
-                            physics: const FixedExtentScrollPhysics(),
-                            onSelectedItemChanged: (h) {
-                              if (movingWheels) return;
-                              final total = h * 60 + minutes % 60;
-                              start(
-                                total.clamp(1, 180),
-                                fromWheel: true,
-                                syncWheels: total < 1 || total > 180,
-                              );
+                AnimatedSize(
+                  alignment: Alignment.topCenter,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : TingyuTokens.transition,
+                  child: !customDuration
+                      ? const SizedBox.shrink()
+                      : Listener(
+                          onPointerDown: (_) => userWheel = true,
+                          onPointerSignal: (_) => userWheel = true,
+                          child: Focus(
+                            onKeyEvent: (_, _) {
+                              userWheel = true;
+                              return KeyEventResult.ignored;
                             },
-                            childDelegate: ListWheelChildListDelegate(
-                              children: [
-                                for (var h = 0; h <= 3; h++)
-                                  Center(
-                                    child: Text(
-                                      '$h 小时',
-                                      style: const TextStyle(fontSize: 23),
+                            child: SizedBox(
+                              height: TingyuTokens.space * 18,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: ListWheelScrollView.useDelegate(
+                                      key: const ValueKey('timer-hours'),
+                                      controller: hoursWheel,
+                                      itemExtent: 48,
+                                      diameterRatio: 1.4,
+                                      overAndUnderCenterOpacity: .25,
+                                      physics: const FixedExtentScrollPhysics(),
+                                      onSelectedItemChanged: (h) {
+                                        if (movingWheels) return;
+                                        final total = h * 60 + minutes % 60;
+                                        start(
+                                          total.clamp(1, 180),
+                                          fromWheel: true,
+                                          syncWheels: total < 1 || total > 180,
+                                        );
+                                      },
+                                      childDelegate: ListWheelChildListDelegate(
+                                        children: [
+                                          for (var h = 0; h <= 3; h++)
+                                            Center(
+                                              child: Text(
+                                                '$h 小时',
+                                                style: const TextStyle(
+                                                  fontSize: 23,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: ListWheelScrollView.useDelegate(
-                            key: const ValueKey('timer-minutes'),
-                            controller: minutesWheel,
-                            itemExtent: 48,
-                            diameterRatio: 1.4,
-                            overAndUnderCenterOpacity: .25,
-                            physics: const FixedExtentScrollPhysics(),
-                            onSelectedItemChanged: (m) {
-                              if (movingWheels) return;
-                              final total = minutes ~/ 60 * 60 + m;
-                              start(
-                                total.clamp(1, 180),
-                                fromWheel: true,
-                                syncWheels: total < 1 || total > 180,
-                              );
-                            },
-                            childDelegate: ListWheelChildListDelegate(
-                              children: [
-                                for (var m = 0; m < 60; m++)
-                                  Center(
-                                    child: Text(
-                                      '$m 分钟',
-                                      style: const TextStyle(fontSize: 23),
+                                  Expanded(
+                                    child: ListWheelScrollView.useDelegate(
+                                      key: const ValueKey('timer-minutes'),
+                                      controller: minutesWheel,
+                                      itemExtent: 48,
+                                      diameterRatio: 1.4,
+                                      overAndUnderCenterOpacity: .25,
+                                      physics: const FixedExtentScrollPhysics(),
+                                      onSelectedItemChanged: (m) {
+                                        if (movingWheels) return;
+                                        final total = minutes ~/ 60 * 60 + m;
+                                        start(
+                                          total.clamp(1, 180),
+                                          fromWheel: true,
+                                          syncWheels: total < 1 || total > 180,
+                                        );
+                                      },
+                                      childDelegate: ListWheelChildListDelegate(
+                                        children: [
+                                          for (var m = 0; m < 60; m++)
+                                            Center(
+                                              child: Text(
+                                                '$m 分钟',
+                                                style: const TextStyle(
+                                                  fontSize: 23,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: TingyuTokens.space,
-                  ),
-                  child: Text(
-                    '结束方式',
-                    style: TextStyle(color: t.muted, fontSize: 13),
-                  ),
-                ),
-                Container(
-                  height: TingyuTokens.controlSize,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    color: t.sidebar,
-                    borderRadius: BorderRadius.circular(
-                      TingyuTokens.segmentRadius,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      for (final value in [false, true])
-                        Expanded(
-                          child: Pressable(
-                            key: ValueKey('timer-finish-$value'),
-                            padding: EdgeInsets.zero,
-                            radius: TingyuTokens.segmentRadius,
-                            selected: finish == value,
-                            selectionFill: false,
-                            color: finish == value
-                                ? t.selectionSurface
-                                : Colors.transparent,
-                            label: value ? '播完本首' : '到时暂停',
-                            onPressed: () {
-                              setState(() {
-                                draft.finish = value;
-                                if (draft.minutes != null) draft.changed = true;
-                              });
-                            },
-                            child: Center(
-                              child: Text(
-                                value ? '播完本首' : '到时暂停',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: finish == value ? t.accentInk : t.text,
-                                ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                    ],
-                  ),
                 ),
               ],
             ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
@@ -9,6 +10,41 @@ import 'package:tingyu/ui/icons.dart';
 import 'package:tingyu/ui/theme.dart';
 
 void main() {
+  test(
+    'Android QR login invokes native confirmation with the same session',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final calls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(BilibiliLinkLauncher.channel, (call) async {
+            calls.add(call);
+            return true;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(BilibiliLinkLauncher.channel, null),
+      );
+      var browserCalls = 0;
+      final session = Uri.https(
+        'account.bilibili.com',
+        '/h5/account-h5/auth/scan-web',
+        {'qrcode_key': 'test-session'},
+      );
+      final launcher = BilibiliLinkLauncher(
+        openBrowser: (_) async {
+          browserCalls++;
+          return true;
+        },
+      );
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      expect(await launcher.openLogin(session), isTrue);
+      expect(calls.map((c) => c.method), ['openBilibiliLogin']);
+      expect(calls.single.arguments, {'url': session.toString()});
+      expect(browserCalls, 0);
+    },
+  );
+
   test(
     'QR handoff preserves the session URL and rejects foreign hosts',
     () async {
@@ -35,6 +71,81 @@ void main() {
         ).openLogin(session),
         isFalse,
       );
+    },
+  );
+
+  test('current official account scan URL is accepted unchanged', () async {
+    Uri? opened;
+    final session = Uri.https(
+      'account.bilibili.com',
+      '/h5/account-h5/auth/scan-web',
+      {'navhide': '1', 'callback': '', 'qrcode_key': 'test-session'},
+    );
+    expect(
+      await BilibiliLinkLauncher(
+        openBrowser: (uri) async {
+          opened = uri;
+          return true;
+        },
+      ).openLogin(session),
+      isTrue,
+    );
+    expect(opened, session);
+  });
+
+  test('QR login rejects unexpected paths, credentials and ports', () async {
+    var calls = 0;
+    final launcher = BilibiliLinkLauncher(
+      openBrowser: (_) async {
+        calls++;
+        return true;
+      },
+    );
+    for (final value in [
+      'https://passport.bilibili.com/other/login',
+      'https://account.bilibili.com/h5/account-h5/auth/other',
+      'https://account.bilibili.com.evil.test/h5/account-h5/auth/scan-web',
+      'https://passport.bilibili.com/h5/account-h5/auth/scan-web',
+      'https://user@passport.bilibili.com/h5-app/passport/login/scan',
+      'https://passport.bilibili.com:444/h5-app/passport/login/scan',
+      'http://passport.bilibili.com/h5-app/passport/login/scan',
+    ]) {
+      expect(await launcher.openLogin(Uri.parse(value)), isFalse);
+    }
+    expect(calls, 0);
+  });
+
+  test(
+    'missing Android client preserves the QR session in browser fallback',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            BilibiliLinkLauncher.channel,
+            (_) async => false,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(BilibiliLinkLauncher.channel, null),
+      );
+      final opened = <Uri>[];
+      final session = Uri.https(
+        'passport.bilibili.com',
+        '/h5-app/passport/login/scan',
+        {'qrcode_key': 'test-session'},
+      );
+      expect(
+        await BilibiliLinkLauncher(
+          openBrowser: (uri) async {
+            opened.add(uri);
+            return true;
+          },
+        ).openLogin(session),
+        isTrue,
+      );
+      expect(opened, [session]);
     },
   );
 
