@@ -209,8 +209,6 @@ class _GlassPreferencesState extends ConsumerState<GlassPreferencesScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            visible(previewDock()),
-                            const SizedBox(height: 12),
                             visible(
                               TingyuSegmented(
                                 labels: const ['自动', '手动'],
@@ -290,6 +288,10 @@ class _GlassPreferencesState extends ConsumerState<GlassPreferencesScreen>
                         ),
                       ),
                     ),
+                    // Reserve the dock's measured layout before a drag starts.
+                    // Hidden controls retain their position and pointer capture;
+                    // the actual AppShell dock beneath is never covered.
+                    visible(previewDock()),
                   ],
                 ),
               ),

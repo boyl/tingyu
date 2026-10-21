@@ -12,7 +12,7 @@
 
 ### Android 手机
 
-月影蓝主题的 Android 手机界面截图，按以下顺序介绍各功能页面。
+月影蓝主题的 Android 手机界面截图，按以下顺序介绍各功能页面（手机截图来自 0.1.23，本版更新见下方）。
 
 <table>
   <tr>
@@ -65,17 +65,26 @@
   </tr>
 </table>
 
+**0.1.24 更新**：点击“我的歌单”标题即可进入带封面的全部歌单列表；透明度调节与底栏预览分区，拖动时完整露出播放栏和导航栏。
+
+<p align="center">
+  <img src="docs/screenshots/2026-10-21-playlists-glass/playlist-directory-verified.png" alt="0.1.24 全部歌单列表：封面、名称与歌曲数" width="240">
+  <img src="docs/screenshots/2026-10-21-playlists-glass/glass-preview-verified.png" alt="0.1.24 透明度预览：调节条不遮挡底部两栏" width="240">
+</p>
+
+以上更新截图来自隔离 Android 模拟器，使用本地验收夹具。
+
 ### macOS
 
 ### Windows
 
 ## 下载与安装
 
-当前发布版本为 **0.1.23**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+当前发布版本为 **0.1.24**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.23/tingyu-0.1.23-android-arm64-v8a-release.apk) |
+| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.24/tingyu-0.1.24-android-arm64-v8a-release.apk) |
 | macOS / Windows | 暂无安装包 |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
@@ -83,16 +92,16 @@ Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可�
 <details>
 <summary>校验安装包</summary>
 
-文件：`tingyu-0.1.23-android-arm64-v8a-release.apk`
+文件：`tingyu-0.1.24-android-arm64-v8a-release.apk`
 
-SHA-256：`1d4284a5ec55f449656e78ae7dde07daeadf32902a20ab39307f269d6d720f00`
+SHA-256：`d754f067edd3c3955db15833d5e1be15564dd978224ec737f1ad0ffeb54ac615`
 
 </details>
 
 ## 主要功能
 
 - **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放。
-- **整理音乐**：本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
+- **整理音乐**：带封面的全部歌单列表、本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
 - **离线播放**：下载音频及可用的封面、歌词，支持导出 M4A。
 - **歌词**：同步逐句／逐字歌词、翻译与罗马音，可手动匹配、编辑和调整偏移；以歌词源实际提供的内容为准。
 - **播放控制**：循环、随机、播完暂停、倍速、音量与定时关闭；自定义时长滚轮带刻度反馈。
@@ -114,7 +123,7 @@ SHA-256：`1d4284a5ec55f449656e78ae7dde07daeadf32902a20ab39307f269d6d720f00`
 
 [功能清单](docs/FEATURES.md) · [界面规范](docs/UI.md) · [验收标准](docs/ACCEPTANCE.md) · [发布准则](docs/RELEASE.md) · [版本记录](https://github.com/boyl/tingyu/releases)
 
-0.1.23 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-21-023.md)。B 站客户端接管已验证，真实账号授权与重启登录保持仍待验。
+0.1.24 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-21-024.md)。真实账号授权与重启登录保持仍待验。
 
 ## 许可
 

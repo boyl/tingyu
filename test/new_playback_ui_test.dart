@@ -80,6 +80,65 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  for (final size in [const Size(320, 640), const Size(390, 844)]) {
+    testWidgets(
+      'preview docks remain unobscured at $size with large text and playing track',
+      (tester) async {
+        f.controller.current = firstTrack;
+        await f.controller.setGlass(automatic: false);
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [libraryProvider.overrideWith((ref) => f.controller)],
+            child: MaterialApp(
+              theme: tingyuTheme('bili'),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(1.6)),
+                child: child!,
+              ),
+              home: const GlassPreferencesScreen(),
+            ),
+          ),
+        );
+        await tester.pump();
+        for (final id in ['all', 'nav', 'mini']) {
+          final slider = find.byKey(ValueKey('glass-slider-$id'));
+          await tester.ensureVisible(slider);
+          await tester.pump();
+          final rect = tester.getRect(slider);
+          final gesture = await tester.startGesture(rect.center);
+          await gesture.moveBy(const Offset(20, 0));
+          await tester.pump();
+          final shell = find.byType(AppShell);
+          final nav = find.descendant(
+            of: shell,
+            matching: find.byType(CompactNavigation),
+          );
+          final mini = find.descendant(
+            of: shell,
+            matching: find.byType(MiniPlayer),
+          );
+          final control = tester.getRect(
+            find.byKey(ValueKey('glass-control-$id')),
+          );
+          expect(tester.getRect(slider), rect);
+          expect(control.bottom, lessThanOrEqualTo(tester.getRect(nav).top));
+          expect(control.bottom, lessThanOrEqualTo(tester.getRect(mini).top));
+          await gesture.cancel();
+          await tester.pump();
+          expect(shell, findsNothing);
+          expect(tester.takeException(), isNull);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
   testWidgets('toggle track stays compact inside accessible touch target', (
     tester,
   ) async {

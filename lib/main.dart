@@ -134,6 +134,11 @@ GoRouter createRouter() => GoRouter(
                 routes: [
                   if (route == 'library')
                     GoRoute(
+                      path: 'playlists',
+                      builder: (_, _) => const PlaylistsScreen(),
+                    ),
+                  if (route == 'library')
+                    GoRoute(
                       path: 'playlist/:id',
                       pageBuilder: (context, state) => collectionPage(
                         context,

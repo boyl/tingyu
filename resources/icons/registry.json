@@ -877,7 +877,7 @@
       "codepoint": 57699,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/preferences_views.dart:396"
+        "lib/ui/preferences_views.dart:398"
       ],
       "designUses": []
     },
@@ -903,7 +903,7 @@
       "codepoint": 61453,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1210"
+        "lib/ui/app.dart:1220"
       ],
       "designUses": []
     },
@@ -915,8 +915,8 @@
       "codepoint": 57912,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1343",
-        "lib/ui/app.dart:1419"
+        "lib/ui/app.dart:1353",
+        "lib/ui/app.dart:1429"
       ],
       "designUses": []
     },
@@ -928,8 +928,8 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3938",
-        "lib/ui/app.dart:4217"
+        "lib/ui/app.dart:3948",
+        "lib/ui/app.dart:4227"
       ],
       "designUses": []
     },
@@ -941,7 +941,7 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3281"
+        "lib/ui/app.dart:3291"
       ],
       "designUses": []
     },
@@ -953,7 +953,7 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4122"
+        "lib/ui/app.dart:4132"
       ],
       "designUses": []
     },
@@ -977,7 +977,7 @@
       "codepoint": 58389,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3943",
+        "lib/ui/app.dart:3953",
         "lib/ui/preferences_views.dart:148"
       ],
       "designUses": []
@@ -1016,7 +1016,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4397"
+        "lib/ui/app.dart:4407"
       ],
       "designUses": []
     },
@@ -1028,7 +1028,7 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4239"
+        "lib/ui/app.dart:4249"
       ],
       "designUses": []
     },
@@ -1040,7 +1040,7 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4239"
+        "lib/ui/app.dart:4249"
       ],
       "designUses": []
     },
@@ -1064,7 +1064,7 @@
       "codepoint": 58655,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1948"
+        "lib/ui/app.dart:1958"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1089,7 +1089,7 @@
       "codepoint": 58657,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1946"
+        "lib/ui/app.dart:1956"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -1103,7 +1103,7 @@
       "codepoint": 58710,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1420",
+        "lib/ui/app.dart:1430",
         "lib/ui/library_views.dart:293",
         "lib/ui/operation_feedback.dart:163",
         "lib/ui/playback_settings_views.dart:164",
@@ -1157,7 +1157,7 @@
       "codepoint": 58785,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1945"
+        "lib/ui/app.dart:1955"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
@@ -1298,7 +1298,7 @@
       "codepoint": 59077,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1639",
+        "lib/ui/app.dart:1649",
         "lib/ui/volume_views.dart:69"
       ],
       "designUses": []

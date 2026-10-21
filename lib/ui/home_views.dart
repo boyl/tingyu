@@ -94,9 +94,25 @@ class HomeShelves extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  '我的歌单',
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Pressable(
+                    key: const ValueKey('all-playlists'),
+                    label: '查看全部歌单',
+                    padding: EdgeInsets.zero,
+                    onPressed: () => context.push('/playlists'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '我的歌单',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(width: TingyuTokens.space),
+                        const TingyuIcon(Icons.chevron_right),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               action(Icons.add, '新建歌单', onCreate),
@@ -177,4 +193,132 @@ class HomeShelves extends StatelessWidget {
       );
     },
   );
+}
+
+class PlaylistsScreen extends ConsumerWidget {
+  const PlaylistsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(libraryProvider);
+    Future<void> create() async {
+      final name = await nameDialog(context);
+      if (name != null && context.mounted) await p.addPlaylist(name);
+    }
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 608),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(TingyuTokens.space),
+                  child: Row(
+                    children: [
+                      action(
+                        Icons.arrow_back,
+                        '返回音乐库',
+                        () =>
+                            context.canPop() ? context.pop() : context.go('/'),
+                      ),
+                      const SizedBox(width: TingyuTokens.space),
+                      Expanded(
+                        child: Text(
+                          '我的歌单',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      action(Icons.add, '新建歌单', create),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: p.playlists.isEmpty
+                      ? Center(
+                          child: EmptyView(
+                            '还没有歌单',
+                            '创建歌单，整理喜欢的声音',
+                            child: labelButton('新建歌单', create, icon: Icons.add),
+                          ),
+                        )
+                      : ListView.separated(
+                          key: const PageStorageKey('all-playlists-list'),
+                          padding: const EdgeInsets.all(TingyuTokens.space * 2),
+                          itemCount: p.playlists.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: TingyuTokens.space * 2),
+                          itemBuilder: (context, index) {
+                            final list = p.playlists[index];
+                            final cover = list.trackIds
+                                .map((id) => p.library[id])
+                                .whereType<Track>()
+                                .firstOrNull;
+                            return Pressable(
+                              key: ValueKey('playlist-list-${list.id}'),
+                              label:
+                                  '打开歌单 ${list.name}，${list.trackIds.length} 首',
+                              padding: EdgeInsets.zero,
+                              onPressed: () => context.push(
+                                '/playlist/${list.id}',
+                                extra: 'playlists',
+                              ),
+                              child: Row(
+                                children: [
+                                  if (cover != null)
+                                    Artwork(cover, size: 64)
+                                  else
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: context.tokens.tint,
+                                        borderRadius: BorderRadius.circular(
+                                          TingyuTokens.artworkRadius,
+                                        ),
+                                      ),
+                                      child: TingyuIcon(
+                                        Icons.library_music_outlined,
+                                        color: context.tokens.accent,
+                                      ),
+                                    ),
+                                  const SizedBox(width: TingyuTokens.space * 2),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          list.name,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleSmall,
+                                        ),
+                                        Text(
+                                          '${list.trackIds.length} 首',
+                                          style: TextStyle(
+                                            color: context.tokens.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: TingyuTokens.space),
+                                  const TingyuIcon(Icons.chevron_right),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

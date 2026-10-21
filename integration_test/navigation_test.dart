@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tingyu/models/music.dart';
@@ -298,6 +299,82 @@ void main() {
       }
       controller.profile = null;
       await controller.save();
+      final router = GoRouter.of(tester.element(find.byType(AppShell).first));
+      router.go('/');
+      await settleAnimations();
+      const directoryTrack = Track(
+        bvid: 'BVdirectory',
+        cid: 904,
+        title: '本地歌单入口验收',
+        artist: '验收夹具',
+        cover: '',
+        duration: 30,
+      );
+      await controller.remember(directoryTrack);
+      controller.current = directoryTrack;
+      Future<void> captureCurrent(String name) async {
+        await settleAnimations();
+        final client = HttpClient();
+        try {
+          final request = await client.postUrl(
+            Uri.parse('http://127.0.0.1:47935/capture/$name'),
+          );
+          final response = await request.close();
+          await response.drain<void>();
+          expect(response.statusCode, HttpStatus.ok);
+        } finally {
+          client.close(force: true);
+        }
+      }
+
+      await controller.addPlaylist('全部歌单入口验收', track: controller.current);
+      final directoryId = controller.playlists.last.id;
+      final entry = find.byKey(const ValueKey('all-playlists'));
+      await tester.ensureVisible(entry);
+      await tester.tap(entry);
+      await settleAnimations();
+      final directoryRow = find.byKey(ValueKey('playlist-list-$directoryId'));
+      await tester.ensureVisible(directoryRow);
+      await captureCurrent('android-all-playlists');
+      await tester.tap(directoryRow);
+      await settleAnimations();
+      expect(find.byKey(const ValueKey('返回我的歌单')), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settleAnimations();
+      expect(find.byType(PlaylistsScreen), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('返回音乐库')));
+      await settleAnimations();
+      expect(find.byType(PlaylistsScreen), findsNothing);
+      await controller.setGlass(automatic: false);
+      unawaited(router.push('/settings/glass'));
+      await settleAnimations();
+      final glassSlider = find.byKey(const ValueKey('glass-slider-mini'));
+      await tester.ensureVisible(glassSlider);
+      await settleAnimations();
+      final beforeDrag = tester.getRect(glassSlider);
+      final drag = await tester.startGesture(beforeDrag.center);
+      await drag.moveBy(const Offset(20, 0));
+      await settleAnimations();
+      expect(tester.getRect(glassSlider), beforeDrag);
+      final previewShell = find.byType(AppShell).last;
+      final previewMini = find.descendant(
+        of: previewShell,
+        matching: find.byType(MiniPlayer),
+      );
+      expect(
+        tester.getRect(find.byKey(const ValueKey('glass-control-mini'))).bottom,
+        lessThanOrEqualTo(tester.getRect(previewMini).top),
+      );
+      expect(tester.getSize(previewMini).height, greaterThan(0));
+      await captureCurrent('android-glass-preview-unobscured');
+      await drag.cancel();
+      await settleAnimations();
+      router.pop();
+      await settleAnimations();
+      await controller.editPlaylist(
+        controller.playlists.firstWhere((list) => list.id == directoryId),
+        delete: true,
+      );
       expect(tester.takeException(), isNull);
     },
   );

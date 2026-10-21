@@ -640,7 +640,17 @@ class _AppShellState extends ConsumerState<AppShell> {
                     : context.go('/playlist/${widget.playlistId}/add'),
               )
             else if (widget.page == 'playlist')
-              action(Icons.arrow_back, '返回音乐库', () => navigate('library')),
+              action(
+                Icons.arrow_back,
+                GoRouterState.of(context).extra == 'playlists'
+                    ? '返回我的歌单'
+                    : '返回音乐库',
+                () =>
+                    GoRouterState.of(context).extra == 'playlists' &&
+                        context.canPop()
+                    ? context.pop()
+                    : navigate('library'),
+              ),
             if (!desktop && widget.page == 'library')
               Tooltip(
                 message: '打开设置',

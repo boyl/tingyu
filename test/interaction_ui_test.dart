@@ -959,6 +959,62 @@ void main() {
     },
   );
   testWidgets(
+    'all playlists opens covered rows and returns through the source list',
+    (tester) async {
+      await fixture.controller.addPlaylist('有封面的歌单', track: firstTrack);
+      await fixture.controller.addPlaylist('空歌单');
+      await mount(tester);
+      final entry = find.byKey(const ValueKey('all-playlists'));
+      expect(entry, findsOneWidget);
+      await tester.ensureVisible(entry);
+      await tester.tap(entry);
+      await settle(tester);
+      final id = fixture.controller.playlists.first.id;
+      final row = find.byKey(ValueKey('playlist-list-$id'));
+      expect(
+        find.descendant(of: row, matching: find.byType(Artwork)),
+        findsOneWidget,
+      );
+      expect(find.text('空歌单'), findsOneWidget);
+      await tester.tap(row);
+      await settle(tester);
+      expect(find.byKey(const ValueKey('返回我的歌单')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('返回我的歌单')));
+      await settle(tester);
+      expect(row, findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('返回音乐库')));
+      await settle(tester);
+      expect(entry, findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets('empty playlist directory supports creation and system back', (
+    tester,
+  ) async {
+    await mount(tester, size: const Size(320, 640));
+    await tester.tap(find.byKey(const ValueKey('all-playlists')));
+    await settle(tester);
+    expect(find.text('还没有歌单'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('新建歌单')).first);
+    await settle(tester);
+    await tester.enterText(find.byType(TextField).last, '很长的歌单名称' * 8);
+    await tester.tap(find.byKey(const ValueKey('保存')));
+    await settle(tester);
+    expect(fixture.controller.playlists, hasLength(1));
+    expect(
+      find.byKey(
+        ValueKey('playlist-list-${fixture.controller.playlists.first.id}'),
+      ),
+      findsOneWidget,
+    );
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    expect(find.byKey(const ValueKey('all-playlists')), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets(
     'playlist covers grow while two cards and the next peek stay visible',
     (tester) async {
       final p = fixture.controller;
