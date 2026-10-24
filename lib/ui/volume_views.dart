@@ -44,11 +44,7 @@ class PlayerVolumePanel extends StatelessWidget {
                     key: const ValueKey('player-volume-percent'),
                     style: TextStyle(color: context.tokens.accentInk),
                   ),
-                  action(
-                    Icons.refresh,
-                    '恢复正常音量',
-                    () => p.playback.player.setVolume(1),
-                  ),
+                  action(Icons.refresh, '恢复正常音量', () => p.setVolume(1)),
                 ],
               ),
               Row(
@@ -60,10 +56,8 @@ class PlayerVolumePanel extends StatelessWidget {
                       value: volume,
                       semanticFormatterCallback: (value) =>
                           '${(value * 100).round()}%',
-                      onChanged: (value) => report(
-                        context,
-                        () => p.playback.player.setVolume(value),
-                      ),
+                      onChanged: (value) =>
+                          report(context, () => p.setVolume(value)),
                     ),
                   ),
                   const TingyuIcon(Icons.volume_up),

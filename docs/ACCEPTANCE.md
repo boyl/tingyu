@@ -266,3 +266,11 @@
 
 - 连续播放从首句经过中间句、末句并回退时，歌词列表独立定位，外层播放页滚动偏移与唱片几何保持不变。
 - 自动回归见 `test/lyric_panel_test.dart` 的 `lyric progression never scrolls the outer record viewport`；工程与设备验证分开记录于 [专项记录](acceptance/lyric-record-stability-2026-10-21.md)。
+
+
+## 2026-10-24 播放偏好持久化修复
+
+- 应用播放音量即时保存，冷启动恢复，包括静音及恢复 100%；不修改系统音量。
+- “播完暂停”在定时关闭时也可修改；收起面板提交后保存，取消、到期及重启保留偏好。
+- 重启不恢复倒计时、等待本首结束状态或自动播放；旧数据默认音量 100%、播完暂停关闭。
+- 验证记录见 `specs/playback-preference-persistence.md`；控制器和界面回归不能替代 Android 真机冷启动及真实音频输出验证。

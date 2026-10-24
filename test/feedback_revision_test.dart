@@ -29,6 +29,35 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('finish choice while off commits only on dismissal and reopens', (
+    tester,
+  ) async {
+    await mountTimer(tester);
+    await tester.tap(find.byKey(const ValueKey('timer-finish-toggle')));
+    await tester.pump();
+    expect(f.controller.sleepTimer.finishTrack, false);
+    Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
+    await tester.pumpAndSettle();
+    expect(f.controller.sleepTimer.finishTrack, true);
+    expect(f.controller.sleepTimer.active, false);
+    await tester.runAsync(() async {
+      expect((await f.db.readState('library'))!['sleepFinishTrack'], true);
+    });
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TingyuToggle>(
+            find.byKey(const ValueKey('timer-finish-toggle')),
+          )
+          .value,
+      true,
+    );
+    Navigator.of(tester.element(find.byType(PlaybackSettingsPanel))).pop();
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'inactive timer has no preset and selecting waits for dismissal',
     (tester) async {
@@ -365,6 +394,9 @@ void main() {
       await tester.pump();
       expect(f.playback.player.volume, .4);
       expect(find.text('40%'), findsOneWidget);
+      await tester.runAsync(() async {
+        expect((await f.db.readState('library'))!['volume'], .4);
+      });
       expect(find.textContaining('仅调节'), findsNothing);
       await f.controller.play(firstTrack);
       await f.controller.play(secondTrack);
@@ -378,6 +410,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('恢复正常音量')));
       await tester.pump();
       expect(f.playback.player.volume, 1);
+      await tester.runAsync(() async {
+        expect((await f.db.readState('library'))!['volume'], 1);
+      });
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

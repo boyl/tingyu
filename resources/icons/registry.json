@@ -46,13 +46,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -105,8 +99,7 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -131,8 +124,7 @@
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
-        "design-review/2026-10-19/review-v13/index.html",
-        "design-review/2026-10-21/polish-v1/index.html"
+        "design-review/2026-10-19/review-v13/index.html"
       ]
     },
     {
@@ -155,10 +147,7 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -207,12 +196,7 @@
         "north_east"
       ],
       "designUses": [
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -231,12 +215,7 @@
         "design-review/2026-10-19/review-v18/index.html",
         "design-review/2026-10-19/review-v19/index.html",
         "design-review/2026-10-19/review-v20/index.html",
-        "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-19/review-v21/index.html"
       ]
     },
     {
@@ -248,10 +227,7 @@
       "aliases": [
         "playlist_add"
       ],
-      "designUses": [
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
-      ]
+      "designUses": []
     },
     {
       "id": "grip",
@@ -296,10 +272,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -421,13 +394,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -473,13 +440,7 @@
         "design-review/2026-10-19/review-v19/index.html",
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -512,9 +473,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -548,9 +507,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -566,9 +523,7 @@
       "designUses": [
         "design-review/2026-10-19/layout-v5/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
-        "design-review/2026-10-19/review-v18/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-19/review-v18/index.html"
       ]
     },
     {
@@ -580,10 +535,7 @@
       "aliases": [
         "playlist_play"
       ],
-      "designUses": [
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
-      ]
+      "designUses": []
     },
     {
       "id": "playlist",
@@ -616,9 +568,7 @@
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-19/review-v17/index.html"
       ]
     },
     {
@@ -649,9 +599,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -683,10 +631,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -699,9 +644,7 @@
         "add_to_queue"
       ],
       "designUses": [
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -741,13 +684,7 @@
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -767,9 +704,7 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v18/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v3/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -1076,9 +1011,7 @@
         "design-review/2026-10-19/layout-v6/controls.html",
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
-        "design-review/2026-10-19/layout-v9/controls.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html"
+        "design-review/2026-10-19/layout-v9/controls.html"
       ]
     },
     {
@@ -1106,9 +1039,9 @@
         "lib/ui/app.dart:1430",
         "lib/ui/library_views.dart:293",
         "lib/ui/operation_feedback.dart:163",
-        "lib/ui/playback_settings_views.dart:164",
-        "lib/ui/playback_settings_views.dart:311",
-        "lib/ui/playback_settings_views.dart:576",
+        "lib/ui/playback_settings_views.dart:167",
+        "lib/ui/playback_settings_views.dart:314",
+        "lib/ui/playback_settings_views.dart:579",
         "lib/ui/settings_views.dart:187"
       ],
       "designUses": [
@@ -1130,13 +1063,7 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html",
-        "design-review/2026-10-21/polish-v1/index.html",
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
+        "design-review/2026-10-20/feedback/index.html"
       ]
     },
     {
@@ -1191,8 +1118,8 @@
       "codepoint": 58848,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/playback_settings_views.dart:164",
-        "lib/ui/playback_settings_views.dart:576",
+        "lib/ui/playback_settings_views.dart:167",
+        "lib/ui/playback_settings_views.dart:579",
         "lib/ui/settings_views.dart:180"
       ],
       "designUses": [
@@ -1236,15 +1163,9 @@
       "codepoint": 62537,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/playback_settings_views.dart:350"
+        "lib/ui/playback_settings_views.dart:353"
       ],
-      "designUses": [
-        "design-review/2026-10-21/polish-v2/index.html",
-        "design-review/2026-10-21/polish-v3/index.html",
-        "design-review/2026-10-21/polish-v4/index.html",
-        "design-review/2026-10-21/sound-reference-v5/index.html",
-        "design-review/2026-10-21/sound-reference-v6/index.html"
-      ]
+      "designUses": []
     },
     {
       "id": "material/tune",
@@ -1286,7 +1207,7 @@
       "codepoint": 59076,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/volume_views.dart:56"
+        "lib/ui/volume_views.dart:52"
       ],
       "designUses": []
     },
@@ -1299,7 +1220,7 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/app.dart:1649",
-        "lib/ui/volume_views.dart:69"
+        "lib/ui/volume_views.dart:63"
       ],
       "designUses": []
     },

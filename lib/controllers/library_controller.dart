@@ -123,9 +123,10 @@ class LibraryController extends ChangeNotifier {
     }
   }
 
-  void setSleepTimer(Duration? duration, {bool? finishTrack}) {
+  Future<void> setSleepTimer(Duration? duration, {bool? finishTrack}) {
     _waitingForTrack = null;
     if (duration == null) {
+      if (finishTrack != null) sleepTimer.finishTrack = finishTrack;
       sleepTimer.cancel();
     } else {
       sleepTimer.start(
@@ -134,6 +135,15 @@ class LibraryController extends ChangeNotifier {
       );
     }
     notifyListeners();
+    return save();
+  }
+
+  Future<void> setVolume(double value) async {
+    if (!value.isFinite || value < 0 || value > 1) {
+      throw const AppFailure('音量范围为 0–100%');
+    }
+    await playback.player.setVolume(value);
+    await save();
   }
 
   Future<void> setSpeed(double value) async {
@@ -264,6 +274,7 @@ class LibraryController extends ChangeNotifier {
       }
     }
     final s = await db.readState('library');
+    double volume = 1;
     if (s != null) {
       theme = supportedThemes.contains(s['theme']) ? s['theme'] : defaultTheme;
       mode = ['order', 'shuffle', 'repeat', 'once'].contains(s['mode'])
@@ -281,6 +292,9 @@ class LibraryController extends ChangeNotifier {
         Map<String, String>.from(s['collectionSort'] ?? {}),
       );
       standard = s['standard'] ?? false;
+      final storedVolume = (s['volume'] as num?)?.toDouble() ?? 1;
+      volume = storedVolume.isFinite ? storedVolume.clamp(0.0, 1.0) : 1;
+      sleepTimer.finishTrack = s['sleepFinishTrack'] as bool? ?? false;
       final storedSpeed = (s['speed'] as num?)?.toDouble() ?? 1;
       speed = storedSpeed.isFinite ? storedSpeed.clamp(.5, 2) : 1;
       showPlayerLyrics = s['showPlayerLyrics'] as bool? ?? true;
@@ -326,6 +340,7 @@ class LibraryController extends ChangeNotifier {
       );
       position = Duration(milliseconds: s['position'] ?? 0);
     }
+    await playback.player.setVolume(volume);
     await playback.player.setSpeed(speed);
     await downloads.initialize();
     if (api.hasSession) unawaited(refreshProfile(silent: true));
@@ -370,6 +385,8 @@ class LibraryController extends ChangeNotifier {
     'lyricFontSize': lyricFontSize,
     'lyricCentered': lyricCentered,
     'speed': speed,
+    'volume': playback.player.volume,
+    'sleepFinishTrack': sleepTimer.finishTrack,
     'showPlayerLyrics': showPlayerLyrics,
     'glassAutomatic': glassAutomatic,
     'navigationOpacity': navigationOpacity,

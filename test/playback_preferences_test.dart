@@ -3,6 +3,99 @@ import 'package:tingyu/services/sleep_timer.dart';
 import 'support/fakes.dart';
 
 void main() {
+  test('stored volume restores in a fresh player', () async {
+    for (final volume in [.37, 0.0, 1.0]) {
+      var f = await TestLibrary.create();
+      final directory = f.directory;
+      await f.controller.setVolume(volume);
+      expect((await f.db.readState('library'))!['volume'], volume);
+      await f.close(deleteData: false);
+      f = await TestLibrary.create(dataDirectory: directory);
+      try {
+        expect(f.playback.player.volume, volume);
+        expect(f.controller.playing, false);
+      } finally {
+        await f.close();
+      }
+    }
+  });
+
+  test(
+    'finish-track choice applies while timer is off and survives restart',
+    () async {
+      var f = await TestLibrary.create();
+      try {
+        await f.controller.setSleepTimer(null, finishTrack: true);
+        expect(f.controller.sleepTimer.finishTrack, true);
+
+        final directory = f.directory;
+        await f.close(deleteData: false);
+        f = await TestLibrary.create(dataDirectory: directory);
+        expect(f.controller.sleepTimer.finishTrack, true);
+        expect(f.controller.sleepTimer.active, false);
+        expect(f.controller.waitingForTrack, false);
+        expect(f.controller.playing, false);
+      } finally {
+        await f.close();
+      }
+    },
+  );
+
+  test('legacy defaults and stored volume bounds are restored', () async {
+    final f = await TestLibrary.create();
+    try {
+      expect(f.playback.player.volume, 1);
+      expect(f.controller.sleepTimer.finishTrack, false);
+      for (final pair in [(-1.0, 0.0), (2.0, 1.0)]) {
+        await f.db.writeState('library', {'volume': pair.$1});
+        await f.controller.initialize();
+        expect(f.playback.player.volume, pair.$2);
+      }
+      for (final invalid in [-.1, 1.1, double.nan, double.infinity]) {
+        await expectLater(
+          f.controller.setVolume(invalid),
+          throwsA(isA<Exception>()),
+        );
+      }
+    } finally {
+      await f.close();
+    }
+  });
+
+  test(
+    'cancel and expiry preserve preference without restoring timer',
+    () async {
+      var f = await TestLibrary.create();
+      try {
+        await f.controller.setSleepTimer(
+          const Duration(minutes: 1),
+          finishTrack: true,
+        );
+        await f.controller.setSleepTimer(null);
+        expect(f.controller.sleepTimer.finishTrack, true);
+        await f.controller.setSleepTimer(const Duration(minutes: 1));
+        f.controller.sleepTimer.deadline = DateTime.now().subtract(
+          const Duration(seconds: 1),
+        );
+        f.controller.sleepTimer.check();
+        expect(f.controller.sleepTimer.finishTrack, true);
+        expect(f.controller.sleepTimer.active, false);
+        await f.controller.setSleepTimer(const Duration(minutes: 1));
+        final directory = f.directory;
+        await f.close(deleteData: false);
+        f = await TestLibrary.create(dataDirectory: directory);
+        expect(f.controller.sleepTimer.finishTrack, true);
+        expect(f.controller.sleepTimer.active, false);
+        expect(f.controller.waitingForTrack, false);
+        expect(f.controller.playing, false);
+        await f.controller.setSleepTimer(null, finishTrack: false);
+        expect((await f.db.readState('library'))!['sleepFinishTrack'], false);
+      } finally {
+        await f.close();
+      }
+    },
+  );
+
   test('continuous lyric size persists and migrates legacy sizes', () async {
     final f = await TestLibrary.create();
     try {

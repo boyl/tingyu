@@ -1926,7 +1926,7 @@ class MiniPlayer extends StatelessWidget {
                       width: 120,
                       child: Slider(
                         value: p.playback.player.volume,
-                        onChanged: (v) => p.playback.player.setVolume(v),
+                        onChanged: (v) => report(context, () => p.setVolume(v)),
                       ),
                     ),
                   if (!desktop)

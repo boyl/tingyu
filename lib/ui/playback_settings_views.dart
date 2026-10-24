@@ -43,9 +43,12 @@ Future<void> showPlaybackSettings(
       draft.changed &&
       context.mounted &&
       (lifecycle == null || lifecycle == AppLifecycleState.resumed)) {
-    p.setSleepTimer(
-      draft.minutes == null ? null : Duration(minutes: draft.minutes!),
-      finishTrack: draft.finish,
+    await report(
+      context,
+      () => p.setSleepTimer(
+        draft.minutes == null ? null : Duration(minutes: draft.minutes!),
+        finishTrack: draft.finish,
+      ),
     );
   }
 }
@@ -182,7 +185,7 @@ class _PlaybackSettingsPanelState extends State<PlaybackSettingsPanel> {
                       value: finish,
                       onChanged: (value) => setState(() {
                         draft.finish = value;
-                        if (draft.minutes != null) draft.changed = true;
+                        draft.changed = true;
                       }),
                     ),
                   ],

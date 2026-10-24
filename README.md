@@ -65,6 +65,8 @@
   </tr>
 </table>
 
+**0.1.26 修复**：重启记住播放音量和“播完暂停”偏好；定时关闭时修改该偏好也有效。倒计时不跨重启恢复。本版没有视觉改动，以下截图沿用旧版。
+
 **0.1.25 修复**：歌词切到中间句或末句时，不再推动外层播放页，保持唱片位置稳定。
 
 <p align="center">
@@ -89,11 +91,11 @@
 
 ## 下载与安装
 
-当前发布版本为 **0.1.25**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+当前发布版本为 **0.1.26**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.25/tingyu-0.1.25-android-arm64-v8a-release.apk) |
+| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.26/tingyu-0.1.26-android-arm64-v8a-release.apk) |
 | macOS / Windows | 暂无安装包 |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
@@ -101,9 +103,9 @@ Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可�
 <details>
 <summary>校验安装包</summary>
 
-文件：`tingyu-0.1.25-android-arm64-v8a-release.apk`
+文件：`tingyu-0.1.26-android-arm64-v8a-release.apk`
 
-SHA-256：`c16c6c63821357228c1b7ebaf700945406cea1dd26822633e48014f0903991f6`
+SHA-256：`83a4b498ff97ae8bbac0a474c875cb3580c8823f6f393156d054d9109c05e28b`
 
 </details>
 
@@ -113,7 +115,7 @@ SHA-256：`c16c6c63821357228c1b7ebaf700945406cea1dd26822633e48014f0903991f6`
 - **整理音乐**：带封面的全部歌单列表、本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
 - **离线播放**：下载音频及可用的封面、歌词，支持导出 M4A。
 - **歌词**：同步逐句／逐字歌词、翻译与罗马音，可手动匹配、编辑和调整偏移；以歌词源实际提供的内容为准。
-- **播放控制**：循环、随机、播完暂停、倍速、音量与定时关闭；自定义时长滚轮带刻度反馈。
+- **播放控制**：循环、随机、播完暂停、倍速、音量与定时关闭；自定义时长滚轮带刻度反馈；音量和定时结束方式跨重启保留。
 - **外观**：哔哩粉、日出橙、月影蓝与夜间暗四种主题。
 
 ## 常见问题
@@ -132,7 +134,7 @@ SHA-256：`c16c6c63821357228c1b7ebaf700945406cea1dd26822633e48014f0903991f6`
 
 [功能清单](docs/FEATURES.md) · [界面规范](docs/UI.md) · [验收标准](docs/ACCEPTANCE.md) · [发布准则](docs/RELEASE.md) · [版本记录](https://github.com/boyl/tingyu/releases)
 
-0.1.25 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-21-025.md)。真实账号授权与重启登录保持仍待验。
+0.1.26 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-24-026.md)。真实账号授权与重启登录保持仍待验。
 
 ## 许可
 
