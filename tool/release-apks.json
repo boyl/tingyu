@@ -1,6 +1,6 @@
 {
-  "version": "0.1.26+27",
-  "sourceSha256": "525125f889f09e4ae181be38e132613eecc0ae30bad80534421cb5c8f0cede42",
+  "version": "0.1.27+28",
+  "sourceSha256": "7a4df91f86bb542cad0385960e5d5571835ebccdc8ca3c26f30252fb5105abc9",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,12 +8,12 @@
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.26-android-arm64-v8a-release.apk",
-      "bytes": 23572599,
-      "sha256": "83a4b498ff97ae8bbac0a474c875cb3580c8823f6f393156d054d9109c05e28b",
+      "path": "artifacts/tingyu-0.1.27-android-arm64-v8a-release.apk",
+      "bytes": 23704003,
+      "sha256": "de52dafb7b507b70cb1c20cbc2a0690944b82c38acfd169fb9aaf249bcdb8174",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2027"
+      "versionCode": "2028"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/launcher-icon.png",

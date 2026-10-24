@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.26';
+const tingyuVersion = '0.1.27';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -96,8 +96,9 @@ class SettingsPageFrame extends StatelessWidget {
 }
 
 class SettingsPanel extends StatelessWidget {
-  const SettingsPanel(this.p, {super.key});
+  const SettingsPanel(this.p, {super.key, this.onAccount});
   final LibraryController p;
+  final VoidCallback? onAccount;
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
@@ -128,7 +129,7 @@ class SettingsPanel extends StatelessWidget {
         Pressable(
           key: const ValueKey('settings-account'),
           label: '账号',
-          onPressed: () => context.push('/settings/account'),
+          onPressed: onAccount ?? () => context.push('/settings/account'),
           padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 2),
           child: Row(
             children: [

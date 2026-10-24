@@ -310,9 +310,14 @@ String storageSize(int bytes) => bytes < 1000000
     : '${(bytes / 1000000).toStringAsFixed(1)} MB';
 
 class StoragePanel extends StatefulWidget {
-  const StoragePanel(this.p, {super.key, this.fillViewport = false});
+  const StoragePanel(
+    this.p, {
+    super.key,
+    this.fillViewport = false,
+    this.desktop = false,
+  });
   final LibraryController p;
-  final bool fillViewport;
+  final bool fillViewport, desktop;
   @override
   State<StoragePanel> createState() => _StoragePanelState();
 }
@@ -352,46 +357,33 @@ class _StoragePanelState extends State<StoragePanel> {
         t.line,
         t.accentInk,
       ];
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: SizedBox.square(
-              dimension: 228,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: StorageRing(data.bytes.values.toList(), colors),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        storageSize(data.total),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (data.installUnavailable)
-                        Text(
-                          '未含应用安装',
-                          style: TextStyle(fontSize: 11, color: t.muted),
-                        ),
-                    ],
-                  ),
-                ],
+      final ring = Center(
+        child: SizedBox.square(
+          dimension: widget.desktop ? TingyuTokens.macStorageRing : 228,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: StorageRing(data.bytes.values.toList(), colors),
+                ),
               ),
-            ),
+              StorageTotalLabel(
+                total: data.total,
+                diameter: widget.desktop ? TingyuTokens.macStorageRing : 228,
+              ),
+            ],
           ),
-          const SizedBox(height: TingyuTokens.space * 2),
+        ),
+      );
+      final categories = Column(
+        children: [
           for (final item in data.bytes.entries.indexed)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: TingyuTokens.space * 2,
+              padding: EdgeInsets.symmetric(
+                vertical: widget.desktop
+                    ? TingyuTokens.space
+                    : TingyuTokens.space * 2,
               ),
               child: Row(
                 children: [
@@ -411,6 +403,25 @@ class _StoragePanelState extends State<StoragePanel> {
                 ],
               ),
             ),
+        ],
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.desktop)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ring,
+                const SizedBox(width: TingyuTokens.space * 3),
+                Expanded(child: categories),
+              ],
+            )
+          else ...[
+            ring,
+            const SizedBox(height: TingyuTokens.space * 2),
+            categories,
+          ],
           if (widget.fillViewport) const Spacer(),
           const SizedBox(height: TingyuTokens.space * 3),
           Center(
@@ -487,17 +498,62 @@ class _StoragePanelState extends State<StoragePanel> {
   );
 }
 
+class StorageTotalLabel extends StatelessWidget {
+  const StorageTotalLabel({
+    super.key,
+    required this.total,
+    required this.diameter,
+  });
+  final int total;
+  final double diameter;
+  @override
+  Widget build(BuildContext context) {
+    final parts = storageSize(total).split(' ');
+    final inner =
+        diameter -
+        TingyuTokens.storageRingInset * 2 -
+        TingyuTokens.storageRingStroke -
+        TingyuTokens.space * 2;
+    return Semantics(
+      label: '占用 ${storageSize(total)}',
+      child: SizedBox.square(
+        key: const ValueKey('storage-total-label'),
+        dimension: inner,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                parts.first,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                parts.skip(1).join(' '),
+                style: TextStyle(fontSize: 12, color: context.tokens.muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class StorageRing extends CustomPainter {
   StorageRing(this.values, this.colors);
   final List<int> values;
   final List<Color> colors;
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = (Offset.zero & size).deflate(20);
+    final rect = (Offset.zero & size).deflate(TingyuTokens.storageRingInset);
     final total = values.fold(0, (a, b) => a + b);
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 38;
+      ..strokeWidth = TingyuTokens.storageRingStroke;
     if (total == 0) {
       canvas.drawOval(rect, paint..color = colors.last);
       return;

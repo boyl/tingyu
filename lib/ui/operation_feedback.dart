@@ -184,9 +184,12 @@ Future<void> showBatchTransfer(
   final ids = source.toSet().toList();
   final pending = <String, List<String>>{};
   bool completed = false;
+  int processed = 0, total = ids.length;
   Future<void> process(Playlist? target) async {
     final key = target?.id ?? 'downloads';
     final work = pending[key] ?? ids;
+    processed = 0;
+    total = work.length;
     final failures = <String>[];
     var success = 0, existing = 0;
     final ok = await session.run(() async {
@@ -194,6 +197,8 @@ Future<void> showBatchTransfer(
         final track = p.library[id];
         if (track == null) {
           failures.add(id);
+          processed++;
+          session.progress('已处理 $processed / $total');
           continue;
         }
         try {
@@ -219,9 +224,8 @@ Future<void> showBatchTransfer(
         } on Exception {
           failures.add(id);
         }
-        session.progress(
-          '已处理 ${success + existing + failures.length} / ${work.length}',
-        );
+        processed++;
+        session.progress('已处理 $processed / $total');
       }
       pending[key] = failures;
       if (failures.isNotEmpty) {
@@ -230,6 +234,10 @@ Future<void> showBatchTransfer(
         );
       }
     }, '处理完成');
+    if (!ok) {
+      session.retry = () => process(target);
+      session.progress(session.message);
+    }
     if (ok) {
       completed = true;
       session.progress(
@@ -240,49 +248,135 @@ Future<void> showBatchTransfer(
 
   try {
     if (download) unawaited(process(null));
-    await showContentActions(
-      context,
-      (ctx) => SimpleDialog(
-        title: Text(download ? '批量下载' : '添加至歌单'),
-        children: [
-          session.status(ctx),
-          if (!download) ...[
-            for (final target in p.playlists)
-              labelButton(
-                target.name,
-                session.busy ? null : () => process(target),
-                icon: Icons.playlist_add,
+    await showContentActions(context, (ctx) {
+      final panel = ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: TingyuTokens.batchDialogWidth,
+          maxHeight: MediaQuery.sizeOf(ctx).height * .8,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(TingyuTokens.space * 3),
+            child: SizedBox(
+              key: const ValueKey('batch-transfer-body'),
+              width: TingyuTokens.batchDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    download ? '批量下载' : '添加至歌单',
+                    style: const TextStyle(
+                      fontSize: TingyuTokens.batchDialogTitle,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: TingyuTokens.space * 3),
+                  if (download || session.message.isNotEmpty)
+                    BatchTransferProgress(
+                      processed: processed,
+                      total: total,
+                      busy: session.busy,
+                      failed: session.failed,
+                      message: session.message,
+                    ),
+                  if (!download) ...[
+                    for (final target in p.playlists)
+                      labelButton(
+                        target.name,
+                        session.busy ? null : () => process(target),
+                        icon: Icons.playlist_add,
+                      ),
+                    labelButton(
+                      '新建歌单',
+                      session.busy
+                          ? null
+                          : () async {
+                              final name = await nameDialog(ctx);
+                              if (name == null) return;
+                              final created = await session.run(
+                                () => p.addPlaylist(name),
+                                '已新建歌单',
+                              );
+                              if (created) await process(p.playlists.last);
+                            },
+                      icon: Icons.add,
+                    ),
+                  ],
+                  const SizedBox(height: TingyuTokens.space * 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (session.failed && session.retry != null)
+                        labelButton('重试', session.retry),
+                      labelButton(
+                        session.busy ? '处理中' : '完成',
+                        session.busy
+                            ? null
+                            : () {
+                                Navigator.pop(ctx);
+                                if (completed) onDone();
+                              },
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            labelButton(
-              '新建歌单',
-              session.busy
-                  ? null
-                  : () async {
-                      final name = await nameDialog(ctx);
-                      if (name == null) return;
-                      final created = await session.run(
-                        () => p.addPlaylist(name),
-                        '已新建歌单',
-                      );
-                      if (created) await process(p.playlists.last);
-                    },
-              icon: Icons.add,
             ),
-          ],
-          labelButton(
-            '完成',
-            session.busy
-                ? null
-                : () {
-                    Navigator.pop(ctx);
-                    if (completed) onDone();
-                  },
           ),
-        ],
-      ),
-      listenable: Listenable.merge([p, session]),
-    );
+        ),
+      );
+      return MediaQuery.sizeOf(ctx).width >= 960 ? Dialog(child: panel) : panel;
+    }, listenable: Listenable.merge([p, session]));
   } finally {
     session.dispose();
   }
+}
+
+/// Bounded progress geometry, independent of Material spinner minimum sizing.
+class BatchTransferProgress extends StatelessWidget {
+  const BatchTransferProgress({
+    super.key,
+    required this.processed,
+    required this.total,
+    required this.busy,
+    required this.failed,
+    required this.message,
+  });
+  final int processed, total;
+  final bool busy, failed;
+  final String message;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: TingyuTokens.batchStatusHeight,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LinearProgressIndicator(
+            key: const ValueKey('batch-transfer-progress'),
+            value: total == 0
+                ? (busy ? null : 0)
+                : (processed / total).clamp(0, 1),
+            minHeight: TingyuTokens.batchProgressHeight,
+            backgroundColor: context.tokens.line,
+            color: failed ? context.tokens.danger : context.tokens.accent,
+            borderRadius: BorderRadius.circular(TingyuTokens.radius),
+          ),
+          const SizedBox(height: TingyuTokens.space * 2),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 13,
+              color: failed ? context.tokens.danger : context.tokens.muted,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

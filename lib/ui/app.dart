@@ -36,6 +36,9 @@ part 'lyrics_preferences_views.dart';
 part 'playback_settings_views.dart';
 part 'preferences_views.dart';
 part 'operation_feedback.dart';
+part 'mac_workspace.dart';
+part 'mac_account_views.dart';
+part 'mac_settings_views.dart';
 
 String normalizedFolderName(String value) => String.fromCharCodes(
   value.runes.map(
@@ -831,6 +834,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 if (selecting)
                   Positioned.fill(
                     child: SelectionToolbar(
+                      scope: widget.page,
                       selectedIds: selection
                           .where(visibleIds(p, list).contains)
                           .toList(),
@@ -2036,9 +2040,19 @@ class _PlayerProgressState extends State<PlayerProgress> {
 }
 
 class SeekBar extends StatelessWidget {
-  const SeekBar(this.p, {super.key, this.onSeeking});
+  const SeekBar(
+    this.p, {
+    super.key,
+    this.onSeeking,
+    this.showTimes = true,
+    this.timeFontSize = 10,
+    this.enabled = true,
+  });
   final LibraryController p;
   final ValueChanged<bool>? onSeeking;
+  final bool showTimes;
+  final bool enabled;
+  final double timeFontSize;
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<Duration>(
     valueListenable: p.playhead,
@@ -2059,25 +2073,39 @@ class SeekBar extends StatelessWidget {
             max > 0 ? max : 1,
           ),
           max: max > 0 ? max : 1,
-          onChangeStart: max > 0 ? (_) => onSeeking?.call(true) : null,
-          onChangeEnd: max > 0 ? (_) => onSeeking?.call(false) : null,
-          onChanged: max > 0
+          label: showTimes ? null : clock(p.position),
+          onChangeStart: enabled && max > 0
+              ? (_) => onSeeking?.call(true)
+              : null,
+          onChangeEnd: enabled && max > 0
+              ? (_) => onSeeking?.call(false)
+              : null,
+          onChanged: enabled && max > 0
               ? (v) => p.playback.seek(Duration(milliseconds: v.round()))
               : null,
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              clock(p.position),
-              style: TextStyle(fontSize: 10, color: context.tokens.muted),
-            ),
-            Text(
-              clock(duration),
-              style: TextStyle(fontSize: 10, color: context.tokens.muted),
-            ),
-          ],
-        ),
+        if (showTimes)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                clock(p.position),
+                style: TextStyle(
+                  fontSize: timeFontSize,
+                  height: 1.4,
+                  color: context.tokens.muted,
+                ),
+              ),
+              Text(
+                clock(duration),
+                style: TextStyle(
+                  fontSize: timeFontSize,
+                  height: 1.4,
+                  color: context.tokens.muted,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -3081,10 +3109,14 @@ class DownloadsPanel extends StatelessWidget {
     this.query = '',
     this.sliver = false,
     this.showTasks = false,
+    this.selected,
+    this.onToggle,
   });
   final bool sliver, showTasks;
   final LibraryController p;
   final String query;
+  final Set<String>? selected;
+  final ValueChanged<String>? onToggle;
   @override
   Widget build(BuildContext context) {
     final active = p.downloads.incompleteTasks
@@ -3113,135 +3145,158 @@ class DownloadsPanel extends StatelessWidget {
           ),
         ),
       for (final d in tasks)
-        (_) => Container(
-          key: ValueKey('download-row-${d.track.id}'),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: context.tokens.line)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Pressable(
-                  key: ValueKey('play-downloaded-${d.track.id}'),
-                  label: '播放已下载歌曲 ${d.track.title}',
-                  onPressed: d.status == DownloadStatus.completed
-                      ? () => p.playDownloaded(d.track)
-                      : () => showDownloadActions(context, p, d),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: TingyuTokens.space * 1.5,
+        (_) => selected != null
+            ? SelectionTrackRow(
+                d.track,
+                selected: selected!.contains(d.track.id),
+                onPressed: () => onToggle!(d.track.id),
+              )
+            : Container(
+                key: ValueKey('download-row-${d.track.id}'),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: context.tokens.line),
                   ),
-                  child: Row(
-                    children: [
-                      Stack(
-                        children: [
-                          Artwork(d.track),
-                          if (p.current?.id == d.track.id)
-                            Positioned(
-                              right: TingyuTokens.downloadBadgeInset,
-                              bottom: TingyuTokens.downloadBadgeInset,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  TingyuTokens.downloadBadgeRadius,
-                                ),
-                                child: BackdropFilter(
-                                  filter: ui.ImageFilter.blur(
-                                    sigmaX: TingyuTokens.glassBlur,
-                                    sigmaY: TingyuTokens.glassBlur,
-                                  ),
-                                  child: Container(
-                                    key: ValueKey(
-                                      'download-playing-${d.track.id}',
-                                    ),
-                                    width: TingyuTokens.downloadBadgeSize,
-                                    height: TingyuTokens.downloadBadgeSize,
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: context.tokens.downloadBadgeFill,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Pressable(
+                        key: ValueKey('play-downloaded-${d.track.id}'),
+                        label: '播放已下载歌曲 ${d.track.title}',
+                        onPressed: d.status == DownloadStatus.completed
+                            ? () => p.playDownloaded(d.track)
+                            : () => showDownloadActions(context, p, d),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: TingyuTokens.space * 1.5,
+                        ),
+                        child: Row(
+                          children: [
+                            Stack(
+                              children: [
+                                Artwork(d.track),
+                                if (p.current?.id == d.track.id)
+                                  Positioned(
+                                    right: TingyuTokens.downloadBadgeInset,
+                                    bottom: TingyuTokens.downloadBadgeInset,
+                                    child: ClipRRect(
                                       borderRadius: BorderRadius.circular(
                                         TingyuTokens.downloadBadgeRadius,
                                       ),
-                                      border: Border.all(
-                                        color: context.tokens.downloadBadgeEdge,
-                                        width: .5,
+                                      child: BackdropFilter(
+                                        filter: ui.ImageFilter.blur(
+                                          sigmaX: TingyuTokens.glassBlur,
+                                          sigmaY: TingyuTokens.glassBlur,
+                                        ),
+                                        child: Container(
+                                          key: ValueKey(
+                                            'download-playing-${d.track.id}',
+                                          ),
+                                          width: TingyuTokens.downloadBadgeSize,
+                                          height:
+                                              TingyuTokens.downloadBadgeSize,
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: context
+                                                .tokens
+                                                .downloadBadgeFill,
+                                            borderRadius: BorderRadius.circular(
+                                              TingyuTokens.downloadBadgeRadius,
+                                            ),
+                                            border: Border.all(
+                                              color: context
+                                                  .tokens
+                                                  .downloadBadgeEdge,
+                                              width: .5,
+                                            ),
+                                          ),
+                                          child: PlayingIndicator(
+                                            color: TingyuTokens.onArtwork,
+                                            playing:
+                                                p.playing &&
+                                                p
+                                                        .playback
+                                                        .player
+                                                        .processingState ==
+                                                    ProcessingState.ready,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    child: PlayingIndicator(
-                                      color: TingyuTokens.onArtwork,
-                                      playing:
-                                          p.playing &&
-                                          p.playback.player.processingState ==
-                                              ProcessingState.ready,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(width: TingyuTokens.space * 1.5),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    d.track.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: context.tokens.text,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(
+                                    height: TingyuTokens.space / 2,
+                                  ),
+                                  Text(
+                                    d.error ??
+                                        switch (d.status) {
+                                          DownloadStatus.completed =>
+                                            d.track.artist,
+                                          DownloadStatus.waiting => '等待下载',
+                                          DownloadStatus.downloading =>
+                                            '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
+                                          DownloadStatus.failed => '下载失败',
+                                          DownloadStatus.paused => '下载已中断，点击重试',
+                                        },
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: context.tokens.muted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  if (d.status == DownloadStatus.downloading)
+                                    LinearProgressIndicator(value: d.progress),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(width: TingyuTokens.space * 1.5),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              d.track.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: context.tokens.text,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: TingyuTokens.space / 2),
-                            Text(
-                              d.error ??
-                                  switch (d.status) {
-                                    DownloadStatus.completed => d.track.artist,
-                                    DownloadStatus.waiting => '等待下载',
-                                    DownloadStatus.downloading =>
-                                      '下载中 · ${d.progress == null ? '未知大小' : '${(d.progress! * 100).round()}%'}',
-                                    DownloadStatus.failed => '下载失败',
-                                    DownloadStatus.paused => '下载已中断，点击重试',
-                                  },
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: context.tokens.muted,
-                                fontSize: 12,
-                              ),
-                            ),
-                            if (d.status == DownloadStatus.downloading)
-                              LinearProgressIndicator(value: d.progress),
                           ],
                         ),
                       ),
+                    ),
+                    if (d.status == DownloadStatus.completed) ...[
+                      action(
+                        Icons.more_horiz,
+                        '下载选项 ${d.track.title}',
+                        () => showDownloadActions(context, p, d),
+                      ),
+                    ] else ...[
+                      if (d.status == DownloadStatus.downloading ||
+                          d.status == DownloadStatus.waiting)
+                        action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
+                      else
+                        action(
+                          d.status == DownloadStatus.paused
+                              ? Icons.play_arrow
+                              : Icons.refresh,
+                          d.status == DownloadStatus.paused ? '继续下载' : '重试下载',
+                          () => p.downloads.retry(d),
+                        ),
+                      action(
+                        Icons.delete_outline,
+                        '移除下载',
+                        () => p.removeDownload(d),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
-              if (d.status == DownloadStatus.completed) ...[
-                action(
-                  Icons.more_horiz,
-                  '下载选项 ${d.track.title}',
-                  () => showDownloadActions(context, p, d),
-                ),
-              ] else ...[
-                if (d.status == DownloadStatus.downloading ||
-                    d.status == DownloadStatus.waiting)
-                  action(Icons.pause, '暂停下载', () => p.downloads.pause(d))
-                else
-                  action(
-                    d.status == DownloadStatus.paused
-                        ? Icons.play_arrow
-                        : Icons.refresh,
-                    d.status == DownloadStatus.paused ? '继续下载' : '重试下载',
-                    () => p.downloads.retry(d),
-                  ),
-                action(Icons.delete_outline, '移除下载', () => p.removeDownload(d)),
-              ],
-            ],
-          ),
-        ),
     ];
     return sliver
         ? SliverList(
@@ -3529,9 +3584,19 @@ Future<void> showAccount(BuildContext context, LibraryController p) async {
 }
 
 class AccountPanel extends StatefulWidget {
-  const AccountPanel(this.p, {super.key, this.standalone = false});
+  const AccountPanel(
+    this.p, {
+    super.key,
+    this.standalone = false,
+    this.pollWhileInactive = false,
+    this.desktop = false,
+    this.onOpenPlaylist,
+  });
   final LibraryController p;
   final bool standalone;
+  final bool pollWhileInactive;
+  final bool desktop;
+  final ValueChanged<Playlist>? onOpenPlaylist;
   @override
   State<AccountPanel> createState() => _AccountPanelState();
 }
@@ -3540,7 +3605,7 @@ class _AccountPanelState extends State<AccountPanel>
     with WidgetsBindingObserver {
   String? qr, key;
   String message = '';
-  bool showQr = false, qrExpired = false;
+  bool showQr = false, qrExpired = false, qrFailed = false;
   int loginEpoch = 0;
   DateTime? qrDeadline;
   Future<void>? activePoll;
@@ -3549,6 +3614,7 @@ class _AccountPanelState extends State<AccountPanel>
   final selectedFolders = <int>{};
   final folderSearch = TextEditingController();
   Playlist? imported;
+  int importedCount = 0;
   Timer? timer;
   List<Map<String, dynamic>> folders = [];
   @override
@@ -3557,6 +3623,8 @@ class _AccountPanelState extends State<AccountPanel>
     WidgetsBinding.instance.addObserver(this);
     if (widget.p.api.hasSession || widget.p.profile != null) {
       unawaited(loadProfile());
+    } else if (widget.desktop) {
+      unawaited(generate(openApp: false));
     }
   }
 
@@ -3625,6 +3693,7 @@ class _AccountPanelState extends State<AccountPanel>
       if (mounted) {
         setState(() {
           imported = importedResult;
+          importedCount = chosen.isEmpty ? 1 : chosen.length;
           message =
               '已导入 ${importedResult.trackIds.length} 首到「${importedResult.name}」';
         });
@@ -3641,16 +3710,21 @@ class _AccountPanelState extends State<AccountPanel>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     timer?.cancel();
-    if (state == AppLifecycleState.resumed && key != null && !qrExpired) {
+    if (canPoll(state) && key != null && !qrExpired) {
       startPolling(loginEpoch, key!);
       unawaited(checkLogin(loginEpoch, key!));
     }
   }
 
+  bool canPoll(AppLifecycleState? state) =>
+      state == null ||
+      state == AppLifecycleState.resumed ||
+      (widget.pollWhileInactive && state == AppLifecycleState.inactive);
+
   void startPolling(int epoch, String sessionKey) {
     timer?.cancel();
     final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    if (!canPoll(lifecycle)) return;
     timer = Timer.periodic(
       const Duration(seconds: 2),
       (_) => unawaited(checkLogin(epoch, sessionKey)),
@@ -3695,9 +3769,10 @@ class _AccountPanelState extends State<AccountPanel>
       } on Exception catch (e) {
         timer?.cancel();
         if (mounted && epoch == loginEpoch) {
-          setState(
-            () => message = e is AppFailure ? e.message : '登录请求失败，请刷新重试',
-          );
+          setState(() {
+            qrFailed = true;
+            message = e is AppFailure ? e.message : '登录请求失败，请刷新重试';
+          });
         }
       } finally {
         polling = false;
@@ -3746,6 +3821,7 @@ class _AccountPanelState extends State<AccountPanel>
         qr = result.url;
         key = result.key;
         qrExpired = false;
+        qrFailed = false;
         qrDeadline = DateTime.now().add(const Duration(minutes: 3));
         showQr = !openApp;
         message = '等待 B 站确认登录';
@@ -3762,11 +3838,67 @@ class _AccountPanelState extends State<AccountPanel>
       if (mounted && epoch == loginEpoch) startPolling(epoch, result.key);
     } on Exception catch (e) {
       if (mounted && epoch == loginEpoch) {
-        setState(() => message = e is AppFailure ? e.message : '无法生成二维码，请重试');
+        setState(() {
+          qrFailed = true;
+          message = e is AppFailure ? e.message : '无法生成二维码，请重试';
+        });
       }
     } finally {
       if (mounted && epoch == loginEpoch) setState(() => busy = false);
     }
+  }
+
+  void _macFolderQuery(String _) => setState(() {});
+  void _macToggleFolder(Map<String, dynamic> folder) => setState(() {
+    final id = folder['id'] as int;
+    if (!selectedFolders.add(id)) selectedFolders.remove(id);
+    selectedFolder = folders
+        .where((f) => selectedFolders.contains(f['id']))
+        .firstOrNull;
+    imported = null;
+    message = '';
+  });
+  void _macSelectVisible() => setState(() {
+    final visible = folders.where(
+      (f) => matchesFolderName('${f['title']}', folderSearch.text),
+    );
+    final ids = visible.map((f) => f['id'] as int).toSet();
+    if (ids.every(selectedFolders.contains)) {
+      selectedFolders.removeAll(ids);
+    } else {
+      selectedFolders.addAll(ids);
+    }
+    selectedFolder = folders
+        .where((f) => selectedFolders.contains(f['id']))
+        .firstOrNull;
+    imported = null;
+    message = '';
+  });
+  void _macContinueImport() => setState(() {
+    imported = null;
+    selectedFolder = null;
+    selectedFolders.clear();
+    message = '';
+  });
+  void _macOpenImported() {
+    final list = imported;
+    if (list == null) return;
+    Navigator.pop(context);
+    widget.onOpenPlaylist?.call(list);
+  }
+
+  Future<void> _macLogout() async {
+    if (!await confirm(context, '退出账号？本地歌曲、歌单和下载会保留。')) return;
+    await widget.p.logout();
+    if (!mounted) return;
+    setState(() {
+      folders = [];
+      selectedFolder = null;
+      selectedFolders.clear();
+      imported = null;
+      message = '';
+    });
+    await generate(openApp: false);
   }
 
   Widget loginCard(BuildContext context) {
@@ -3950,6 +4082,7 @@ class _AccountPanelState extends State<AccountPanel>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.desktop) return _MacAccountPanelView(this);
     final p = widget.p;
     final visibleFolders = folders
         .where((f) => matchesFolderName('${f['title']}', folderSearch.text))
@@ -4248,6 +4381,43 @@ class FolderChoice extends StatelessWidget {
 Future<void> showLyrics(BuildContext context, LibraryController p) async {
   final track = p.current;
   if (track == null) return;
+  if (PressableStyle.isDesktop(context)) {
+    String? section;
+    await showContentActions(
+      context,
+      (ctx) => SimpleDialog(
+        title: const Text('歌词'),
+        children: [
+          for (final entry in [
+            ('display', '显示与排版'),
+            ('match', '匹配歌词'),
+            ('edit', '编辑歌词'),
+            ('offset', '时间偏移'),
+          ])
+            labelButton(entry.$2, () {
+              section = entry.$1;
+              Navigator.pop(ctx);
+            }),
+        ],
+      ),
+    );
+    if (section == null || !context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          width: TingyuTokens.macSettingsWidth,
+          height: math.min(
+            TingyuTokens.macSettingsHeight,
+            MediaQuery.sizeOf(ctx).height * .85,
+          ),
+          child: LyricsPreferencesPage(p, track, section: section!),
+        ),
+      ),
+    );
+    return;
+  }
   final section = await showModalBottomSheet<String>(
     context: context,
     useSafeArea: true,

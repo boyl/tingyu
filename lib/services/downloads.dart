@@ -169,24 +169,33 @@ class DownloadManager extends ChangeNotifier {
   }
 
   Future<void> remove(DownloadTask t) async {
+    final index = tasks.indexOf(t);
+    if (index < 0) return;
     tasks.remove(t);
-    _lyricQueue.remove(t);
-    _lyricRevisions[t.track.id] = (_lyricRevisions[t.track.id] ?? 0) + 1;
-    await _lyricWrites[t.track.id];
-    await _coverWrites[t];
-    if (_active == t) {
-      final done = _activeDone?.future;
-      _cancel?.cancel();
-      await done;
+    try {
+      _lyricQueue.remove(t);
+      _lyricRevisions[t.track.id] = (_lyricRevisions[t.track.id] ?? 0) + 1;
+      await _lyricWrites[t.track.id];
+      await _coverWrites[t];
+      if (_active == t) {
+        final done = _activeDone?.future;
+        _cancel?.cancel();
+        await done;
+      }
+      final stem = path.join(directory.path, _stem(t.track));
+      for (final ext in ['.m4a', '.part', '.cover', '.lyrics']) {
+        final f = File('$stem$ext');
+        if (await f.exists()) await f.delete();
+      }
+      _localCovers.remove(t.track.id);
+      await _save();
+      notifyListeners();
+    } catch (_) {
+      // Keep failed removals visible and retryable, even if some files are gone.
+      if (!tasks.contains(t)) tasks.insert(index.clamp(0, tasks.length), t);
+      notifyListeners();
+      rethrow;
     }
-    final stem = path.join(directory.path, _stem(t.track));
-    for (final ext in ['.m4a', '.part', '.cover', '.lyrics']) {
-      final f = File('$stem$ext');
-      if (await f.exists()) await f.delete();
-    }
-    _localCovers.remove(t.track.id);
-    await _save();
-    notifyListeners();
   }
 
   String _stem(Track t) => '${t.bvid}_${t.cid}';

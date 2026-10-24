@@ -14,7 +14,8 @@ Future<void> showPlayerVolume(BuildContext context, LibraryController p) =>
     );
 
 class PlayerVolumePanel extends StatelessWidget {
-  const PlayerVolumePanel(this.p, {super.key});
+  const PlayerVolumePanel(this.p, {super.key, this.compact = false});
+  final bool compact;
   final LibraryController p;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -23,22 +24,27 @@ class PlayerVolumePanel extends StatelessWidget {
       final volume = p.playback.player.volume.clamp(0.0, 1.0);
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(TingyuTokens.space * 3),
+          padding: compact
+              ? EdgeInsets.zero
+              : const EdgeInsets.all(TingyuTokens.space * 3),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      '播放音量',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                  if (compact)
+                    const Spacer()
+                  else
+                    const Expanded(
+                      child: Text(
+                        '播放音量',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
                   Text(
                     '${(volume * 100).round()}%',
                     key: const ValueKey('player-volume-percent'),

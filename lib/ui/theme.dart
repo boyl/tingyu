@@ -52,6 +52,35 @@ class TingyuTokens extends ThemeExtension<TingyuTokens> {
   Color get glassShadow => playerShadow.withValues(alpha: isDark ? .24 : .07);
   Color get atmosphereCool => isDark ? tint : discoveryPalettes[0][1];
   Color get atmosphereWarm => isDark ? accent : brandPink;
+  // Mac workspace geometry; Android tokens and layout stay independent.
+  static const batchDialogWidth = 420.0, batchDialogTitle = 18.0;
+  static const batchProgressHeight = 4.0, batchStatusHeight = 64.0;
+  static const macSidebar = 220.0, macSidebarCompact = 184.0;
+  static const macPadding = 32.0, macHeader = 64.0;
+  static const macDock = 80.0, macDockRadius = 14.0;
+  static const macPlayerArt = 36.0, macBrand = 18.0;
+  static const macDetailCover = 320.0, macLyricWidth = 560.0;
+  static const macAccountWidth = 680.0, macAccountQr = 176.0;
+  static const macLoginWidth = 420.0, macSettingsWidth = 680.0;
+  static const macSettingsHeight = 560.0, macStorageRing = 156.0;
+  static const macAccountRadius = 16.0, macAccountAction = 224.0;
+  static const macAccountHeight = 560.0,
+      macLoginHeight = 380.0,
+      macResultHeight = 360.0;
+  static const macQueueWidth = 384.0, macQueueHeight = 440.0;
+  static const macVolumeHeight = 184.0, macOptionsHeight = 460.0;
+  static const storageRingInset = 20.0, storageRingStroke = 38.0;
+  static const macSliderTrack = 2.0,
+      macSliderThumb = 5.0,
+      macSliderOverlay = 14.0;
+  static const macCover = 360.0, macCard = 156.0;
+  static const macMetadata = 12.0,
+      macCaption = 12.0,
+      macTrackTitle = 13.0,
+      macMenuTitle = 17.0,
+      macDetailTitle = 24.0;
+  static const macTitle = 26.0, macSectionTitle = 18.0;
+  static const macWide = 1120.0, macCompact = 900.0;
   static const pillRadius = 100.0;
   static const detailBlur = 18.0;
   static const detailRadius = 22.0;
@@ -351,6 +380,25 @@ ThemeData tingyuTheme(String name) {
   );
 }
 
+/// Captured by dialogs opened from the Mac workspace; other platforms keep their feedback.
+class PressableStyle extends InheritedTheme {
+  const PressableStyle({
+    super.key,
+    required this.desktop,
+    required super.child,
+  });
+  final bool desktop;
+  static bool isDesktop(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PressableStyle>()?.desktop ??
+      false;
+  @override
+  bool updateShouldNotify(PressableStyle oldWidget) =>
+      oldWidget.desktop != desktop;
+  @override
+  Widget wrap(BuildContext context, Widget child) =>
+      PressableStyle(desktop: desktop, child: child);
+}
+
 class Pressable extends StatefulWidget {
   const Pressable({
     super.key,
@@ -396,6 +444,28 @@ class _PressableState extends State<Pressable> {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
+    final desktop = PressableStyle.isDesktop(context);
+    Widget surface({
+      required BoxConstraints constraints,
+      required EdgeInsets padding,
+      required BoxDecoration decoration,
+      required Widget child,
+    }) => desktop
+        ? AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : TingyuTokens.pressDuration,
+            constraints: constraints,
+            padding: padding,
+            decoration: decoration,
+            child: child,
+          )
+        : Container(
+            constraints: constraints,
+            padding: padding,
+            decoration: decoration,
+            child: child,
+          );
     return Semantics(
       button: true,
       enabled: widget.onPressed != null && !pending,
@@ -424,20 +494,29 @@ class _PressableState extends State<Pressable> {
           onTapCancel: () => setState(() => down = false),
           onTapUp: (_) => setState(() => down = false),
           child: AnimatedScale(
-            scale: (down && !MediaQuery.disableAnimationsOf(context))
+            scale:
+                (down && !desktop && !MediaQuery.disableAnimationsOf(context))
                 ? 0.99
                 : 1.0,
             duration: MediaQuery.disableAnimationsOf(context)
                 ? Duration.zero
                 : TingyuTokens.pressDuration,
-            child: Container(
+            child: surface(
               constraints: BoxConstraints(
                 minWidth: widget.minSize,
                 minHeight: widget.minSize,
               ),
               padding: widget.padding,
               decoration: BoxDecoration(
-                color: widget.selected && widget.selectionFill
+                color: desktop && widget.onPressed != null && (down || hover)
+                    ? Color.alphaBlend(
+                        t.text.withValues(alpha: down ? .10 : .05),
+                        widget.color ??
+                            (widget.selected && widget.selectionFill
+                                ? t.tint
+                                : t.surface),
+                      )
+                    : widget.selected && widget.selectionFill
                     ? t.tint
                     : widget.color ?? (hover ? t.tint : null),
                 borderRadius: BorderRadius.circular(widget.radius),

@@ -264,7 +264,12 @@ class LibraryController extends ChangeNotifier {
 
   bool get playing => playback.player.playing;
   Future<void> initialize() async {
-    await api.initialize();
+    try {
+      await api.initialize();
+    } on AppFailure catch (failure) {
+      // 账号不可用不妨碍恢复本地歌单；不删除或改写钥匙串记录。
+      error = failure.message;
+    }
     for (final t in await db.loadTracks()) {
       library[t.id] = t;
     }
@@ -371,7 +376,9 @@ class LibraryController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> save() => db.writeState('library', {
+  Future<void> save() => db.writeState('library', _libraryState());
+
+  Map<String, dynamic> _libraryState() => {
     'libraryOrder': library.keys.toList(),
     'collectionSort': collectionSort,
     'theme': theme,
@@ -399,7 +406,7 @@ class LibraryController extends ChangeNotifier {
     'playlists': playlists.map((l) => l.toJson()).toList(),
     'current': current?.id,
     'position': position.inMilliseconds,
-  });
+  };
   void showError(String message) {
     error = message;
     notifyListeners();
@@ -1002,6 +1009,88 @@ class LibraryController extends ChangeNotifier {
     final valid = ids.where(library.containsKey).toSet().toList();
     if (valid.isEmpty) return;
     await playFromCollection(library[valid.first]!, valid);
+  }
+
+  /// Commit records and their references together before touching live playback.
+  Future<void> removeLibraryTracks(Set<String> selected) async {
+    final ids = selected.where(library.containsKey).toSet();
+    if (ids.isEmpty) return;
+    final state = Map<String, dynamic>.from(
+      jsonDecode(jsonEncode(_libraryState())) as Map,
+    );
+    for (final key in [
+      'libraryOrder',
+      'queue',
+      'nextPriority',
+      'likes',
+      'history',
+    ]) {
+      state[key] = (state[key] as List)
+          .where((id) => !ids.contains(id))
+          .toList();
+    }
+    state['playlists'] = playlists
+        .map(
+          (list) => Playlist(
+            list.id,
+            list.name,
+            list.trackIds.where((id) => !ids.contains(id)).toList(),
+            description: list.description,
+          ).toJson(),
+        )
+        .toList();
+    if (ids.contains(current?.id)) {
+      state['current'] = null;
+      state['position'] = 0;
+    }
+    await db.transaction(() async {
+      for (final id in ids) {
+        await db.deleteTrack(id);
+      }
+      await db.writeState('library', state);
+    });
+    library.removeWhere((id, _) => ids.contains(id));
+    _resolved.removeWhere(
+      (id, track) => ids.contains(id) || ids.contains(track.id),
+    );
+    for (final values in [queue, _nextPriority, likes, history]) {
+      values.removeWhere(ids.contains);
+    }
+    for (var i = 0; i < playlists.length; i++) {
+      final list = playlists[i];
+      playlists[i] = Playlist(
+        list.id,
+        list.name,
+        list.trackIds.where((id) => !ids.contains(id)).toList(),
+        description: list.description,
+      );
+    }
+    _playOrder.sync(queue);
+    try {
+      if (ids.contains(current?.id)) await _clearPlayback();
+    } finally {
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> removeLikes(Set<String> ids) async {
+    for (final id in ids) {
+      final track = library[id];
+      if (track != null && likes.contains(id)) await setLiked(track, false);
+    }
+  }
+
+  Future<void> removeDownloads(Set<String> ids) async {
+    final tasks = downloads.completedTasks
+        .where((task) => ids.contains(task.track.id))
+        .toList();
+    for (var i = 0; i < tasks.length; i++) {
+      try {
+        await removeDownload(tasks[i]);
+      } on Exception {
+        throw AppFailure('已移除 $i 首，剩余下载移除失败，请重试');
+      }
+    }
   }
 
   Future<void> removeFromPlaylist(Playlist list, Set<String> ids) async {

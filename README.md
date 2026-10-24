@@ -65,6 +65,8 @@
   </tr>
 </table>
 
+**0.1.27 更新**：新增 Mac 桌面开发版与两端批量移除；Mac 最近播放采用大封面网格，统一侧栏交互、账号头像、歌词与待播操作弹窗，修复音量面板和存储圆环布局。
+
 **0.1.26 修复**：重启记住播放音量和“播完暂停”偏好；定时关闭时修改该偏好也有效。倒计时不跨重启恢复。本版没有视觉改动，以下截图沿用旧版。
 
 **0.1.25 修复**：歌词切到中间句或末句时，不再推动外层播放页，保持唱片位置稳定。
@@ -87,27 +89,28 @@
 
 ### macOS
 
+提供未公证的 Mac 开发版：侧栏资料库、大封面最近播放、歌曲详情歌词、核心播放栏与独立待播。构建与验证边界见 [桌面开发说明](docs/DESKTOP.md)。
+
+<p><img src="docs/screenshots/2026-10-24-macos/1280-recent.png" alt="Mac 最近播放大封面网格" width="720"></p>
+
+以上为 0.1.27 Mac Flutter 组件夹具截图；真实账号与设备验证边界见版本验收记录。
+
 ### Windows
 
 ## 下载与安装
 
-当前发布版本为 **0.1.26**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+当前发布版本为 **0.1.27**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.26/tingyu-0.1.26-android-arm64-v8a-release.apk) |
-| macOS / Windows | 暂无安装包 |
+| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.27/tingyu-0.1.27-android-arm64-v8a-release.apk) |
+| macOS 12+ · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.27/tingyu-0.1.27-macos-release.dmg) |
+| Windows | 暂无安装包 |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-<details>
-<summary>校验安装包</summary>
+校验值见 [0.1.27 发布记录](docs/ACCEPTANCE-2026-10-24-027.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
-文件：`tingyu-0.1.26-android-arm64-v8a-release.apk`
-
-SHA-256：`83a4b498ff97ae8bbac0a474c875cb3580c8823f6f393156d054d9109c05e28b`
-
-</details>
 
 ## 主要功能
 
@@ -126,7 +129,7 @@ SHA-256：`83a4b498ff97ae8bbac0a474c875cb3580c8823f6f393156d054d9109c05e28b`
 
 **为什么下载没有继续？** 应用进程被系统结束后，下载不会继续。中断任务可重试，目前不支持 HTTP Range 断点续传。
 
-**哪些平台可以使用？** 当前仅发布 Android arm64-v8a 安装包。桌面端仍在开发，模拟器测试不能替代物理设备验收。
+**哪些平台可以使用？** 提供 Android arm64-v8a 安装包与 Mac 开发版。Windows 尚未发布，模拟器测试不能替代物理设备验收。
 
 ## 开发与文档
 
@@ -134,8 +137,12 @@ SHA-256：`83a4b498ff97ae8bbac0a474c875cb3580c8823f6f393156d054d9109c05e28b`
 
 [功能清单](docs/FEATURES.md) · [界面规范](docs/UI.md) · [验收标准](docs/ACCEPTANCE.md) · [发布准则](docs/RELEASE.md) · [版本记录](https://github.com/boyl/tingyu/releases)
 
-0.1.26 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-24-026.md)。真实账号授权与重启登录保持仍待验。
+0.1.27 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-24-027.md)。真实账号授权与重启登录保持仍待验。
 
 ## 许可
 
 项目采用 [MIT License](LICENSE)。第三方组件和资源遵循各自许可。
+
+Mac 本地开发版已取消独立主页，默认进入最近播放或歌曲列表；最新界面预览见 [Mac 最近播放截图](docs/screenshots/2026-10-24-macos/1280-recent.png)。图库为隔离夹具下的 Flutter 组件截图，原生窗口与真实音频需单独验收。
+
+Mac 与 Android 已增加资料库批量删除、批量取消喜欢和批量移除下载；歌单批量移出改为多选工具栏直接操作。所有删除均先确认范围，资料库删除保留下载文件。

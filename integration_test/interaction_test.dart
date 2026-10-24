@@ -239,12 +239,9 @@ void main() {
         await tap('批量选择');
         await tap('select-${firstTrack.id}');
         await capture('collection-selection');
-        await tap('批量更多');
         await tap('批量移出歌单');
         await tap('取消');
         expect(p.playlists.single.trackIds, [firstTrack.id]);
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         await tap('退出多选');
         await tap('歌单更多');
         await capture('collection-more');

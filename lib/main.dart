@@ -113,73 +113,95 @@ Page<void> collectionPage(
   );
 }
 
-final _router = createRouter();
-GoRouter createRouter() => GoRouter(
+final _router = createRouter(macOS: Platform.isMacOS);
+GoRouter createRouter({bool macOS = false}) => GoRouter(
   routes: [
-    StatefulShellRoute.indexedStack(
-      builder: (_, _, shell) => shell,
-      branches: [
-        for (final route in ['library', 'search', 'downloads', 'likes'])
-          StatefulShellBranch(
+    if (macOS)
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const MacWorkspace(),
+        routes: [
+          GoRoute(
+            path: 'playlist/:id/add',
+            builder: (_, state) =>
+                PlaylistAddScreen(playlistId: state.pathParameters['id']!),
             routes: [
               GoRoute(
-                path: route == 'library' ? '/' : '/$route',
-                pageBuilder: (_, state) => NoTransitionPage(
-                  key: state.pageKey,
-                  child: AppShell(
-                    page: route,
-                    downloadSection: state.uri.queryParameters['section'],
-                  ),
+                path: 'search',
+                builder: (_, state) => AppShell(
+                  page: 'search',
+                  playlistId: state.pathParameters['id'],
                 ),
-                routes: [
-                  if (route == 'library')
-                    GoRoute(
-                      path: 'playlists',
-                      builder: (_, _) => const PlaylistsScreen(),
-                    ),
-                  if (route == 'library')
-                    GoRoute(
-                      path: 'playlist/:id',
-                      pageBuilder: (context, state) => collectionPage(
-                        context,
-                        key: state.pageKey,
-                        child: AppShell(
-                          page: 'playlist',
-                          playlistId: state.pathParameters['id'],
-                        ),
-                      ),
-                      routes: [
-                        GoRoute(
-                          path: 'add',
-                          pageBuilder: (context, state) => collectionPage(
-                            context,
-                            key: state.pageKey,
-                            child: PlaylistAddScreen(
-                              playlistId: state.pathParameters['id']!,
-                            ),
-                          ),
-                          routes: [
-                            GoRoute(
-                              path: 'search',
-                              pageBuilder: (context, state) => collectionPage(
-                                context,
-                                key: state.pageKey,
-                                child: AppShell(
-                                  page: 'search',
-                                  playlistId: state.pathParameters['id'],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
               ),
             ],
           ),
-      ],
-    ),
+        ],
+      )
+    else
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) => shell,
+        branches: [
+          for (final route in ['library', 'search', 'downloads', 'likes'])
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: route == 'library' ? '/' : '/$route',
+                  pageBuilder: (_, state) => NoTransitionPage(
+                    key: state.pageKey,
+                    child: AppShell(
+                      page: route,
+                      downloadSection: state.uri.queryParameters['section'],
+                    ),
+                  ),
+                  routes: [
+                    if (route == 'library')
+                      GoRoute(
+                        path: 'playlists',
+                        builder: (_, _) => const PlaylistsScreen(),
+                      ),
+                    if (route == 'library')
+                      GoRoute(
+                        path: 'playlist/:id',
+                        pageBuilder: (context, state) => collectionPage(
+                          context,
+                          key: state.pageKey,
+                          child: AppShell(
+                            page: 'playlist',
+                            playlistId: state.pathParameters['id'],
+                          ),
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'add',
+                            pageBuilder: (context, state) => collectionPage(
+                              context,
+                              key: state.pageKey,
+                              child: PlaylistAddScreen(
+                                playlistId: state.pathParameters['id']!,
+                              ),
+                            ),
+                            routes: [
+                              GoRoute(
+                                path: 'search',
+                                pageBuilder: (context, state) => collectionPage(
+                                  context,
+                                  key: state.pageKey,
+                                  child: AppShell(
+                                    page: 'search',
+                                    playlistId: state.pathParameters['id'],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
+        ],
+      ),
     GoRoute(
       path: '/settings',
       builder: (_, _) => const SettingsScreen(),
@@ -199,7 +221,12 @@ GoRouter createRouter() => GoRouter(
       builder: (_, _) => const GlassPreferencesScreen(),
     ),
     GoRoute(path: '/lyrics', builder: (_, _) => const LyricsScreen()),
-    GoRoute(path: '/player', builder: (_, _) => const PlayerScreen()),
+    GoRoute(
+      path: '/player',
+      builder: (_, _) => macOS
+          ? const MacWorkspace(initialPage: 'details')
+          : const PlayerScreen(),
+    ),
   ],
 );
 

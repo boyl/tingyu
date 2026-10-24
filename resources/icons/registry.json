@@ -46,7 +46,16 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -56,7 +65,11 @@
       "asset": "svg/check.svg",
       "runtimeSource": "lib/ui/icons.dart",
       "aliases": [],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "circle",
@@ -69,7 +82,10 @@
       ],
       "designUses": [
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -99,7 +115,11 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html"
       ]
     },
     {
@@ -124,7 +144,11 @@
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
-        "design-review/2026-10-19/review-v13/index.html"
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html"
       ]
     },
     {
@@ -147,7 +171,13 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -168,7 +198,10 @@
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
-        "design-review/2026-10-19/review-v13/index.html"
+        "design-review/2026-10-19/review-v13/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -182,7 +215,10 @@
         "cancel_outlined"
       ],
       "designUses": [
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -196,7 +232,15 @@
         "north_east"
       ],
       "designUses": [
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -215,7 +259,15 @@
         "design-review/2026-10-19/review-v18/index.html",
         "design-review/2026-10-19/review-v19/index.html",
         "design-review/2026-10-19/review-v20/index.html",
-        "design-review/2026-10-19/review-v21/index.html"
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -227,7 +279,13 @@
       "aliases": [
         "playlist_add"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
+      ]
     },
     {
       "id": "grip",
@@ -239,7 +297,11 @@
         "drag_handle",
         "drag_indicator"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "heart",
@@ -272,7 +334,13 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -285,7 +353,11 @@
         "favorite",
         "favorite_rounded"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "info",
@@ -298,7 +370,10 @@
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -310,7 +385,11 @@
       "aliases": [
         "my_location"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "lyrics",
@@ -331,7 +410,10 @@
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -352,7 +434,10 @@
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -364,7 +449,11 @@
       "aliases": [
         "remove_circle_outline"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "more",
@@ -394,7 +483,16 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -406,7 +504,11 @@
       "aliases": [
         "arrow_downward"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "moveUp",
@@ -417,7 +519,11 @@
       "aliases": [
         "arrow_upward"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "music",
@@ -440,7 +546,16 @@
         "design-review/2026-10-19/review-v19/index.html",
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -473,7 +588,12 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
       ]
     },
     {
@@ -507,7 +627,12 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
       ]
     },
     {
@@ -523,7 +648,12 @@
       "designUses": [
         "design-review/2026-10-19/layout-v5/controls.html",
         "design-review/2026-10-19/review-v13/index.html",
-        "design-review/2026-10-19/review-v18/index.html"
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -535,7 +665,13 @@
       "aliases": [
         "playlist_play"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
+      ]
     },
     {
       "id": "playlist",
@@ -547,7 +683,10 @@
         "featured_play_list_outlined"
       ],
       "designUses": [
-        "design-review/2026-10-19/review-v21/index.html"
+        "design-review/2026-10-19/review-v21/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -568,7 +707,12 @@
         "design-review/2026-10-19/layout-v8/controls.html",
         "design-review/2026-10-19/layout-v9/controls.html",
         "design-review/2026-10-19/review-v16/index.html",
-        "design-review/2026-10-19/review-v17/index.html"
+        "design-review/2026-10-19/review-v17/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -599,7 +743,12 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
       ]
     },
     {
@@ -631,7 +780,13 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -644,7 +799,12 @@
         "add_to_queue"
       ],
       "designUses": [
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
       ]
     },
     {
@@ -670,7 +830,10 @@
         "design-review/2026-10-19/review-v13/index.html",
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
-        "design-review/2026-10-19/review-v18/index.html"
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -684,7 +847,16 @@
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -704,7 +876,12 @@
         "design-review/2026-10-19/review-v16/index.html",
         "design-review/2026-10-19/review-v17/index.html",
         "design-review/2026-10-19/review-v18/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v3/index.html"
       ]
     },
     {
@@ -718,7 +895,10 @@
       ],
       "designUses": [
         "design-review/2026-10-19/review-v18/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -731,7 +911,10 @@
         "swap_vert"
       ],
       "designUses": [
-        "design-review/2026-10-19/review-v18/index.html"
+        "design-review/2026-10-19/review-v18/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -743,7 +926,11 @@
       "aliases": [
         "vertical_align_top"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "trackPlus",
@@ -754,7 +941,11 @@
       "aliases": [
         "library_add_outlined"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "trash",
@@ -765,7 +956,11 @@
       "aliases": [
         "delete_outline"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "wave",
@@ -776,7 +971,11 @@
       "aliases": [
         "graphic_eq"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/album_outlined",
@@ -786,9 +985,13 @@
       "codepoint": 61031,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:445"
+        "lib/ui/app.dart:448"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/blur_on",
@@ -798,10 +1001,13 @@
       "codepoint": 57581,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/settings_views.dart:172"
+        "lib/ui/settings_views.dart:173"
       ],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -812,7 +1018,27 @@
       "codepoint": 57699,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/preferences_views.dart:398"
+        "lib/ui/preferences_views.dart:390"
+      ],
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
+    },
+    {
+      "id": "material/clear",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57704,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/library_views.dart:62",
+        "lib/ui/mac_account_views.dart:81",
+        "lib/ui/mac_settings_views.dart:38",
+        "lib/ui/mac_workspace.dart:209",
+        "lib/ui/mac_workspace.dart:1025"
       ],
       "designUses": []
     },
@@ -827,7 +1053,10 @@
         "lib/ui/icons.dart:25"
       ],
       "designUses": [
-        "design-review/2026-10-19/layout-v5/controls.html"
+        "design-review/2026-10-19/layout-v5/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -838,9 +1067,13 @@
       "codepoint": 61453,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1220"
+        "lib/ui/app.dart:1224"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/error_outline",
@@ -850,10 +1083,14 @@
       "codepoint": 57912,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1353",
-        "lib/ui/app.dart:1429"
+        "lib/ui/app.dart:1357",
+        "lib/ui/app.dart:1433"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/folder_outlined",
@@ -863,8 +1100,26 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3938",
-        "lib/ui/app.dart:4217"
+        "lib/ui/app.dart:4070",
+        "lib/ui/app.dart:4350",
+        "lib/ui/mac_account_views.dart:289",
+        "lib/ui/mac_workspace.dart:537"
+      ],
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
+    },
+    {
+      "id": "material/history",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58132,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/mac_workspace.dart:516"
       ],
       "designUses": []
     },
@@ -876,9 +1131,13 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3281"
+        "lib/ui/app.dart:3336"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/logout",
@@ -888,9 +1147,13 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4122"
+        "lib/ui/app.dart:4255"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/looks_one_outlined",
@@ -901,7 +1164,10 @@
       "matchTextDirection": false,
       "uses": [],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -912,10 +1178,16 @@
       "codepoint": 58389,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3943",
+        "lib/ui/app.dart:4075",
+        "lib/ui/mac_workspace.dart:517",
+        "lib/ui/mac_workspace.dart:675",
         "lib/ui/preferences_views.dart:148"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/nights_stay_outlined",
@@ -927,7 +1199,11 @@
       "uses": [
         "lib/ui/search_views.dart:16"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/person_outline",
@@ -937,10 +1213,13 @@
       "codepoint": 58519,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/library_views.dart:295"
+        "lib/ui/library_views.dart:345"
       ],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -951,7 +1230,23 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4397"
+        "lib/ui/app.dart:4567"
+      ],
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
+    },
+    {
+      "id": "material/qr_code_2",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 58614,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/mac_account_views.dart:144"
       ],
       "designUses": []
     },
@@ -963,9 +1258,13 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4239"
+        "lib/ui/app.dart:4372"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/radio_button_off",
@@ -975,9 +1274,13 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4239"
+        "lib/ui/app.dart:4372"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/radio_button_unchecked",
@@ -987,9 +1290,14 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
+        "lib/ui/mac_account_views.dart:313",
         "lib/ui/playlist_add_views.dart:197"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/repeat",
@@ -999,7 +1307,7 @@
       "codepoint": 58655,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1958"
+        "lib/ui/app.dart:1962"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1011,7 +1319,12 @@
         "design-review/2026-10-19/layout-v6/controls.html",
         "design-review/2026-10-19/layout-v7/controls.html",
         "design-review/2026-10-19/layout-v8/controls.html",
-        "design-review/2026-10-19/layout-v9/controls.html"
+        "design-review/2026-10-19/layout-v9/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html"
       ]
     },
     {
@@ -1022,10 +1335,13 @@
       "codepoint": 58657,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1956"
+        "lib/ui/app.dart:1960"
       ],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -1036,13 +1352,13 @@
       "codepoint": 58710,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1430",
-        "lib/ui/library_views.dart:293",
+        "lib/ui/app.dart:1434",
+        "lib/ui/library_views.dart:343",
         "lib/ui/operation_feedback.dart:163",
         "lib/ui/playback_settings_views.dart:167",
         "lib/ui/playback_settings_views.dart:314",
         "lib/ui/playback_settings_views.dart:579",
-        "lib/ui/settings_views.dart:187"
+        "lib/ui/settings_views.dart:188"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1063,7 +1379,16 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v1/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
       ]
     },
     {
@@ -1074,7 +1399,11 @@
       "codepoint": 62329,
       "matchTextDirection": false,
       "uses": [],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/shuffle",
@@ -1084,7 +1413,7 @@
       "codepoint": 58785,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1955"
+        "lib/ui/app.dart:1959"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
@@ -1095,7 +1424,10 @@
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-19/review-v22/index.html",
-        "design-review/2026-10-20/feedback/index.html"
+        "design-review/2026-10-20/feedback/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -1106,9 +1438,13 @@
       "codepoint": 58835,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/library_views.dart:294"
+        "lib/ui/library_views.dart:344"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/speed",
@@ -1120,7 +1456,7 @@
       "uses": [
         "lib/ui/playback_settings_views.dart:167",
         "lib/ui/playback_settings_views.dart:579",
-        "lib/ui/settings_views.dart:180"
+        "lib/ui/settings_views.dart:181"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1140,7 +1476,10 @@
         "design-review/2026-10-19/review-v19/index.html",
         "design-review/2026-10-19/review-v20/index.html",
         "design-review/2026-10-19/review-v21/index.html",
-        "design-review/2026-10-19/review-v22/index.html"
+        "design-review/2026-10-19/review-v22/index.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -1152,7 +1491,10 @@
       "matchTextDirection": false,
       "uses": [],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -1163,20 +1505,35 @@
       "codepoint": 62537,
       "matchTextDirection": false,
       "uses": [
+        "lib/ui/mac_workspace.dart:1290",
         "lib/ui/playback_settings_views.dart:353"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html",
+        "design-review/2026-10-21/polish-v2/index.html",
+        "design-review/2026-10-21/polish-v3/index.html",
+        "design-review/2026-10-21/polish-v4/index.html",
+        "design-review/2026-10-21/sound-reference-v5/index.html",
+        "design-review/2026-10-21/sound-reference-v6/index.html"
+      ]
     },
     {
       "id": "material/tune",
       "provider": "Flutter MaterialIcons",
-      "status": "design-reuse",
+      "status": "existing-app-use",
       "asset": "material/MaterialIcons-Regular.otf",
       "codepoint": 59011,
       "matchTextDirection": false,
-      "uses": [],
+      "uses": [
+        "lib/ui/mac_workspace.dart:549"
+      ],
       "designUses": [
-        "design-review/2026-10-19/layout-v4/controls.html"
+        "design-review/2026-10-19/layout-v4/controls.html",
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
       ]
     },
     {
@@ -1187,7 +1544,11 @@
       "codepoint": 59069,
       "matchTextDirection": false,
       "uses": [],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/visibility_off",
@@ -1197,7 +1558,11 @@
       "codepoint": 59070,
       "matchTextDirection": false,
       "uses": [],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/volume_off",
@@ -1207,9 +1572,13 @@
       "codepoint": 59076,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/volume_views.dart:52"
+        "lib/ui/volume_views.dart:58"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/volume_up",
@@ -1219,10 +1588,15 @@
       "codepoint": 59077,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1649",
-        "lib/ui/volume_views.dart:63"
+        "lib/ui/app.dart:1653",
+        "lib/ui/mac_workspace.dart:1632",
+        "lib/ui/volume_views.dart:69"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/waves",
@@ -1234,7 +1608,11 @@
       "uses": [
         "lib/ui/search_views.dart:18"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     },
     {
       "id": "material/wb_twilight",
@@ -1246,7 +1624,11 @@
       "uses": [
         "lib/ui/search_views.dart:17"
       ],
-      "designUses": []
+      "designUses": [
+        "design-review/2026-10-21/macos-v1/index.html",
+        "design-review/2026-10-21/macos-v2/index.html",
+        "design-review/2026-10-21/macos-v3/index.html"
+      ]
     }
   ],
   "assetSha256": {

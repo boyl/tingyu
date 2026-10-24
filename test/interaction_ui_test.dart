@@ -649,7 +649,6 @@ void main() {
       await tap(tester, '批量选择');
       await tap(tester, 'select-${firstTrack.id}');
       expect(find.text('已选 1 首'), findsOneWidget);
-      await tap(tester, '批量更多');
       await tap(tester, '批量移出歌单');
       await tap(tester, '取消');
       expect(p.playlists.single.trackIds.length, 2);

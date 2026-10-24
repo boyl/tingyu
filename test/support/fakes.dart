@@ -49,6 +49,7 @@ class FixtureApi extends BilibiliClient {
   bool offline = false;
   int qrCode = 86101, qrRequests = 0;
   bool loggedIn = false;
+  AppFailure? qrFailure;
   @override
   bool get hasSession => loggedIn;
   @override
@@ -59,6 +60,7 @@ class FixtureApi extends BilibiliClient {
 
   @override
   Future<int> pollQr(String key, {bool Function()? isCurrent}) async {
+    if (qrFailure != null) throw qrFailure!;
     if (qrCode == 0 && (isCurrent?.call() ?? true)) loggedIn = true;
     return qrCode;
   }
@@ -72,6 +74,11 @@ class FixtureApi extends BilibiliClient {
   @override
   Future<List<Map<String, dynamic>>> folders(int mid) async => folderResults;
   List<Map<String, dynamic>> folderResults = [];
+  Future<List<Track>> Function(int)? importAnswer;
+  @override
+  Future<List<Track>> importFolder(int id) =>
+      importAnswer?.call(id) ?? super.importFolder(id);
+
   @override
   Future<void> logout() async {
     loggedIn = false;

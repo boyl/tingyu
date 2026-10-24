@@ -1,0 +1,28 @@
+{
+  "version": "0.1.27+28",
+  "sourceSha256": "7a4df91f86bb542cad0385960e5d5571835ebccdc8ca3c26f30252fb5105abc9",
+  "macos": {
+    "path": "artifacts/tingyu-0.1.27-macos-release.dmg",
+    "bytes": 27561231,
+    "sha256": "50c5413c021ee5987169003d717f18a94ffb85daa801c163e72b5fd63597fde1",
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "minimumSystem": "12.0",
+    "signing": "ad-hoc; not notarized",
+    "imageIntegrity": "PASS",
+    "mountedBundleSignature": "PASS",
+    "applicationsLink": "/Applications",
+    "runtime": "Mac Debug native UI reviewed; Release package checked; Intel hardware not tested"
+  },
+  "android": {
+    "abi": "arm64-v8a",
+    "path": "artifacts/tingyu-0.1.27-android-arm64-v8a-release.apk",
+    "bytes": 23704003,
+    "sha256": "de52dafb7b507b70cb1c20cbc2a0690944b82c38acfd169fb9aaf249bcdb8174",
+    "zipIntegrity": "PASS",
+    "exactAbi": "PASS",
+    "versionCode": "2028"
+  }
+}

@@ -23,6 +23,56 @@ Future<void> showContentActions(
           );
   }
 
+  if (PressableStyle.isDesktop(context)) {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => reactive(ctx, (ctx) {
+        final content = builder(ctx);
+        if (content is! SimpleDialog) return content;
+        return Dialog(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: TingyuTokens.batchDialogWidth,
+              maxHeight: MediaQuery.sizeOf(ctx).height * .85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(TingyuTokens.space * 3),
+              child: DefaultTextStyle(
+                style: Theme.of(ctx).textTheme.bodyMedium!.copyWith(
+                  color: ctx.tokens.text,
+                  fontSize: TingyuTokens.macTrackTitle,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DefaultTextStyle(
+                            style: Theme.of(ctx).textTheme.titleMedium!
+                                .copyWith(
+                                  color: ctx.tokens.text,
+                                  fontSize: TingyuTokens.macMenuTitle,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            child: content.title ?? const SizedBox.shrink(),
+                          ),
+                        ),
+                        action(Icons.clear, '关闭操作', () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const SizedBox(height: TingyuTokens.space),
+                    ...?content.children,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
   if (MediaQuery.sizeOf(context).width >= 960) {
     return showDialog<void>(
       context: context,
@@ -432,8 +482,7 @@ bool selectionToolbarCompact(BuildContext context, double width) =>
   final digits = total.toString().length;
   final widest = List.generate(10, (i) => measure('$i')).reduce(math.max);
   final countWidth = (measure('已选  首') + widest * digits).ceilToDouble();
-  final requiredWidth =
-      countWidth + TingyuTokens.controlSize * (hasList ? 5 : 4) + 1;
+  final requiredWidth = countWidth + TingyuTokens.controlSize * 5 + 1;
   return (
     countWidth: countWidth,
     compact: selectionToolbarCompact(context, width) || width < requiredWidth,
@@ -447,6 +496,7 @@ class SelectionToolbar extends StatelessWidget {
     required this.allSelected,
     required this.totalCount,
     this.list,
+    this.scope = 'library',
     required this.onSelectAll,
     required this.onDone,
   });
@@ -454,6 +504,7 @@ class SelectionToolbar extends StatelessWidget {
   final bool allSelected;
   final int totalCount;
   final Playlist? list;
+  final String scope;
   final VoidCallback onSelectAll, onDone;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -496,6 +547,7 @@ class SelectionToolbar extends StatelessWidget {
         inline: true,
         ids: selectedIds,
         list: list,
+        scope: scope,
         onDone: onDone,
       );
       if (compact) {
@@ -540,12 +592,14 @@ class SelectionBar extends ConsumerWidget {
     super.key,
     required this.ids,
     this.list,
+    this.scope = 'library',
     required this.onDone,
     this.inline = false,
   });
   final bool inline;
   final List<String> ids;
   final Playlist? list;
+  final String scope;
   final VoidCallback onDone;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -562,52 +616,106 @@ class SelectionBar extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          action(
-            Icons.playlist_add,
-            '批量加入歌单',
-            ids.isEmpty
-                ? null
-                : () => showBatchTransfer(context, p, ids.toList(), onDone),
-          ),
-          action(
-            Icons.download_outlined,
-            '批量下载',
-            ids.isEmpty
-                ? null
-                : () => showBatchTransfer(
-                    context,
-                    p,
-                    ids.toList(),
-                    onDone,
-                    download: true,
-                  ),
-          ),
-          if (list != null)
+          if (scope != 'downloads')
             action(
-              Icons.more_horiz,
-              '批量更多',
+              Icons.playlist_add,
+              '批量加入歌单',
               ids.isEmpty
                   ? null
-                  : () => showContentActions(
+                  : () => showBatchTransfer(context, p, ids.toList(), onDone),
+            ),
+          if (scope != 'downloads')
+            action(
+              Icons.download_outlined,
+              '批量下载',
+              ids.isEmpty
+                  ? null
+                  : () => showBatchTransfer(
                       context,
-                      (ctx) => SimpleDialog(
-                        children: [
-                          labelButton('批量移出歌单', () async {
-                            if (await confirm(
-                              ctx,
-                              '从歌单移除所选 ${ids.length} 首歌？已下载文件会保留。',
-                            )) {
-                              await p.removeFromPlaylist(list!, ids.toSet());
-                              if (ctx.mounted) Navigator.pop(ctx);
-                              onDone();
-                            }
-                          }, icon: Icons.remove_circle_outline),
-                        ],
-                      ),
+                      p,
+                      ids.toList(),
+                      onDone,
+                      download: true,
                     ),
             ),
+          BatchRemovalButton(
+            ids: ids,
+            scope: scope,
+            list: list,
+            onDone: onDone,
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// One direct destructive action with an immutable selection for confirmation.
+class BatchRemovalButton extends ConsumerStatefulWidget {
+  const BatchRemovalButton({
+    super.key,
+    required this.ids,
+    required this.scope,
+    this.list,
+    required this.onDone,
+  });
+  final List<String> ids;
+  final String scope;
+  final Playlist? list;
+  final VoidCallback onDone;
+  @override
+  ConsumerState<BatchRemovalButton> createState() => _BatchRemovalButtonState();
+}
+
+class _BatchRemovalButtonState extends ConsumerState<BatchRemovalButton> {
+  bool busy = false;
+  @override
+  Widget build(BuildContext context) {
+    final kind = widget.list != null ? 'playlist' : widget.scope;
+    final label = switch (kind) {
+      'playlist' => '批量移出歌单',
+      'likes' => '批量取消喜欢',
+      'downloads' => '批量移除下载',
+      _ => '批量删除歌曲',
+    };
+    return action(
+      Icons.delete_outline,
+      label,
+      busy || widget.ids.isEmpty
+          ? null
+          : () async {
+              final ids = widget.ids.toSet();
+              final list = widget.list;
+              final p = ref.read(libraryProvider);
+              final question = switch (kind) {
+                'playlist' => '从歌单移除所选 ${ids.length} 首歌？已下载文件会保留。',
+                'likes' => '取消喜欢所选 ${ids.length} 首歌？歌曲、歌单和下载文件会保留。',
+                'downloads' => '移除所选 ${ids.length} 首歌的下载音频和离线资料？歌曲、歌单与喜欢记录会保留。',
+                _ =>
+                  '从资料库删除所选 ${ids.length} 首歌？将同步移出歌单、喜欢、最近播放和待播，正在播放的所选歌曲会停止。下载文件会保留。',
+              };
+              setState(() => busy = true);
+              try {
+                if (!await confirm(context, question) || !context.mounted) {
+                  return;
+                }
+                await report(context, () async {
+                  switch (kind) {
+                    case 'playlist':
+                      await p.removeFromPlaylist(list!, ids);
+                    case 'likes':
+                      await p.removeLikes(ids);
+                    case 'downloads':
+                      await p.removeDownloads(ids);
+                    default:
+                      await p.removeLibraryTracks(ids);
+                  }
+                  if (mounted) widget.onDone();
+                });
+              } finally {
+                if (mounted) setState(() => busy = false);
+              }
+            },
     );
   }
 }
