@@ -65,6 +65,12 @@
   </tr>
 </table>
 
+**0.1.28 更新**：Mac 与安卓新增默认开启的自动播放缓存，缓存上限 2 GB，下载可复用匹配音质的缓存；存储页统一清理入口，两态均为方框复选框。修复慢启动可能覆盖本地播放记录的问题，并完善 Mac 定时、搜索、错误提示和歌单操作。
+
+<p align="center"><img src="docs/screenshots/2026-10-25-cache/android-storage.png" alt="0.1.28 Android 原生存储设置" width="240"> <img src="docs/screenshots/2026-10-25-cache/android-cleanup.png" alt="0.1.28 Android 原生清理确认，方形复选框" width="240"></p>
+
+以上新增 Android 截图来自最终 Release APK、隔离模拟器与公开 BV 音频，Mac 截图来自组件夹具；完整缓存不等于永久下载，清理缓存不会删除下载与播放记录。
+
 **0.1.27 更新**：新增 Mac 桌面开发版与两端批量移除；Mac 最近播放采用大封面网格，统一侧栏交互、账号头像、歌词与待播操作弹窗，修复音量面板和存储圆环布局。
 
 **0.1.26 修复**：重启记住播放音量和“播完暂停”偏好；定时关闭时修改该偏好也有效。倒计时不跨重启恢复。本版没有视觉改动，以下截图沿用旧版。
@@ -95,21 +101,23 @@
 
 以上为 0.1.27 Mac Flutter 组件夹具截图；真实账号与设备验证边界见版本验收记录。
 
+<p><img src="docs/screenshots/2026-10-25-cache/mac-storage.png" alt="0.1.28 Mac 存储设置组件夹具" width="720"></p>
+
 ### Windows
 
 ## 下载与安装
 
-当前发布版本为 **0.1.27**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+当前发布版本为 **0.1.28**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.27/tingyu-0.1.27-android-arm64-v8a-release.apk) |
-| macOS 12+ · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.27/tingyu-0.1.27-macos-release.dmg) |
+| Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-android-arm64-v8a-release.apk) |
+| macOS 12+ · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-macos-release.dmg) |
 | Windows | 暂无安装包 |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-校验值见 [0.1.27 发布记录](docs/ACCEPTANCE-2026-10-24-027.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+校验值见 [0.1.28 发布记录](docs/ACCEPTANCE-2026-10-25-028.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
 ## 主要功能
@@ -117,6 +125,7 @@ Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可�
 - **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放。
 - **整理音乐**：带封面的全部歌单列表、本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
 - **离线播放**：下载音频及可用的封面、歌词，支持导出 M4A。
+- **自动缓存**：默认开启，最多 2 GB，优先淘汰较早使用的缓存；关闭后保留已有缓存。下载复用匹配音质的完整缓存或同一活动传输，缓存与下载分开保存。
 - **歌词**：同步逐句／逐字歌词、翻译与罗马音，可手动匹配、编辑和调整偏移；以歌词源实际提供的内容为准。
 - **播放控制**：循环、随机、播完暂停、倍速、音量与定时关闭；自定义时长滚轮带刻度反馈；音量和定时结束方式跨重启保留。
 - **外观**：哔哩粉、日出橙、月影蓝与夜间暗四种主题。
@@ -137,7 +146,7 @@ Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可�
 
 [功能清单](docs/FEATURES.md) · [界面规范](docs/UI.md) · [验收标准](docs/ACCEPTANCE.md) · [发布准则](docs/RELEASE.md) · [版本记录](https://github.com/boyl/tingyu/releases)
 
-0.1.27 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-24-027.md)。真实账号授权与重启登录保持仍待验。
+0.1.28 的变更与验证边界见[验收记录](docs/ACCEPTANCE-2026-10-25-028.md)。真实账号授权与重启登录保持仍待验。
 
 ## 许可
 

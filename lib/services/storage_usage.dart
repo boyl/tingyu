@@ -37,7 +37,7 @@ class StorageUsage {
   final Map<String, int> bytes;
   final List<UsageFile> temporary;
   int get total => bytes.values.fold(0, (a, b) => a + b);
-  static const categories = ['已下载音频', '封面缓存', '歌词', '临时文件', '其他资料'];
+  static const categories = ['已下载音频', '播放缓存', '封面缓存', '歌词', '临时文件', '其他资料'];
   static Future<StorageUsage> scan(Directory root) async {
     final sizes = {for (final key in categories) key: 0};
     final temporary = <UsageFile>[];
@@ -46,15 +46,19 @@ class StorageUsage {
       if (entry is! File) continue;
       final stat = await entry.stat();
       final ext = path.extension(entry.path).toLowerCase();
-      final category = switch (ext) {
-        '.m4a' || '.mp3' || '.wav' || '.flac' => categories[0],
-        '.cover' || '.jpg' || '.png' || '.webp' => categories[1],
-        '.lyrics' || '.lrc' || '.spl' || '.yrc' => categories[2],
-        '.part' || '.tmp' => categories[3],
-        _ => categories[4],
-      };
+      final category =
+          !['.part', '.tmp'].contains(ext) &&
+              path.isWithin(path.join(root.path, 'playback-cache'), entry.path)
+          ? '播放缓存'
+          : switch (ext) {
+              '.m4a' || '.mp3' || '.wav' || '.flac' => '已下载音频',
+              '.cover' || '.jpg' || '.png' || '.webp' => '封面缓存',
+              '.lyrics' || '.lrc' || '.spl' || '.yrc' => '歌词',
+              '.part' || '.tmp' => '临时文件',
+              _ => '其他资料',
+            };
       sizes[category] = sizes[category]! + stat.size;
-      if (category == categories[3]) {
+      if (category == '临时文件') {
         temporary.add(UsageFile(entry.path, stat.size, stat.modified));
       }
     }
@@ -64,7 +68,9 @@ class StorageUsage {
   Future<void> clearTemporary(
     Directory root, {
     required bool transferActive,
+    bool skipActive = false,
   }) async {
+    if (transferActive && skipActive) return;
     if (transferActive) throw const FileSystemException('下载处理中，请稍后清理');
     final safeRoot = path.normalize(path.absolute(root.path));
     for (final item in temporary) {

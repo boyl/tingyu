@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "geometrySource": "lib/ui/icons.dart",
-  "runtimeSha256": "fae096833e315ecece8ff00fa05412baa292946df9d6e8c2e15c31701671065c",
+  "runtimeSha256": "4b2d132e11b1b6e2e35e7133914783ff0561bf3d5416170c172ea231b50b3490",
   "fontSha256": "d9865b671a09d683d13a863089d8825e0f61a37696ce5d7d448bc8023aa62453",
   "note": "SVG review exports mirror runtime painter; app still reads TingyuIcon. Font glyphs are existing Flutter resources, not newly drawn icons.",
   "tokens": {
@@ -77,9 +77,7 @@
       "status": "existing",
       "asset": "svg/circle.svg",
       "runtimeSource": "lib/ui/icons.dart",
-      "aliases": [
-        "check_box_outline_blank"
-      ],
+      "aliases": [],
       "designUses": [
         "design-review/2026-10-19/review-v21/index.html",
         "design-review/2026-10-20/feedback/index.html",
@@ -97,8 +95,7 @@
       "aliases": [
         "check",
         "check_circle",
-        "check_circle_outline",
-        "check_box"
+        "check_circle_outline"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1011,6 +1008,34 @@
       ]
     },
     {
+      "id": "material/check_box",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57687,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1511",
+        "lib/ui/library_views.dart:433",
+        "lib/ui/preferences_views.dart:563"
+      ],
+      "designUses": []
+    },
+    {
+      "id": "material/check_box_outline_blank",
+      "provider": "Flutter MaterialIcons",
+      "status": "existing-app-use",
+      "asset": "material/MaterialIcons-Regular.otf",
+      "codepoint": 57688,
+      "matchTextDirection": false,
+      "uses": [
+        "lib/ui/app.dart:1511",
+        "lib/ui/library_views.dart:433",
+        "lib/ui/preferences_views.dart:563"
+      ],
+      "designUses": []
+    },
+    {
       "id": "material/circle",
       "provider": "Flutter MaterialIcons",
       "status": "existing-app-use",
@@ -1018,7 +1043,7 @@
       "codepoint": 57699,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/preferences_views.dart:390"
+        "lib/ui/preferences_views.dart:432"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",
@@ -1037,8 +1062,10 @@
         "lib/ui/library_views.dart:62",
         "lib/ui/mac_account_views.dart:81",
         "lib/ui/mac_settings_views.dart:38",
-        "lib/ui/mac_workspace.dart:209",
-        "lib/ui/mac_workspace.dart:1025"
+        "lib/ui/mac_workspace.dart:231",
+        "lib/ui/mac_workspace.dart:498",
+        "lib/ui/mac_workspace.dart:1131",
+        "lib/ui/playlist_add_views.dart:120"
       ],
       "designUses": []
     },
@@ -1103,7 +1130,7 @@
         "lib/ui/app.dart:4070",
         "lib/ui/app.dart:4350",
         "lib/ui/mac_account_views.dart:289",
-        "lib/ui/mac_workspace.dart:537"
+        "lib/ui/mac_workspace.dart:621"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",
@@ -1119,7 +1146,7 @@
       "codepoint": 58132,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:516"
+        "lib/ui/mac_workspace.dart:600"
       ],
       "designUses": []
     },
@@ -1179,8 +1206,8 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/app.dart:4075",
-        "lib/ui/mac_workspace.dart:517",
-        "lib/ui/mac_workspace.dart:675",
+        "lib/ui/mac_workspace.dart:601",
+        "lib/ui/mac_workspace.dart:759",
         "lib/ui/preferences_views.dart:148"
       ],
       "designUses": [
@@ -1230,7 +1257,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4567"
+        "lib/ui/app.dart:4573"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",
@@ -1291,7 +1318,7 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/mac_account_views.dart:313",
-        "lib/ui/playlist_add_views.dart:197"
+        "lib/ui/playlist_add_views.dart:338"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",
@@ -1505,7 +1532,7 @@
       "codepoint": 62537,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:1290",
+        "lib/ui/mac_workspace.dart:1450",
         "lib/ui/playback_settings_views.dart:353"
       ],
       "designUses": [
@@ -1527,7 +1554,7 @@
       "codepoint": 59011,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:549"
+        "lib/ui/mac_workspace.dart:633"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
@@ -1572,7 +1599,7 @@
       "codepoint": 59076,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/volume_views.dart:58"
+        "lib/ui/volume_views.dart:62"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",
@@ -1589,8 +1616,8 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/app.dart:1653",
-        "lib/ui/mac_workspace.dart:1632",
-        "lib/ui/volume_views.dart:69"
+        "lib/ui/mac_workspace.dart:1797",
+        "lib/ui/volume_views.dart:73"
       ],
       "designUses": [
         "design-review/2026-10-21/macos-v1/index.html",

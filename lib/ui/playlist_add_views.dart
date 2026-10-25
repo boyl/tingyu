@@ -2,23 +2,82 @@ part of 'app.dart';
 
 /// A scoped selection task: temporary choices are committed only by Add.
 class PlaylistAddScreen extends ConsumerStatefulWidget {
-  const PlaylistAddScreen({super.key, required this.playlistId});
+  const PlaylistAddScreen({
+    super.key,
+    required this.playlistId,
+    this.desktop = false,
+  });
   final String playlistId;
+  final bool desktop;
   @override
   ConsumerState<PlaylistAddScreen> createState() => _PlaylistAddScreenState();
 }
 
 class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
-  final query = TextEditingController();
+  final localQuery = TextEditingController();
+  final onlineQuery = TextEditingController();
+  TextEditingController get query => online ? onlineQuery : localQuery;
+  bool online = false, searching = false, hasMore = true;
+  int searchPage = 1, searchAttempt = 1, searchEpoch = 0;
+  String? searchError;
+  List<Track> results = [];
+  final candidates = <String, Track>{};
+  Timer? debounce;
+
+  Future<void> searchOnline({int page = 1}) async {
+    final text = onlineQuery.text.trim();
+    final epoch = ++searchEpoch;
+    setState(() {
+      if (page == 1) {
+        results = [];
+        hasMore = true;
+      }
+      searchError = null;
+      searching = text.isNotEmpty;
+      searchAttempt = page;
+    });
+    if (text.isEmpty) return;
+    try {
+      final found = await ref
+          .read(libraryProvider)
+          .api
+          .search(text, page: page);
+      if (!mounted || epoch != searchEpoch) return;
+      setState(() {
+        final existing = results.map((t) => t.id).toSet();
+        hasMore =
+            found.isNotEmpty &&
+            (page == 1 || found.any((t) => !existing.contains(t.id)));
+        results = {
+          for (final t in [...results, ...found]) t.id: t,
+        }.values.toList();
+        candidates.addEntries(found.map((t) => MapEntry(t.id, t)));
+        searchPage = page;
+      });
+    } on Exception catch (error) {
+      if (mounted && epoch == searchEpoch) {
+        setState(() {
+          searchError = error is AppFailure ? error.message : '搜索失败，请重试';
+        });
+      }
+    } finally {
+      if (mounted && epoch == searchEpoch) setState(() => searching = false);
+    }
+  }
+
   final selected = <String>{};
   bool saving = false;
   @override
   void dispose() {
-    query.dispose();
+    debounce?.cancel();
+    localQuery.dispose();
+    onlineQuery.dispose();
     super.dispose();
   }
 
-  void back() => context.canPop()
+  void back() => widget.desktop
+      ? Navigator.pop(context)
+      : context.canPop()
       ? context.pop()
       : context.go('/playlist/${widget.playlistId}');
 
@@ -30,13 +89,19 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
         .firstOrNull;
     final existing = list?.trackIds.toSet() ?? <String>{};
     final pending = selected
-        .where((id) => p.library.containsKey(id) && !existing.contains(id))
+        .where(
+          (id) =>
+              (p.library.containsKey(id) || candidates.containsKey(id)) &&
+              !existing.contains(id),
+        )
         .toList();
-    final tracks = p
-        .collectionIds('library', p.library.keys)
-        .map((id) => p.library[id]!)
-        .where((track) => matchesLocal(track, query.text))
-        .toList();
+    final tracks = online
+        ? results
+        : p
+              .collectionIds('library', p.library.keys)
+              .map((id) => p.library[id]!)
+              .where((track) => matchesLocal(track, query.text))
+              .toList();
     final t = context.tokens;
     return PopScope(
       canPop: !saving,
@@ -52,7 +117,7 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                     child: Row(
                       children: [
                         action(
-                          Icons.arrow_back,
+                          widget.desktop ? Icons.clear : Icons.arrow_back,
                           '取消添加歌曲',
                           saving ? null : back,
                         ),
@@ -78,18 +143,34 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                             ],
                           ),
                         ),
-                        labelButton(
-                          '在线搜索',
-                          saving || list == null
-                              ? null
-                              : () => context.push(
-                                  '/playlist/${widget.playlistId}/add/search',
-                                ),
-                          icon: Icons.search,
-                        ),
+                        if (!widget.desktop)
+                          labelButton(
+                            '在线搜索',
+                            saving || list == null
+                                ? null
+                                : () => context.push(
+                                    '/playlist/${widget.playlistId}/add/search',
+                                  ),
+                            icon: Icons.search,
+                          ),
                       ],
                     ),
                   ),
+                  if (widget.desktop)
+                    Row(
+                      children: [
+                        for (final source in [(false, '音乐库'), (true, '在线搜索')])
+                          Expanded(
+                            child: labelButton(
+                              source.$2,
+                              saving
+                                  ? null
+                                  : () => setState(() => online = source.$1),
+                              selected: online == source.$1,
+                            ),
+                          ),
+                      ],
+                    ),
                   if (list != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -98,16 +179,53 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                         controller: query,
                         enabled: !saving,
                         decoration: InputDecoration(
-                          hintText: '搜索音乐库',
+                          hintText: online ? '歌曲、UP 主、BV / AV 号或链接' : '搜索音乐库',
                           prefixIcon: const TingyuIcon(Icons.search),
                           suffixIcon: action(
                             Icons.clear_all,
                             '清除选歌搜索',
-                            () => setState(query.clear),
+                            saving || query.text.isEmpty
+                                ? null
+                                : () {
+                                    setState(query.clear);
+                                    if (online) {
+                                      debounce?.cancel();
+                                      unawaited(searchOnline());
+                                    }
+                                  },
                           ),
                         ),
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) {
+                          setState(() {});
+                          if (online) {
+                            debounce?.cancel();
+                            // Invalidate in-flight results as soon as the query changes.
+                            ++searchEpoch;
+                            setState(() {
+                              results = [];
+                              searching = query.text.trim().isNotEmpty;
+                              searchError = null;
+                            });
+                            debounce = Timer(
+                              const Duration(milliseconds: 450),
+                              searchOnline,
+                            );
+                          }
+                        },
+                        onSubmitted: online
+                            ? (_) {
+                                debounce?.cancel();
+                                unawaited(searchOnline());
+                              }
+                            : null,
                       ),
+                    ),
+                  if (online && searching) const LinearProgressIndicator(),
+                  if (online && searchError != null)
+                    errorBox(
+                      context,
+                      searchError!,
+                      () => searchOnline(page: searchAttempt),
                     ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -117,6 +235,17 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                             '返回音乐库重新选择。',
                             child: labelButton('返回音乐库', () => context.go('/')),
                           )
+                        : online && tracks.isEmpty
+                        ? searching
+                              ? const Center(child: Text('正在搜索…'))
+                              : searchError != null
+                              ? const SizedBox.shrink()
+                              : EmptyView(
+                                  query.text.trim().isEmpty
+                                      ? '搜索歌曲'
+                                      : '没有找到相关内容',
+                                  '搜索关键词，或粘贴 BV 号。',
+                                )
                         : tracks.isEmpty
                         ? EmptyView(
                             query.text.trim().isEmpty ? '音乐库还没有歌曲' : '没有匹配的歌曲',
@@ -125,8 +254,20 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                         : ListView.builder(
                             key: const PageStorageKey('playlist-add-library'),
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: tracks.length,
+                            itemCount: tracks.length + (online ? 1 : 0),
                             itemBuilder: (_, index) {
+                              if (index == tracks.length) {
+                                return hasMore
+                                    ? labelButton(
+                                        '加载更多',
+                                        searching
+                                            ? null
+                                            : () => searchOnline(
+                                                page: searchPage + 1,
+                                              ),
+                                      )
+                                    : const Center(child: Text('已显示全部结果'));
+                              }
                               final track = tracks[index];
                               final added = existing.contains(track.id);
                               final checked = selected.contains(track.id);
@@ -217,6 +358,11 @@ class _PlaylistAddScreenState extends ConsumerState<PlaylistAddScreen> {
                                 setState(() => saving = true);
                                 try {
                                   await report(context, () async {
+                                    for (final id in pending) {
+                                      if (!p.library.containsKey(id)) {
+                                        await p.remember(candidates[id]!);
+                                      }
+                                    }
                                     await p.addLibraryTracks(
                                       widget.playlistId,
                                       pending,

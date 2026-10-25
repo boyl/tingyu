@@ -20,7 +20,7 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
       width: TingyuTokens.macSettingsWidth,
       height: TingyuTokens.macSettingsHeight,
       child: Padding(
-        padding: const EdgeInsets.all(TingyuTokens.space * 3),
+        padding: const EdgeInsets.all(TingyuTokens.space * 2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -38,7 +38,7 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
                 action(Icons.clear, '关闭设置', () => Navigator.pop(context)),
               ],
             ),
-            const SizedBox(height: TingyuTokens.space * 2),
+            const SizedBox(height: TingyuTokens.space),
             Row(
               children: [
                 for (final item in [
@@ -69,35 +69,43 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
                   ),
               ],
             ),
-            const SizedBox(height: TingyuTokens.space * 2),
+            const SizedBox(height: TingyuTokens.space),
             Expanded(
               child: SingleChildScrollView(
                 key: PageStorageKey('mac-preferences-$section'),
-                child: switch (section) {
-                  'appearance' => Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [heading('主题'), themes(context)],
-                  ),
-                  'playback' => playback(context),
-                  _ => StoragePanel(widget.p, desktop: true),
-                },
-              ),
-            ),
-            const SizedBox(height: TingyuTokens.space),
-            Divider(height: 1, color: t.line),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'tingyu $tingyuVersion',
-                    style: TextStyle(
-                      color: t.muted,
-                      fontSize: TingyuTokens.macCaption,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    switch (section) {
+                      'appearance' => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [heading('主题'), themes(context)],
+                      ),
+                      'playback' => playback(context),
+                      _ => StoragePanel(widget.p, desktop: true),
+                    },
+                    const SizedBox(height: TingyuTokens.space),
+                    Divider(height: 1, color: t.line),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'tingyu $tingyuVersion',
+                            style: TextStyle(
+                              color: t.muted,
+                              fontSize: TingyuTokens.macCaption,
+                            ),
+                          ),
+                        ),
+                        labelButton(
+                          '关于 tingyu',
+                          () => showAboutTingyu(context),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
-                labelButton('关于 tingyu', () => showAboutTingyu(context)),
-              ],
+              ),
             ),
           ],
         ),
@@ -127,7 +135,7 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
   );
 
   Widget heading(String title) => Padding(
-    padding: const EdgeInsets.only(bottom: TingyuTokens.space * 2),
+    padding: const EdgeInsets.only(bottom: TingyuTokens.space),
     child: Text(
       title,
       style: const TextStyle(
@@ -170,9 +178,9 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
               ),
           ],
         ),
-        const SizedBox(height: TingyuTokens.space * 3),
+        const SizedBox(height: TingyuTokens.space),
         Divider(height: 1, color: t.line),
-        const SizedBox(height: TingyuTokens.space * 2),
+        const SizedBox(height: TingyuTokens.space),
         Row(
           children: [
             Expanded(child: heading('播放倍速')),
@@ -180,7 +188,7 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
             action(
               Icons.refresh,
               '恢复正常倍速',
-              () => report(context, () => p.setSpeed(1)),
+              p.speed == 1 ? null : () => report(context, () => p.setSpeed(1)),
             ),
           ],
         ),

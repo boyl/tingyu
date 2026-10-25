@@ -44,7 +44,7 @@ void main() {
     );
     expect(
       await pixels(Icons.check_box),
-      await pixels(Icons.check_circle_outline),
+      isNot(await pixels(Icons.check_circle_outline)),
     );
     // Compare actual small-size raster silhouettes, not IconData or path names.
     // A tiny coordinate change must not count as a distinct action icon.

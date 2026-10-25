@@ -53,11 +53,14 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
   final states = <String, _MacCollectionState>{};
   final search = TextEditingController();
   final searchFocus = FocusNode();
+  final workspaceFocus = FocusNode();
   final localFocus = FocusNode();
   final optionsMinutes = TextEditingController();
   final queueScroll = ScrollController();
   final downloadsMemory = DownloadsViewMemory();
   String? overlay;
+  String? timerError;
+  String? queueActions;
   SleepTimerDraft? timerDraft;
   Timer? debounce;
   _MacCollectionState get collection =>
@@ -69,6 +72,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     debounce?.cancel();
     search.dispose();
     searchFocus.dispose();
+    workspaceFocus.dispose();
     localFocus.dispose();
     optionsMinutes.dispose();
     queueScroll.dispose();
@@ -81,7 +85,8 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
 
   void navigate(String next, {bool back = false}) {
     closeOverlay();
-    FocusManager.instance.primaryFocus?.unfocus();
+    if (overlay != null) return;
+    workspaceFocus.requestFocus();
     setState(() {
       if (back) {
         if (history.isNotEmpty) page = history.removeLast();
@@ -97,6 +102,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
   }
 
   void closeOverlay({bool commit = true}) {
+    if (commit && timerError != null) return;
     final draft = timerDraft;
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     if (commit &&
@@ -114,13 +120,15 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
       );
     }
     timerDraft = null;
+    timerError = null;
+    queueActions = null;
     if (overlay != null && mounted) setState(() => overlay = null);
   }
 
   void toggleOverlay(String value) {
     final closing = overlay == value;
     closeOverlay();
-    if (closing) return;
+    if (closing || overlay != null) return;
     if (value == 'options') {
       timerDraft = SleepTimerDraft(p);
       optionsMinutes.text = timerDraft!.minutes?.toString() ?? '';
@@ -147,6 +155,17 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     width: TingyuTokens.macAccountWidth,
   );
 
+  Future<void> openPlaylistAdd(Playlist list) => panel(
+    '添加歌曲',
+    (_) => SizedBox(
+      height: TingyuTokens.macSettingsHeight,
+      child: PlaylistAddScreen(playlistId: list.id, desktop: true),
+    ),
+    selfContained: true,
+    width: TingyuTokens.macSettingsWidth,
+    barrierDismissible: false,
+  );
+
   Future<void> openSettings() => panel(
     '设置',
     (_) => MacSettingsPanel(p),
@@ -159,10 +178,13 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     WidgetBuilder builder, {
     bool selfContained = false,
     double? width,
+    bool barrierDismissible = true,
   }) async {
     closeOverlay();
+    if (overlay != null) return;
     await showDialog<void>(
       context: context,
+      barrierDismissible: barrierDismissible,
       builder: (ctx) => PressableStyle(
         desktop: true,
         child: Dialog(
@@ -280,12 +302,15 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
               searchFocus.requestFocus();
             } else if ([
               'library',
+              'recent',
               'details',
               'playlists',
               'downloads',
             ].contains(page)) {
               navigate('search');
-              searchFocus.requestFocus();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && page == 'search') searchFocus.requestFocus();
+              });
             } else {
               localFocus.requestFocus();
             }
@@ -300,148 +325,207 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
             }
           },
         },
-        child: Scaffold(
-          backgroundColor: t.background,
-          body: Row(
-            children: [
-              SizedBox(
-                width: MediaQuery.sizeOf(context).width < TingyuTokens.macWide
-                    ? TingyuTokens.macSidebarCompact
-                    : TingyuTokens.macSidebar,
-                child: sidebar(p),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, box) {
-                    final compact = box.maxWidth < TingyuTokens.macCompact;
-                    const dock = TingyuTokens.macDock;
-                    return Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Column(
-                            children: [
-                              if (page == 'details')
-                                SizedBox(
-                                  height: TingyuTokens.macHeader,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: TingyuTokens.space * 2,
+        child: Focus(
+          focusNode: workspaceFocus,
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: t.background,
+            body: Row(
+              children: [
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width < TingyuTokens.macWide
+                      ? TingyuTokens.macSidebarCompact
+                      : TingyuTokens.macSidebar,
+                  child: sidebar(p),
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, box) {
+                      final compact = box.maxWidth < TingyuTokens.macCompact;
+                      const dock = TingyuTokens.macDock;
+                      return Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Column(
+                              children: [
+                                if (page == 'details')
+                                  SizedBox(
+                                    height: TingyuTokens.macHeader,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: TingyuTokens.space * 2,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          action(
+                                            Icons.arrow_back,
+                                            '返回来源',
+                                            history.isEmpty
+                                                ? null
+                                                : () =>
+                                                      navigate('', back: true),
+                                          ),
+                                          const SizedBox(
+                                            width: TingyuTokens.space,
+                                          ),
+                                          Text(
+                                            title(p),
+                                            style: TextStyle(color: t.muted),
+                                          ),
+                                          const Spacer(),
+                                        ],
+                                      ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        action(
-                                          Icons.arrow_back,
-                                          '返回来源',
-                                          history.isEmpty
-                                              ? null
-                                              : () => navigate('', back: true),
-                                        ),
-                                        const SizedBox(
-                                          width: TingyuTokens.space,
-                                        ),
-                                        Text(
-                                          title(p),
-                                          style: TextStyle(color: t.muted),
-                                        ),
-                                        const Spacer(),
-                                      ],
+                                  ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: dock + TingyuTokens.space * 3,
+                                    ),
+                                    child: KeyedSubtree(
+                                      key: ValueKey('mac-page-$page'),
+                                      child: SizedBox.expand(
+                                        key: const ValueKey('mac-main-content'),
+                                        child: content(p),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: dock + TingyuTokens.space * 3,
+                              ],
+                            ),
+                          ),
+                          if (overlay != null) ...[
+                            Positioned.fill(
+                              child: GestureDetector(
+                                key: const ValueKey('mac-overlay-dismiss'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: closeOverlay,
+                                child: const SizedBox.expand(),
+                              ),
+                            ),
+                            Positioned(
+                              right: TingyuTokens.space * 2,
+                              bottom: dock + TingyuTokens.space * 2,
+                              width: math.min(
+                                TingyuTokens.macQueueWidth,
+                                box.maxWidth - TingyuTokens.macPadding,
+                              ),
+                              height: math.min(
+                                overlay == 'volume'
+                                    ? TingyuTokens.macVolumeHeight
+                                    : overlay == 'options'
+                                    ? TingyuTokens.macOptionsHeight
+                                    : TingyuTokens.macQueueHeight,
+                                box.maxHeight - dock - TingyuTokens.macPadding,
+                              ),
+                              child: overlaySurface(p),
+                            ),
+                          ],
+                          Positioned(
+                            left: TingyuTokens.space * 2,
+                            bottom: dock + TingyuTokens.space * 3,
+                            child: IgnorePointer(
+                              child: ValueListenableBuilder<String?>(
+                                valueListenable: p.modeNotice,
+                                builder: (context, notice, _) => notice == null
+                                    ? const SizedBox.shrink()
+                                    : Semantics(
+                                        liveRegion: true,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: t.surface,
+                                            border: Border.all(color: t.line),
+                                            borderRadius: BorderRadius.circular(
+                                              TingyuTokens.radius,
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(
+                                              TingyuTokens.space * 1.5,
+                                            ),
+                                            child: Text(notice),
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          if (p.error.isNotEmpty)
+                            Positioned(
+                              left: TingyuTokens.space * 2,
+                              right: TingyuTokens.space * 2,
+                              bottom: dock + TingyuTokens.space * 2,
+                              child: Material(
+                                color: t.surface,
+                                shape: RoundedRectangleBorder(
+                                  side: BorderSide(color: t.line),
+                                  borderRadius: BorderRadius.circular(
+                                    TingyuTokens.radius,
                                   ),
-                                  child: KeyedSubtree(
-                                    key: ValueKey('mac-page-$page'),
-                                    child: SizedBox.expand(
-                                      key: const ValueKey('mac-main-content'),
-                                      child: content(p),
-                                    ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(
+                                    TingyuTokens.space,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Semantics(
+                                          liveRegion: true,
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                              maxHeight:
+                                                  TingyuTokens.controlSize * 2,
+                                            ),
+                                            child: SingleChildScrollView(
+                                              child: Text(
+                                                p.error,
+                                                style: TextStyle(
+                                                  color: t.danger,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (p.retryError != null)
+                                        action(
+                                          Icons.refresh,
+                                          '重试播放',
+                                          p.opening ? null : p.retryError,
+                                        ),
+                                      action(
+                                        Icons.clear,
+                                        '关闭错误提示',
+                                        p.clearError,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        if (overlay != null) ...[
-                          Positioned.fill(
-                            child: GestureDetector(
-                              key: const ValueKey('mac-overlay-dismiss'),
-                              behavior: HitTestBehavior.opaque,
-                              onTap: closeOverlay,
-                              child: const SizedBox.expand(),
                             ),
-                          ),
                           Positioned(
+                            key: const ValueKey('mac-dock-position'),
+                            left: TingyuTokens.space * 2,
                             right: TingyuTokens.space * 2,
-                            bottom: dock + TingyuTokens.space * 2,
-                            width: math.min(
-                              TingyuTokens.macQueueWidth,
-                              box.maxWidth - TingyuTokens.macPadding,
+                            bottom: TingyuTokens.space,
+                            height: dock,
+                            child: MacPlaybackBar(
+                              p,
+                              compact: compact,
+                              onDetails: () => navigate('details'),
+                              onQueue: () => toggleOverlay('queue'),
+                              onVolume: () => toggleOverlay('volume'),
+                              onOptions: () => toggleOverlay('options'),
                             ),
-                            height: math.min(
-                              overlay == 'volume'
-                                  ? TingyuTokens.macVolumeHeight
-                                  : overlay == 'options'
-                                  ? TingyuTokens.macOptionsHeight
-                                  : TingyuTokens.macQueueHeight,
-                              box.maxHeight - dock - TingyuTokens.macPadding,
-                            ),
-                            child: overlaySurface(p),
                           ),
                         ],
-                        Positioned(
-                          left: TingyuTokens.space * 2,
-                          bottom: dock + TingyuTokens.space * 3,
-                          child: IgnorePointer(
-                            child: ValueListenableBuilder<String?>(
-                              valueListenable: p.modeNotice,
-                              builder: (context, notice, _) => notice == null
-                                  ? const SizedBox.shrink()
-                                  : Semantics(
-                                      liveRegion: true,
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: t.surface,
-                                          border: Border.all(color: t.line),
-                                          borderRadius: BorderRadius.circular(
-                                            TingyuTokens.radius,
-                                          ),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(
-                                            TingyuTokens.space * 1.5,
-                                          ),
-                                          child: Text(notice),
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          key: const ValueKey('mac-dock-position'),
-                          left: TingyuTokens.space * 2,
-                          right: TingyuTokens.space * 2,
-                          bottom: TingyuTokens.space,
-                          height: dock,
-                          child: MacPlaybackBar(
-                            p,
-                            compact: compact,
-                            onDetails: () => navigate('details'),
-                            onQueue: () => toggleOverlay('queue'),
-                            onVolume: () => toggleOverlay('volume'),
-                            onOptions: () => toggleOverlay('options'),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -719,18 +803,25 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
               ),
               onChanged: (value) {
                 debounce?.cancel();
-                debounce = Timer(
-                  const Duration(milliseconds: 450),
-                  () => p.search(value),
-                );
+                setState(() {
+                  debounce = Timer(
+                    const Duration(milliseconds: 450),
+                    () => p.search(value),
+                  );
+                });
               },
               onSubmitted: (value) {
                 debounce?.cancel();
                 unawaited(p.search(value));
               },
             ),
-            if (p.searching) const LinearProgressIndicator(),
-            if (p.searchError.isNotEmpty)
+            SizedBox(
+              height: TingyuTokens.batchProgressHeight,
+              child: p.searching || (debounce?.isActive ?? false)
+                  ? const LinearProgressIndicator()
+                  : null,
+            ),
+            if (p.searchError.isNotEmpty && !(debounce?.isActive ?? false))
               errorBox(
                 context,
                 p.searchError,
@@ -740,24 +831,39 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
         ),
       ),
       Expanded(
-        child: p.results.isEmpty
-            ? EmptyView(
-                search.text.isEmpty ? '听点新鲜的' : '没有找到相关内容',
-                '搜索关键词，或直接粘贴 BV 号。',
+        child: (debounce?.isActive ?? false)
+            ? Center(
+                child: Text(search.text.trim().isEmpty ? '听点新鲜的' : '正在搜索…'),
               )
+            : p.results.isEmpty
+            ? p.searching
+                  ? const Center(child: Text('正在搜索…'))
+                  : p.searchError.isNotEmpty
+                  ? const SizedBox.shrink()
+                  : EmptyView(
+                      search.text.isEmpty ? '听点新鲜的' : '没有找到相关内容',
+                      '搜索关键词，或直接粘贴 BV 号。',
+                    )
             : ListView.builder(
                 itemCount: p.results.length + 1,
                 padding: const EdgeInsets.symmetric(
                   horizontal: TingyuTokens.macPadding,
                 ),
                 itemBuilder: (_, i) => i == p.results.length
-                    ? labelButton(
-                        '加载更多',
-                        p.searching
-                            ? null
-                            : () =>
-                                  p.search(search.text, page: p.searchPage + 1),
-                      )
+                    ? !p.searchHasMore
+                          ? const Padding(
+                              padding: EdgeInsets.all(TingyuTokens.space * 2),
+                              child: Center(child: Text('已显示全部结果')),
+                            )
+                          : labelButton(
+                              '加载更多',
+                              p.searching
+                                  ? null
+                                  : () => p.search(
+                                      search.text,
+                                      page: p.searchPage + 1,
+                                    ),
+                            )
                     : TrackRow(p.results[i]),
               ),
       ),
@@ -934,7 +1040,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
               if (list != null)
                 labelButton(
                   '添加歌曲',
-                  () => context.push('/playlist/${list.id}/add'),
+                  () => openPlaylistAdd(list),
                   icon: Icons.playlist_add,
                 ),
             ],
@@ -1040,67 +1146,106 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     ),
   );
   Widget queue(LibraryController p) {
-    final index = p.queue.indexOf(p.current?.id ?? '');
     final next = p.queue
-        .skip(index < 0 ? 0 : index + 1)
+        .where((id) => id != p.current?.id)
         .map((id) => p.library[id])
         .whereType<Track>()
         .toList();
-    Widget queueRow(Track track, {bool current = false}) => Row(
+    Widget queueRow(Track track, {bool current = false}) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Pressable(
-            label: '${current ? '当前歌曲' : '播放'} ${track.title}',
-            selected: current,
-            selectionFill: false,
-            padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space),
-            onPressed: p.opening
-                ? null
-                : () => report(
-                    context,
-                    () => current ? p.toggle() : p.play(track),
-                  ),
-            child: Row(
-              children: [
-                Artwork(track, size: TingyuTokens.space * 5),
-                const SizedBox(width: TingyuTokens.space),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        track.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: TingyuTokens.macTrackTitle,
-                          color: current
-                              ? context.tokens.accentInk
-                              : context.tokens.text,
-                        ),
-                      ),
-                      Text(
-                        track.artist,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: TingyuTokens.macMetadata,
-                          color: context.tokens.muted,
-                        ),
-                      ),
-                    ],
-                  ),
+        Row(
+          children: [
+            Expanded(
+              child: Pressable(
+                label: '${current ? '当前歌曲' : '播放'} ${track.title}',
+                selected: current,
+                selectionFill: false,
+                padding: const EdgeInsets.symmetric(
+                  vertical: TingyuTokens.space,
                 ),
-                if (current) PlayingIndicator(playing: p.playing),
-              ],
+                onPressed: p.opening
+                    ? null
+                    : () => report(
+                        context,
+                        () => current ? p.toggle() : p.play(track),
+                      ),
+                child: Row(
+                  children: [
+                    Artwork(track, size: TingyuTokens.space * 5),
+                    const SizedBox(width: TingyuTokens.space),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            track.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: TingyuTokens.macTrackTitle,
+                              color: current
+                                  ? context.tokens.accentInk
+                                  : context.tokens.text,
+                            ),
+                          ),
+                          Text(
+                            track.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: TingyuTokens.macMetadata,
+                              color: context.tokens.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (current) PlayingIndicator(playing: p.playing),
+                  ],
+                ),
+              ),
             ),
+            action(
+              Icons.more_horiz,
+              '队列选项 ${track.id}',
+              () => setState(
+                () => queueActions = queueActions == track.id ? null : track.id,
+              ),
+            ),
+          ],
+        ),
+        if (queueActions == track.id)
+          Wrap(
+            children: [
+              action(
+                Icons.playlist_play,
+                '移至下一首',
+                current ? null : () => p.enqueue(track, next: true),
+              ),
+              action(
+                Icons.arrow_upward,
+                '上移一位',
+                p.queue.indexOf(track.id) <= 0
+                    ? null
+                    : () => p.moveQueue(p.queue.indexOf(track.id), -1),
+              ),
+              action(
+                Icons.arrow_downward,
+                '下移一位',
+                p.queue.indexOf(track.id) >= p.queue.length - 1
+                    ? null
+                    : () => p.moveQueue(p.queue.indexOf(track.id), 1),
+              ),
+              action(Icons.remove_circle_outline, '从队列移除', () async {
+                final undo = await p.removeQueueUndoable(track.id);
+                if (mounted) {
+                  setState(() => queueActions = null);
+                  offerUndo(context, '已从队列移除', undo);
+                }
+              }),
+            ],
           ),
-        ),
-        action(
-          Icons.more_horiz,
-          '队列选项 ${track.id}',
-          () => showQueueTrackActions(context, p, track.id),
-        ),
       ],
     );
     return ListView(
@@ -1108,7 +1253,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
       children: [
         if (p.current case final Track current) ...[
           Text(
-            '正在播放',
+            p.playing ? '正在播放' : '当前歌曲',
             style: TextStyle(
               color: context.tokens.muted,
               fontSize: TingyuTokens.macCaption,
@@ -1120,7 +1265,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
           children: [
             Expanded(
               child: Text(
-                '接下来 · ${next.length} 首',
+                '队列 · ${p.queue.length} 首',
                 style: TextStyle(
                   color: context.tokens.muted,
                   fontSize: TingyuTokens.macCaption,
@@ -1140,9 +1285,9 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
           ],
         ),
         if (next.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(TingyuTokens.macPadding),
-            child: Text('本轮没有待播歌曲'),
+          Padding(
+            padding: const EdgeInsets.all(TingyuTokens.macPadding),
+            child: Text(p.queue.isEmpty ? '队列为空' : '没有其他歌曲'),
           ),
         for (final track in next) queueRow(track),
       ],
@@ -1162,7 +1307,11 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                 rateLabel(p.speed),
                 style: TextStyle(color: context.tokens.accentInk),
               ),
-              action(Icons.refresh, '恢复倍速', () => p.setSpeed(1)),
+              action(
+                Icons.refresh,
+                '恢复倍速',
+                p.speed == 1 ? null : () => p.setSpeed(1),
+              ),
             ],
           ),
           Slider(
@@ -1199,7 +1348,13 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
             children: [
               const Expanded(child: Text('定时关闭')),
               Text(
-                draft.minutes == null ? '已关闭' : '${draft.minutes} 分钟后',
+                draft.changed
+                    ? (draft.minutes == null ? '已关闭' : '${draft.minutes} 分钟后')
+                    : p.waitingForTrack
+                    ? '本首播完后暂停'
+                    : p.sleepTimer.active
+                    ? '剩余 ${clock(p.sleepTimer.remaining)}'
+                    : '已关闭',
                 style: TextStyle(
                   fontSize: TingyuTokens.macCaption,
                   color: context.tokens.muted,
@@ -1220,6 +1375,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                       draft.minutes = minutes;
                       draft.changed = true;
                       optionsMinutes.text = '$minutes';
+                      timerError = null;
                     }),
                     child: Center(
                       child: Text(
@@ -1268,6 +1424,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: '自定义分钟',
+                    errorText: timerError,
                     isDense: true,
                     filled: false,
                     border: OutlineInputBorder(
@@ -1277,17 +1434,21 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                   ),
                   onChanged: (value) {
                     final number = int.tryParse(value);
-                    if (number != null && number > 0 && number <= 180) {
-                      setState(() {
+                    setState(() {
+                      timerError = number == null || number < 1 || number > 180
+                          ? '请输入 1–180 分钟'
+                          : null;
+                      if (timerError == null) {
                         draft.minutes = number;
                         draft.changed = true;
-                      });
-                    }
+                      }
+                    });
                   },
                 ),
               ),
               const SizedBox(width: TingyuTokens.space),
               action(Icons.timer_off_outlined, '关闭定时', () {
+                timerError = null;
                 draft.minutes = null;
                 draft.changed = true;
                 closeOverlay();
@@ -1485,7 +1646,11 @@ class MacSongDetails extends StatelessWidget {
                                       ),
                                       labelButton(
                                         '匹配或导入歌词',
-                                        () => showLyrics(context, p),
+                                        () => showLyrics(
+                                          context,
+                                          p,
+                                          initialSection: 'match',
+                                        ),
                                         icon: Icons.search,
                                       ),
                                     ],

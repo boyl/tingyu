@@ -10,12 +10,14 @@ import 'storage.dart';
 import 'covers.dart';
 import 'lyrics.dart';
 import 'media_export.dart';
+import 'playback_cache.dart';
 
 class DownloadManager extends ChangeNotifier {
   DownloadManager(
     this.api,
     this.db,
     this.directory, {
+    this.cache,
     Dio? dio,
     LyricsClient? lyricsClient,
   }) : lyricsClient = lyricsClient ?? LyricsClient(subtitleClient: api),
@@ -29,6 +31,7 @@ class DownloadManager extends ChangeNotifier {
            ) {
     covers = CoverCache(Directory('${directory.path}/covers'), dio: _http);
   }
+  final PlaybackCache? cache;
   late final CoverCache covers;
   final LyricsClient lyricsClient;
   final BilibiliClient api;
@@ -70,6 +73,7 @@ class DownloadManager extends ChangeNotifier {
   Timer? _saveTimer;
   Future<void> initialize() async {
     await directory.create(recursive: true);
+    await cache?.initialize();
     final j = await db.readState('downloads');
     for (final raw in j?['tasks'] as List? ?? []) {
       final t = DownloadTask.fromJson(Map<String, dynamic>.from(raw));
@@ -213,6 +217,7 @@ class DownloadManager extends ChangeNotifier {
     _saveTimer = null;
     _cancel?.cancel();
     lyricsClient.cancelRequests();
+    await cache?.close();
     await _pumpFuture;
     await _lyricPumpFuture;
     await covers.close();
@@ -239,29 +244,42 @@ class DownloadManager extends ChangeNotifier {
           path.join(directory.path, '${_stem(pending.track)}.part'),
         );
         try {
-          final stream = await api.resolve(pending.track, cancelToken: _cancel);
-          if (_cancel!.isCancelled) continue;
-          // Restart incomplete resources rather than append bytes from expired URLs.
-          final response = await _http.download(
-            stream.url,
-            temp.path,
-            options: Options(headers: stream.headers),
-            cancelToken: _cancel,
-            onReceiveProgress: (count, total) {
-              if (_closed) return;
-              pending.received = count;
-              pending.total = total;
-              _saveTimer ??= Timer(const Duration(seconds: 1), () {
-                _saveTimer = null;
-                unawaited(_save());
-              });
-              notifyListeners();
-            },
-          );
+          final reused =
+              await cache?.copyForDownload(
+                pending.track,
+                temp,
+                cancelToken: _cancel,
+              ) ??
+              false;
+          int? expected;
+          if (!reused) {
+            final stream = await api.resolve(
+              pending.track,
+              cancelToken: _cancel,
+            );
+            if (_cancel!.isCancelled) continue;
+            // Restart incomplete resources rather than append bytes from expired URLs.
+            final response = await _http.download(
+              stream.url,
+              temp.path,
+              options: Options(headers: stream.headers),
+              cancelToken: _cancel,
+              onReceiveProgress: (count, total) {
+                if (_closed) return;
+                pending.received = count;
+                pending.total = total;
+                _saveTimer ??= Timer(const Duration(seconds: 1), () {
+                  _saveTimer = null;
+                  unawaited(_save());
+                });
+                notifyListeners();
+              },
+            );
+            expected = int.tryParse(
+              response.headers.value('content-length') ?? '',
+            );
+          }
           final bytes = await temp.length();
-          final expected = int.tryParse(
-            response.headers.value('content-length') ?? '',
-          );
           if (bytes == 0 || (expected != null && bytes != expected)) {
             throw const AppFailure('下载文件不完整，请重试');
           }
@@ -278,6 +296,12 @@ class DownloadManager extends ChangeNotifier {
           notifyListeners();
           if (pending.track.cover.isNotEmpty) _queueCover(pending);
           await db.saveTrack(pending.track);
+          await _save();
+          try {
+            await cache?.downloaded(pending.track);
+          } on FileSystemException {
+            pending.error = '音频已下载，缓存副本清理失败';
+          }
         } on DioException catch (e) {
           if (tasks.contains(pending)) {
             pending.status = e.type == DioExceptionType.cancel
@@ -528,6 +552,7 @@ class DownloadManager extends ChangeNotifier {
     lyricsClient.cancelRequests();
     _saveTimer?.cancel();
     _cancel?.cancel();
+    unawaited(cache?.close());
     unawaited(covers.close());
     super.dispose();
   }

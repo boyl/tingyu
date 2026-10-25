@@ -90,3 +90,7 @@
 ## 0.1.27 双平台发布授权
 
 本轮用户明确要求 Mac 与 Android，故资产为一个 Android arm64-v8a APK 与一个 Mac DMG；上文仅 Android 的资产数量约束仅适用于此前发布。Mac 使用 `sh tool/build_macos_release.sh` 的 Release 配置、ad-hoc 签名，再使用 hdiutil 制作包含应用与 Applications 快捷入口的只读 DMG。记录实际 Mach-O 架构、最低系统、签名与未公证限制，不要求用户关闭 Gatekeeper。发布正文表格列出两项实际资产，分别核对 SHA-256。
+
+## 0.1.28 双平台发布授权
+
+用户于 2026-10-25 授权本轮 Mac 与安卓修复在验证完成后发布。沿用 0.1.27 的双资产范围：Android arm64-v8a APK 与 Mac DMG；开发签名、Mac 未公证及真机未验范围继续如实披露。未通过必需验收前不上传。

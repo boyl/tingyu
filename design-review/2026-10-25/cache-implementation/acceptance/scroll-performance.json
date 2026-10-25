@@ -1,0 +1,52 @@
+{
+  "scroll_library": {
+    "frames": 200,
+    "build": {
+      "p50Ms": 0.663,
+      "p95Ms": 4.517,
+      "maxMs": 6.872,
+      "over16_67ms": 0
+    },
+    "raster": {
+      "p50Ms": 40.829,
+      "p95Ms": 56.098,
+      "maxMs": 71.393,
+      "over16_67ms": 172
+    },
+    "mountedArtworks": 13
+  },
+  "scroll_downloads": {
+    "frames": 203,
+    "build": {
+      "p50Ms": 0.615,
+      "p95Ms": 3.796,
+      "maxMs": 4.6,
+      "over16_67ms": 0
+    },
+    "raster": {
+      "p50Ms": 39.297,
+      "p95Ms": 50.285,
+      "maxMs": 71.135,
+      "over16_67ms": 173
+    },
+    "mountedArtworks": 9
+  },
+  "scroll_playlist": {
+    "frames": 201,
+    "build": {
+      "p50Ms": 0.744,
+      "p95Ms": 4.395,
+      "maxMs": 6.108,
+      "over16_67ms": 0
+    },
+    "raster": {
+      "p50Ms": 40.806,
+      "p95Ms": 61.235,
+      "maxMs": 73.812,
+      "over16_67ms": 179
+    },
+    "mountedArtworks": 13
+  },
+  "baseline": false,
+  "scenario": "500 tracks, 1024px local covers, 20Hz playhead, library/downloads, profile emulator; not physical-device FPS"
+}

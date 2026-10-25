@@ -11,6 +11,7 @@ import 'services/bilibili.dart';
 import 'services/downloads.dart';
 import 'services/desktop.dart';
 import 'services/playback.dart';
+import 'services/playback_cache.dart';
 import 'services/storage.dart';
 import 'services/lyrics.dart';
 import 'ui/app.dart';
@@ -42,6 +43,9 @@ Future<void> runTingyu({
       api,
       db,
       Directory(path.join(directory.path, 'downloads')),
+      cache: PlaybackCache(
+        Directory(path.join(directory.path, 'playback-cache')),
+      ),
       lyricsClient: lyricsClient,
     );
     final playback = await PlaybackHandler.initialize();

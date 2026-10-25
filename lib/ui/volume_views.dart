@@ -50,7 +50,11 @@ class PlayerVolumePanel extends StatelessWidget {
                     key: const ValueKey('player-volume-percent'),
                     style: TextStyle(color: context.tokens.accentInk),
                   ),
-                  action(Icons.refresh, '恢复正常音量', () => p.setVolume(1)),
+                  action(
+                    Icons.refresh,
+                    '恢复正常音量',
+                    compact && volume == 1 ? null : () => p.setVolume(1),
+                  ),
                 ],
               ),
               Row(

@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-10-25T08:10:36.949353+00:00",
+  "sourceSha256": "9ddc29160a908cc73e763df25e156413c8faa29ef1b54191815bb1ca138858c4",
+  "checks": {
+    "icon-catalog": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "icon-catalog.log"
+    },
+    "cached-dependencies": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "cached-dependencies.log"
+    },
+    "analyze": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "analyze.log"
+    },
+    "offline-tests": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "offline-tests.log"
+    },
+    "desktop-packaging-tests": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "desktop-packaging-tests.log"
+    },
+    "android-navigation": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "android-navigation.log"
+    },
+    "android-interactions": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "android-interactions.log"
+    },
+    "android-export": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "android-export.log"
+    },
+    "android-scroll-performance": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "android-scroll-performance.log"
+    },
+    "android-live-playback": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "android-live-playback.log"
+    },
+    "source-stability": {
+      "status": "PASS"
+    }
+  },
+  "notExecutedByThisCommand": [
+    "G03 Release visible system bars lifecycle",
+    "G04 native desktop / large-font / screen-reader review",
+    "G05 real account import and keyword search",
+    "G06 actual storage exhaustion and real account expiry",
+    "G07 physical Android device",
+    "G08 matching release APK",
+    "D01 native desktops"
+  ],
+  "humanHandoffReady": false
+}

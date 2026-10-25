@@ -65,10 +65,6 @@ class LibraryController extends ChangeNotifier {
         }
       }),
     );
-    _saveTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => unawaited(save()),
-    );
     downloads.addListener(_downloadsChanged);
   }
   final BilibiliClient api;
@@ -215,6 +211,9 @@ class LibraryController extends ChangeNotifier {
 
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _saveTimer;
+  bool _restored = false;
+  Future<void>? _initialization;
+  Future<void> Function()? retryError;
   String theme = defaultTheme,
       mode = 'order',
       quality = '',
@@ -224,12 +223,20 @@ class LibraryController extends ChangeNotifier {
       lyricText = '',
       lyricSource = '',
       lyricError = '';
+  bool autoCache = true;
+  Future<void> setAutoCache(bool value) async {
+    autoCache = value;
+    notifyListeners();
+    await save();
+  }
+
   bool standard = false,
       searching = false,
       opening = false,
       _refreshing = false;
   int _searchEpoch = 0, _playEpoch = 0, _lyricEpoch = 0, lyricOffset = 0;
   int searchPage = 1, searchAttemptPage = 1;
+  bool searchHasMore = true;
   bool _disposed = false;
   Track? current;
   List<Track> results = [], parts = [];
@@ -263,7 +270,9 @@ class LibraryController extends ChangeNotifier {
   }
 
   bool get playing => playback.player.playing;
-  Future<void> initialize() async {
+  Future<void> initialize() => _initialization ??= _restore();
+
+  Future<void> _restore() async {
     try {
       await api.initialize();
     } on AppFailure catch (failure) {
@@ -297,6 +306,7 @@ class LibraryController extends ChangeNotifier {
         Map<String, String>.from(s['collectionSort'] ?? {}),
       );
       standard = s['standard'] ?? false;
+      autoCache = s['autoCache'] ?? true;
       final storedVolume = (s['volume'] as num?)?.toDouble() ?? 1;
       volume = storedVolume.isFinite ? storedVolume.clamp(0.0, 1.0) : 1;
       sleepTimer.finishTrack = s['sleepFinishTrack'] as bool? ?? false;
@@ -348,6 +358,15 @@ class LibraryController extends ChangeNotifier {
     await playback.player.setVolume(volume);
     await playback.player.setSpeed(speed);
     await downloads.initialize();
+    if (_disposed) return;
+    _restored = true;
+    _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      unawaited(
+        save().catchError((Object error) {
+          if (!_disposed) showError('本地状态保存失败，请检查存储空间后重试');
+        }),
+      );
+    });
     if (api.hasSession) unawaited(refreshProfile(silent: true));
     notifyListeners();
   }
@@ -376,7 +395,12 @@ class LibraryController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> save() => db.writeState('library', _libraryState());
+  Future<void> save() {
+    if (!_restored) {
+      return Future.error(StateError('本地状态尚未恢复，不能保存'));
+    }
+    return db.writeState('library', _libraryState());
+  }
 
   Map<String, dynamic> _libraryState() => {
     'libraryOrder': library.keys.toList(),
@@ -384,6 +408,7 @@ class LibraryController extends ChangeNotifier {
     'theme': theme,
     'mode': mode,
     'standard': standard,
+    'autoCache': autoCache,
     'lyricOffset': lyricOffset,
     'showLyricWords': showLyricWords,
     'showLyricTranslation': showLyricTranslation,
@@ -408,11 +433,13 @@ class LibraryController extends ChangeNotifier {
     'position': position.inMilliseconds,
   };
   void showError(String message) {
+    retryError = null;
     error = message;
     notifyListeners();
   }
 
   void clearError() {
+    retryError = null;
     error = '';
     notifyListeners();
   }
@@ -464,6 +491,8 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> search(String value, {int page = 1}) async {
+    if (page > 1 && !searchHasMore && query.trim() == value.trim()) return;
+    if (page == 1) searchHasMore = true;
     if (query.trim() != value.trim()) results = [];
     query = value;
     searchAttemptPage = page;
@@ -481,6 +510,10 @@ class LibraryController extends ChangeNotifier {
     try {
       final found = await api.search(value, page: page);
       if (epoch == _searchEpoch) {
+        final existing = results.map((t) => t.id).toSet();
+        searchHasMore =
+            found.isNotEmpty &&
+            (page == 1 || found.any((t) => !existing.contains(t.id)));
         results = {
           for (final t in page == 1 ? found : [...results, ...found]) t.id: t,
         }.values.toList();
@@ -577,12 +610,16 @@ class LibraryController extends ChangeNotifier {
     final epoch = ++_playEpoch;
     opening = true;
     error = '';
+    retryError = null;
     _refreshing = false;
     notifyListeners();
     try {
       final t = await canonical(input);
       if (epoch != _playEpoch) return;
-      final file = await downloads.availablePath(t);
+      final downloaded = await downloads.availablePath(t);
+      final file =
+          downloaded ??
+          await downloads.cache?.availablePath(t, standard: standard);
       final source = file == null
           ? await api.resolve(t, standard: standard)
           : null;
@@ -591,13 +628,41 @@ class LibraryController extends ChangeNotifier {
         if (epoch != _playEpoch || _disposed) return;
         await playback.pause();
         if (epoch != _playEpoch || _disposed) return;
-        await playback.open(t, file: file, source: source, position: at);
+        await downloads.cache?.activate(
+          downloaded == null ? t : null,
+          standard: standard,
+        );
+        AudioSource? cachedSource;
+        if (file == null && autoCache && downloads.cache != null) {
+          try {
+            cachedSource = await downloads.cache!.source(
+              t,
+              source!,
+              standard: standard,
+            );
+          } on Exception {
+            // A cache/storage failure must not prevent ordinary streaming.
+            cachedSource = null;
+          }
+        }
+        if (epoch != _playEpoch || _disposed) return;
+        await playback.open(
+          t,
+          file: file,
+          source: source,
+          cacheSource: cachedSource,
+          position: at,
+        );
         await playback.player.setSpeed(speed);
       });
       if (epoch != _playEpoch) return;
       current = t;
       position = at;
-      quality = file != null ? '离线文件' : source!.quality;
+      quality = downloaded != null
+          ? '离线文件'
+          : file != null
+          ? '播放缓存'
+          : source!.quality;
       await remember(t);
       if (_disposed || epoch != _playEpoch) return;
       if (!queue.contains(t.id)) queue.add(t.id);
@@ -618,6 +683,7 @@ class LibraryController extends ChangeNotifier {
       unawaited(_loadParts(t));
     } on Exception catch (e) {
       if (epoch == _playEpoch) {
+        retryError = () => play(input, at: at);
         error = e is AppFailure
             ? e.message
             : e is PlayerException
@@ -657,7 +723,10 @@ class LibraryController extends ChangeNotifier {
       if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
       await _withPlayer(() async {
         if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
+        await playback.pause();
+        await downloads.cache?.activate(null);
         await playback.open(t, source: src, position: at);
+        quality = src.quality;
       });
       if (_disposed || epoch != _playEpoch || current?.id != t.id) return;
       unawaited(_startPlayback());
@@ -1239,6 +1308,7 @@ class LibraryController extends ChangeNotifier {
     await _withPlayer(() async {
       await playback.pause();
       await playback.player.stop();
+      await downloads.cache?.activate(null);
     });
   }
 

@@ -250,9 +250,68 @@ void main() {
           },
         ),
       );
+      Future<void> captureCurrent(String name) async {
+        await settleAnimations();
+        final client = HttpClient();
+        try {
+          final request = await client.postUrl(
+            Uri.parse('http://127.0.0.1:47935/capture/$name'),
+          );
+          final response = await request.close();
+          await response.drain<void>();
+          expect(response.statusCode, HttpStatus.ok);
+        } finally {
+          client.close(force: true);
+        }
+      }
+
       controller.profile = {'mid': 1, 'uname': '本地验收账号'};
       await tester.tap(find.byKey(const ValueKey('打开设置')));
       await settleAnimations();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('settings-storage')),
+      );
+      await tester.tap(find.byKey(const ValueKey('settings-storage')));
+      await settleAnimations();
+      expect(find.text('存储空间'), findsOneWidget);
+      for (var i = 0; i < 100 && find.text('自动缓存').evaluate().isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await tester.pump();
+      }
+      expect(find.text('自动缓存'), findsOneWidget);
+      await tester.ensureVisible(find.text('自动缓存').first);
+      expect(controller.autoCache, isTrue);
+      final tempFixture = File(
+        '${controller.downloads.directory.parent.path}/navigation-cleanup.part',
+      );
+      await tempFixture.writeAsBytes(List.filled(12000, 1));
+      await tester.tap(find.byKey(const ValueKey('返回设置')));
+      await settleAnimations();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('settings-storage')),
+      );
+      await tester.tap(find.byKey(const ValueKey('settings-storage')));
+      await settleAnimations();
+      final cleanup = find.byKey(const ValueKey('storage-clear-temporary'));
+      for (var i = 0; i < 100 && cleanup.evaluate().isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await tester.pump();
+      }
+      await tester.ensureVisible(cleanup);
+      await captureCurrent('android-storage-cache');
+      await tester.tap(cleanup);
+      await settleAnimations();
+      expect(find.text('选择本次要清理的内容'), findsOneWidget);
+      await captureCurrent('android-storage-cleanup');
+      await tester.tap(find.text('取消'));
+      await settleAnimations();
+      expect(await tempFixture.exists(), isTrue);
+      await tempFixture.delete();
+      await tester.tap(find.byKey(const ValueKey('返回设置')));
+      await settleAnimations();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('settings-account')),
+      );
       await tester.tap(find.byKey(const ValueKey('settings-account')));
       await settleAnimations();
       expect(find.text('选择收藏夹'), findsOneWidget);
@@ -312,21 +371,6 @@ void main() {
       );
       await controller.remember(directoryTrack);
       controller.current = directoryTrack;
-      Future<void> captureCurrent(String name) async {
-        await settleAnimations();
-        final client = HttpClient();
-        try {
-          final request = await client.postUrl(
-            Uri.parse('http://127.0.0.1:47935/capture/$name'),
-          );
-          final response = await request.close();
-          await response.drain<void>();
-          expect(response.statusCode, HttpStatus.ok);
-        } finally {
-          client.close(force: true);
-        }
-      }
-
       await controller.addPlaylist('全部歌单入口验收', track: controller.current);
       final directoryId = controller.playlists.last.id;
       final entry = find.byKey(const ValueKey('all-playlists'));

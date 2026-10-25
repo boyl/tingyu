@@ -415,6 +415,11 @@ void main() {
         expect(p.playing, isTrue);
         await tap('播放或暂停');
         expect(p.playing, isFalse);
+        // A network-failure scenario requires a cold cache. Complete cached
+        // audio is intentionally downloadable even when the server rejects.
+        await p.playback.player.stop();
+        await p.downloads.cache?.activate(null);
+        await p.downloads.cache?.clear();
         reject = true;
         await tap('download-${firstTrack.id}');
         await tap('tab-downloads');

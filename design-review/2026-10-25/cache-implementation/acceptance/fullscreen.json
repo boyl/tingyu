@@ -1,0 +1,58 @@
+{
+  "apkSha256": "7de2d5e6eda6365029a62f551000329b30e28f57ab709cc618512c379e599f59",
+  "device": "emulator-5558",
+  "checks": {
+    "cold-start": {
+      "status": "PASS",
+      "bars": {
+        "statusBars": [
+          "true",
+          "true"
+        ],
+        "navigationBars": [
+          "true",
+          "true"
+        ]
+      }
+    },
+    "keyboard-dismiss": {
+      "status": "PASS",
+      "bars": {
+        "statusBars": [
+          "true",
+          "true"
+        ],
+        "navigationBars": [
+          "true",
+          "true"
+        ]
+      }
+    },
+    "resume": {
+      "status": "PASS",
+      "bars": {
+        "statusBars": [
+          "true",
+          "true"
+        ],
+        "navigationBars": [
+          "true",
+          "true"
+        ]
+      }
+    },
+    "bars-remain-visible": {
+      "status": "PASS",
+      "bars": {
+        "statusBars": [
+          "true",
+          "true"
+        ],
+        "navigationBars": [
+          "true",
+          "true"
+        ]
+      }
+    }
+  }
+}

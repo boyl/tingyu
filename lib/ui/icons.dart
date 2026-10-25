@@ -59,8 +59,6 @@ class TingyuIcon extends StatelessWidget {
     Icons.add_to_queue: 'queuePlus',
     Icons.library_add_outlined: 'trackPlus',
     Icons.featured_play_list_outlined: 'playlist',
-    Icons.check_box: 'done',
-    Icons.check_box_outline_blank: 'circle',
     Icons.refresh: 'refresh',
     Icons.pause_circle_outline: 'endPause',
   };

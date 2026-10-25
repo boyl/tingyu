@@ -326,7 +326,37 @@ class _StoragePanelState extends State<StoragePanel> {
   late Future<StorageUsage> scan = StorageUsage.scanWithInstall(
     widget.p.downloads.directory.parent,
   );
-  bool cleaning = false;
+  bool cleaning = false, choosing = false;
+  void refresh() => setState(() {
+    scan = StorageUsage.scanWithInstall(widget.p.downloads.directory.parent);
+  });
+  Future<void> choose(StorageUsage data) async {
+    if (widget.desktop) {
+      setState(() => choosing = true);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(TingyuTokens.space * 3),
+          child: StorageCleanup(
+            data: data,
+            p: widget.p,
+            onCancel: () => Navigator.pop(ctx),
+            onDone: () {
+              Navigator.pop(ctx);
+              refresh();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<StorageUsage>(
     future: scan,
@@ -349,6 +379,17 @@ class _StoragePanelState extends State<StoragePanel> {
         return const Center(child: CircularProgressIndicator());
       }
       final data = snapshot.data!, t = context.tokens;
+      if (choosing) {
+        return StorageCleanup(
+          data: data,
+          p: widget.p,
+          onCancel: () => setState(() => choosing = false),
+          onDone: () {
+            setState(() => choosing = false);
+            refresh();
+          },
+        );
+      }
       final colors = [
         t.accent,
         t.muted,
@@ -356,10 +397,11 @@ class _StoragePanelState extends State<StoragePanel> {
         t.playerMuted,
         t.line,
         t.accentInk,
+        t.playerMuted,
       ];
       final ring = Center(
         child: SizedBox.square(
-          dimension: widget.desktop ? TingyuTokens.macStorageRing : 228,
+          dimension: widget.desktop ? TingyuTokens.macStorageRing : 160,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -370,7 +412,7 @@ class _StoragePanelState extends State<StoragePanel> {
               ),
               StorageTotalLabel(
                 total: data.total,
-                diameter: widget.desktop ? TingyuTokens.macStorageRing : 228,
+                diameter: widget.desktop ? TingyuTokens.macStorageRing : 160,
               ),
             ],
           ),
@@ -382,8 +424,8 @@ class _StoragePanelState extends State<StoragePanel> {
             Padding(
               padding: EdgeInsets.symmetric(
                 vertical: widget.desktop
-                    ? TingyuTokens.space
-                    : TingyuTokens.space * 2,
+                    ? TingyuTokens.space / 2
+                    : TingyuTokens.space,
               ),
               child: Row(
                 children: [
@@ -392,14 +434,15 @@ class _StoragePanelState extends State<StoragePanel> {
                   Expanded(child: Text(item.$2.key)),
                   Text(storageSize(item.$2.value)),
                   const SizedBox(width: TingyuTokens.space * 2),
-                  SizedBox(
-                    width: 40,
-                    child: Text(
-                      '${data.total == 0 ? 0 : (item.$2.value / data.total * 100).round()}%',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(color: t.muted),
+                  if (widget.desktop)
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        '${data.total == 0 ? 0 : (item.$2.value / data.total * 100).round()}%',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: t.muted),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -422,68 +465,47 @@ class _StoragePanelState extends State<StoragePanel> {
             const SizedBox(height: TingyuTokens.space * 2),
             categories,
           ],
-          if (widget.fillViewport) const Spacer(),
+          const Divider(height: TingyuTokens.space * 4),
+          Row(
+            children: [
+              const Expanded(child: Text('自动缓存')),
+              TingyuToggle(
+                value: widget.p.autoCache,
+                label: '自动缓存',
+                onChanged: (value) async {
+                  await report(context, () => widget.p.setAutoCache(value));
+                  if (mounted) setState(() {});
+                },
+              ),
+            ],
+          ),
+          Text(
+            '播放时自动缓存，最多 2 GB',
+            style: TextStyle(color: t.muted, fontSize: 12),
+          ),
+          Text(
+            '达到上限时清理较早使用的缓存',
+            style: TextStyle(color: t.muted, fontSize: 12),
+          ),
           const SizedBox(height: TingyuTokens.space * 3),
+          Pressable(
+            key: const ValueKey('storage-clear-temporary'),
+            label: '清理缓存与临时文件',
+            color: t.tint,
+            radius: TingyuTokens.space * 2,
+            onPressed:
+                (data.bytes['临时文件'] ?? 0) + (data.bytes['播放缓存'] ?? 0) == 0
+                ? null
+                : () => choose(data),
+            child: Center(
+              child: Text('清理缓存与临时文件', style: TextStyle(color: t.accentInk)),
+            ),
+          ),
+          const SizedBox(height: TingyuTokens.space),
           Center(
-            child: Pressable(
-              key: const ValueKey('storage-clear-temporary'),
-              label: cleaning ? '正在清理' : '清理临时文件',
-              color: t.tint,
-              radius: TingyuTokens.space * 2,
-              padding: const EdgeInsets.symmetric(
-                horizontal: TingyuTokens.space * 2,
-                vertical: TingyuTokens.space * 2,
-              ),
-              onPressed: cleaning || data.temporary.isEmpty
-                  ? null
-                  : () async {
-                      if (!await confirm(
-                        context,
-                        '清理非活动临时文件？已下载歌曲、歌单和喜欢会保留。',
-                      )) {
-                        return;
-                      }
-                      setState(() => cleaning = true);
-                      try {
-                        await data.clearTemporary(
-                          widget.p.downloads.directory.parent,
-                          transferActive: widget.p.downloads.tasks.any(
-                            (x) => [
-                              DownloadStatus.waiting,
-                              DownloadStatus.downloading,
-                            ].contains(x.status),
-                          ),
-                        );
-                        if (mounted) {
-                          setState(
-                            () => scan = StorageUsage.scanWithInstall(
-                              widget.p.downloads.directory.parent,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) setState(() => cleaning = false);
-                      }
-                    },
-              child: SizedBox(
-                width: double.infinity,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TingyuIcon(Icons.clear_all, color: t.accentInk),
-                    const SizedBox(width: TingyuTokens.space * 1.5),
-                    Text(
-                      cleaning ? '正在清理…' : '清理临时文件',
-                      style: TextStyle(color: t.accentInk),
-                    ),
-                    const SizedBox(width: TingyuTokens.space * 1.5),
-                    Text(
-                      storageSize(data.bytes['临时文件'] ?? 0),
-                      style: TextStyle(color: t.accentInk, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
+            child: Text(
+              '可清理 ${storageSize((data.bytes['临时文件'] ?? 0) + (data.bytes['播放缓存'] ?? 0))}',
+              style: TextStyle(color: t.muted, fontSize: 12),
             ),
           ),
           if (data.installUnavailable)
@@ -496,6 +518,158 @@ class _StoragePanelState extends State<StoragePanel> {
       );
     },
   );
+}
+
+class StorageCleanup extends StatefulWidget {
+  const StorageCleanup({
+    super.key,
+    required this.data,
+    required this.p,
+    required this.onCancel,
+    required this.onDone,
+  });
+  final StorageUsage data;
+  final LibraryController p;
+  final VoidCallback onCancel, onDone;
+  @override
+  State<StorageCleanup> createState() => _StorageCleanupState();
+}
+
+class _StorageCleanupState extends State<StorageCleanup> {
+  bool temporary = true, cache = false, busy = false;
+  String? error;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final amount =
+        (temporary ? widget.data.bytes['临时文件'] ?? 0 : 0) +
+        (cache ? widget.data.bytes['播放缓存'] ?? 0 : 0);
+    Widget choice(
+      String title,
+      String subtitle,
+      bool selected,
+      int bytes,
+      VoidCallback toggle,
+    ) => Pressable(
+      label: title,
+      selected: selected,
+      selectionFill: false,
+      onPressed: busy || bytes == 0 ? null : toggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 2),
+        child: Row(
+          children: [
+            TingyuIcon(
+              selected ? Icons.check_box : Icons.check_box_outline_blank,
+              color: selected ? t.accentInk : t.muted,
+            ),
+            const SizedBox(width: TingyuTokens.space * 2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title),
+                  const SizedBox(height: TingyuTokens.space),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: t.muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Text(storageSize(bytes)),
+          ],
+        ),
+      ),
+    );
+    return PopScope(
+      canPop: !busy,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('清理缓存与临时文件', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: TingyuTokens.space),
+          Text('选择本次要清理的内容', style: TextStyle(color: t.muted)),
+          const SizedBox(height: TingyuTokens.space * 2),
+          choice(
+            '临时文件',
+            '未完成或遗留的临时数据',
+            temporary,
+            widget.data.bytes['临时文件'] ?? 0,
+            () => setState(() => temporary = !temporary),
+          ),
+          const Divider(),
+          choice(
+            '同时清理播放缓存',
+            '清理后，再次播放需联网获取',
+            cache,
+            widget.data.bytes['播放缓存'] ?? 0,
+            () => setState(() => cache = !cache),
+          ),
+          const Divider(),
+          Text(
+            '已下载歌曲和播放记录会保留\n正在使用的文件会跳过',
+            style: TextStyle(color: t.muted, fontSize: 12),
+          ),
+          if (error != null) Text(error!, style: TextStyle(color: t.accentInk)),
+          const SizedBox(height: TingyuTokens.space * 3),
+          Row(
+            children: [
+              Expanded(child: labelButton('取消', busy ? null : widget.onCancel)),
+              const SizedBox(width: TingyuTokens.space * 2),
+              Expanded(
+                child: Pressable(
+                  label: busy ? '正在清理' : '清理 ${storageSize(amount)}',
+                  color: t.accent,
+                  radius: TingyuTokens.radius,
+                  onPressed: busy || amount == 0
+                      ? null
+                      : () async {
+                          setState(() {
+                            busy = true;
+                            error = null;
+                          });
+                          try {
+                            if (temporary) {
+                              await widget.data.clearTemporary(
+                                widget.p.downloads.directory.parent,
+                                transferActive:
+                                    widget.p.downloads.tasks.any(
+                                      (x) =>
+                                          x.status ==
+                                              DownloadStatus.downloading ||
+                                          x.status == DownloadStatus.waiting,
+                                    ) ||
+                                    (widget.p.downloads.cache?.transferring ??
+                                        false),
+                                skipActive: true,
+                              );
+                            }
+                            if (cache) await widget.p.downloads.cache?.clear();
+                            if (mounted) widget.onDone();
+                          } on FileSystemException {
+                            if (mounted) {
+                              setState(() => error = '清理失败，请检查存储空间后重试');
+                            }
+                          } finally {
+                            if (mounted) setState(() => busy = false);
+                          }
+                        },
+                  child: Center(
+                    child: Text(
+                      busy ? '正在清理…' : '清理 ${storageSize(amount)}',
+                      style: const TextStyle(color: TingyuTokens.onArtwork),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class StorageTotalLabel extends StatelessWidget {

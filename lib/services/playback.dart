@@ -72,6 +72,7 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
     Track t, {
     String? file,
     AudioStream? source,
+    AudioSource? cacheSource,
     Duration position = Duration.zero,
   }) async {
     mediaItem.add(
@@ -85,6 +86,8 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
     );
     if (file != null) {
       await player.setFilePath(file, initialPosition: position);
+    } else if (cacheSource != null) {
+      await player.setAudioSource(cacheSource, initialPosition: position);
     } else {
       await player.setUrl(
         source!.url,

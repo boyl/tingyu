@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-25T07:01:41.290874+00:00",
+  "sourceSha256": "7a4df91f86bb542cad0385960e5d5571835ebccdc8ca3c26f30252fb5105abc9",
+  "checks": {
+    "icon-catalog": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "icon-catalog.log"
+    },
+    "cached-dependencies": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "cached-dependencies.log"
+    },
+    "analyze": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "analyze.log"
+    },
+    "offline-tests": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "offline-tests.log"
+    },
+    "desktop-packaging-tests": {
+      "status": "PASS",
+      "exitCode": 0,
+      "log": "desktop-packaging-tests.log"
+    },
+    "source-stability": {
+      "status": "PASS"
+    }
+  },
+  "notExecutedByThisCommand": [
+    "G02 Android tab navigation",
+    "G03 Release visible system bars lifecycle",
+    "G04 native desktop / large-font / screen-reader review",
+    "G05 real account import and keyword search",
+    "G06 actual storage exhaustion and real account expiry",
+    "G07 physical Android device",
+    "G08 matching release APK",
+    "D01 native desktops"
+  ],
+  "humanHandoffReady": false
+}

@@ -4378,29 +4378,35 @@ class FolderChoice extends StatelessWidget {
   );
 }
 
-Future<void> showLyrics(BuildContext context, LibraryController p) async {
+Future<void> showLyrics(
+  BuildContext context,
+  LibraryController p, {
+  String? initialSection,
+}) async {
   final track = p.current;
   if (track == null) return;
   if (PressableStyle.isDesktop(context)) {
-    String? section;
-    await showContentActions(
-      context,
-      (ctx) => SimpleDialog(
-        title: const Text('歌词'),
-        children: [
-          for (final entry in [
-            ('display', '显示与排版'),
-            ('match', '匹配歌词'),
-            ('edit', '编辑歌词'),
-            ('offset', '时间偏移'),
-          ])
-            labelButton(entry.$2, () {
-              section = entry.$1;
-              Navigator.pop(ctx);
-            }),
-        ],
-      ),
-    );
+    String? section = initialSection;
+    if (section == null) {
+      await showContentActions(
+        context,
+        (ctx) => SimpleDialog(
+          title: const Text('歌词'),
+          children: [
+            for (final entry in [
+              ('display', '显示与排版'),
+              ('match', '匹配歌词'),
+              ('edit', '编辑歌词'),
+              ('offset', '时间偏移'),
+            ])
+              labelButton(entry.$2, () {
+                section = entry.$1;
+                Navigator.pop(ctx);
+              }),
+          ],
+        ),
+      );
+    }
     if (section == null || !context.mounted) return;
     await showDialog<void>(
       context: context,

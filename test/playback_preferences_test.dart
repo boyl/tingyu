@@ -42,13 +42,15 @@ void main() {
   );
 
   test('legacy defaults and stored volume bounds are restored', () async {
-    final f = await TestLibrary.create();
+    var f = await TestLibrary.create();
     try {
       expect(f.playback.player.volume, 1);
       expect(f.controller.sleepTimer.finishTrack, false);
       for (final pair in [(-1.0, 0.0), (2.0, 1.0)]) {
         await f.db.writeState('library', {'volume': pair.$1});
-        await f.controller.initialize();
+        final directory = f.directory;
+        await f.close(deleteData: false);
+        f = await TestLibrary.create(dataDirectory: directory);
         expect(f.playback.player.volume, pair.$2);
       }
       for (final invalid in [-.1, 1.1, double.nan, double.infinity]) {
@@ -97,17 +99,20 @@ void main() {
   );
 
   test('continuous lyric size persists and migrates legacy sizes', () async {
-    final f = await TestLibrary.create();
+    var f = await TestLibrary.create();
     try {
       await f.db.writeState('library', {'lyricSize': 2});
-      await f.controller.initialize();
+      final directory = f.directory;
+      await f.close(deleteData: false);
+      f = await TestLibrary.create(dataDirectory: directory);
       expect(f.controller.lyricFontSize, 28);
       await f.controller.setLyricDisplay(fontSize: 31, translation: false);
       final state = (await f.db.readState('library'))!;
       expect(state['lyricFontSize'], 31);
       await f.controller.setLyricDisplay(fontSize: 24);
       expect(f.controller.showLyricTranslation, false);
-      await f.controller.initialize();
+      await f.close(deleteData: false);
+      f = await TestLibrary.create(dataDirectory: directory);
       expect(f.controller.lyricFontSize, 24);
       expect(f.controller.showLyricTranslation, false);
     } finally {

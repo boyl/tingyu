@@ -228,6 +228,7 @@ class FakePlayback extends BaseAudioHandler implements PlaybackHandler {
     Track track, {
     String? file,
     AudioStream? source,
+    AudioSource? cacheSource,
     Duration position = Duration.zero,
   }) async {
     final answer = openAnswer;

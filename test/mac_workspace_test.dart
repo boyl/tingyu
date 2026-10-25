@@ -228,7 +228,7 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('storage-clear-temporary')));
       await tester.pumpAndSettle();
-      expect(find.text('清理非活动临时文件？已下载歌曲、歌单和喜欢会保留。'), findsOneWidget);
+      expect(find.text('选择本次要清理的内容'), findsOneWidget);
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
       expect(await tester.runAsync(temporary.exists), isTrue);
@@ -557,27 +557,16 @@ void main() {
         tester.getRect(find.byKey(const ValueKey('mac-main-content'))),
         rect,
       );
-      expect(find.text('接下来 · 1 首'), findsOneWidget);
+      expect(find.text('队列 · 2 首'), findsOneWidget);
       await screenshot(tester, '${size.width.toInt()}-queue');
       await tester.tap(find.byKey(ValueKey('队列选项 ${secondTrack.id}')));
       await tester.pumpAndSettle();
       expect(find.byType(SimpleDialog), findsNothing);
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(const ValueKey('关闭操作')), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('关闭操作')),
-          matching: find.byIcon(Icons.clear),
-        ),
-        findsOneWidget,
-      );
-      final dialogBody = find.descendant(
-        of: find.byType(Dialog),
-        matching: find.byType(SingleChildScrollView),
-      );
-      expect(tester.getSize(dialogBody).width, lessThanOrEqualTo(420));
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byKey(const ValueKey('从队列移除')), findsOneWidget);
       await screenshot(tester, '${size.width.toInt()}-queue-actions');
-      await tester.tap(find.byKey(const ValueKey('关闭操作')));
+      await tester.tap(find.byKey(ValueKey('队列选项 ${secondTrack.id}')));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
