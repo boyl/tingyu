@@ -1,10 +1,12 @@
 {
-  "version": "0.1.28+29",
-  "sourceSha256": "9ddc29160a908cc73e763df25e156413c8faa29ef1b54191815bb1ca138858c4",
+  "version": "0.1.29+30",
+  "sourceSha256": "080f86625cd6f4b277de8e69b41a4bb8ac25c066ed94f1c924cd1207e8d83425",
   "macos": {
-    "path": "artifacts/tingyu-0.1.28-macos-release.dmg",
-    "bytes": 27671950,
-    "sha256": "63857924c91a4f3ba096eb658ab38745fa660c86545ec1c505dbf22d50c88c72",
+    "path": "artifacts/tingyu-0.1.29-macos-release.dmg",
+    "bytes": 27679116,
+    "sha256": "8efe2a77c8a6b1b8a0f5ea507b39ae3f63fa96554bc7f68f6fc0db0eed0e918d",
+    "version": "0.1.29",
+    "rebuilt": true,
     "architectures": [
       "x86_64",
       "arm64"
@@ -12,17 +14,22 @@
     "minimumSystem": "12.0",
     "signing": "ad-hoc; not notarized",
     "imageIntegrity": "PASS",
-    "mountedBundleSignature": "PASS",
-    "applicationsLink": "/Applications",
-    "runtime": "Mac native cache stream/offline/promoted-file decode PASS; component layout PASS; Intel hardware and physical listening pending"
+    "mountedBundleSignature": "PASS"
   },
-  "android": {
-    "abi": "arm64-v8a",
-    "path": "artifacts/tingyu-0.1.28-android-arm64-v8a-release.apk",
-    "bytes": 23769539,
-    "sha256": "7de2d5e6eda6365029a62f551000329b30e28f57ab709cc618512c379e599f59",
-    "zipIntegrity": "PASS",
-    "exactAbi": "PASS",
-    "versionCode": "2029"
-  }
+  "reusedAssets": [
+    {
+      "path": "artifacts/release-0.1.29/tingyu-0.1.28-windows-x64-setup.exe",
+      "bytes": 18738437,
+      "sha256": "9472ec365cb4f7c664d5d806196e6659a1dc78b159755ee7cbbf9a83c3c2d77f",
+      "version": "0.1.28",
+      "rebuilt": false
+    },
+    {
+      "path": "artifacts/release-0.1.29/tingyu-0.1.28-android-arm64-v8a-release.apk",
+      "bytes": 23769539,
+      "sha256": "7de2d5e6eda6365029a62f551000329b30e28f57ab709cc618512c379e599f59",
+      "version": "0.1.28",
+      "rebuilt": false
+    }
+  ]
 }
