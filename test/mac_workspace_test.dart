@@ -622,7 +622,7 @@ void main() {
         tester.getRect(find.byKey(const ValueKey('mac-main-content'))),
         rect,
       );
-      for (final mode in ['repeat', 'shuffle', 'order']) {
+      for (final mode in ['repeat', 'shuffle', 'once', 'order']) {
         await tester.tap(find.byKey(const ValueKey('mac-cycle-mode')));
         await tester.pumpAndSettle();
         expect(fixture.controller.mode, mode);

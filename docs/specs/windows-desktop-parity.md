@@ -106,3 +106,6 @@
 修复版 Windows Release 从清理后的目录构建成功（85.8s），日志 artifacts/settings-fix-build.log。本轮未替用户关闭正在使用的旧窗口；新版原生人工验收待运行修复包确认。
 
 2026-10-26 用户授权发布三个平台同一 Release，按补充 Windows 的方式保留原 v0.1.28 Mac/Android 附件与标签。最终原生托盘隐藏/恢复、隔离测试凭据读写删除通过；最终工程全 PASS，Release 清理重建通过。发布验收见 docs/ACCEPTANCE-2026-10-26-WINDOWS.md。
+
+## 播完暂停入口补齐
+用户反馈 Windows 无法选择播完暂停。控制器已支持 once，但共享桌面按钮只列出三种模式。回归先在三个尺寸失败，补入 once 后验证四模式循环；沿用控制器回归检查自然结束暂停、不切歌与手动下一首。本轮更新 Windows 安装包，不替换 Mac/Android 原二进制。

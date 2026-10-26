@@ -1851,7 +1851,7 @@ class MacModeButton extends StatelessWidget {
       label: '播放模式：${modeLabel(p.mode)}，点击切换',
       padding: const EdgeInsets.all(TingyuTokens.space),
       onPressed: () => report(context, () async {
-        const modes = ['order', 'repeat', 'shuffle'];
+        const modes = ['order', 'repeat', 'shuffle', 'once'];
         await p.setMode(modes[(modes.indexOf(p.mode) + 1) % modes.length]);
         p.announceMode(modeLabel(p.mode));
       }),

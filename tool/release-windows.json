@@ -1,12 +1,12 @@
 {
-  "bytes": 18737996,
+  "bytes": 18738437,
   "limitations": [
     "real account restart pending",
     "system media keys pending",
     "full tray exit pending",
     "physical listening pending"
   ],
-  "sha256": "4e9aeb2b92dfe218bc4ada9d6a14b6f4f04c559937efb119e898ab8ee0592f94",
+  "sha256": "9472ec365cb4f7c664d5d806196e6659a1dc78b159755ee7cbbf9a83c3c2d77f",
   "filename": "tingyu-0.1.28-windows-x64-setup.exe",
   "version": "0.1.28+29",
   "nativeChecks": [
@@ -14,7 +14,7 @@
     "tray initialize/hide/restore PASS",
     "isolated secure storage write/read/delete PASS"
   ],
-  "sourceSha256": "cc1402015369f6ce8783a65bb44cdd287d2bd1493fce78e6d3521ce2c7ab792a",
+  "sourceSha256": "993db8bd15ba40eb258127370e0df0ac22c7835982cc490138572e51012fdef2",
   "originalTagCommit": "97e7b03da0d5d6b23b3943a29b4ab67fe92ad650",
   "signing": "unsigned development build",
   "source": "Windows supplemental commit; see Release body",
@@ -28,5 +28,5 @@
     "shortcuts and uninstall registration PASS",
     "uninstall preserving user file PASS"
   ],
-  "installerSourceSha256": "865495e24be58beabf28ccb967c4b940c0d066b9e6977a924676782cf224bcc8"
+  "installerSourceSha256": "993db8bd15ba40eb258127370e0df0ac22c7835982cc490138572e51012fdef2"
 }

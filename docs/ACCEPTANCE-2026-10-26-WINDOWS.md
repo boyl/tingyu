@@ -34,3 +34,8 @@ Windows 真实账号跨进程凭据恢复、系统媒体键、完整托盘退出
 259 项离线测试通过，2 项原项目跳过；analyze、图标目录、依赖、打包测试和源码稳定性均 PASS。源码指纹：cc1402015369f6ce8783a65bb44cdd287d2bd1493fce78e6d3521ce2c7ab792a。报告 artifacts/acceptance/report.json。
 
 Windows Release 清理后重建通过（135.7s），ZIP 完整性通过。文件 tingyu-0.1.28-windows-x64-release.zip，22784045 字节，SHA-256：371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9。附件内无指向构建机的 SQLite 绝对路径，包含完整 DLL 和 data 目录。
+
+## 播完暂停入口修复（2026-10-26）
+桌面播放模式列表遗漏 once，导致 Windows 无法选择。三尺寸回归先失败，补齐第四项后 Windows 组件与偏好测试共 30 项通过，最终工程 259 passed / 2 skipped、分析/打包/源码稳定性全部 PASS。当前源码指纹 993db8bd15ba40eb258127370e0df0ac22c7835982cc490138572e51012fdef2。自然完成后保持当前曲目并暂停，手动下一首仍可用。Mac/Android 已发布二进制不在本次替换范围。
+
+Windows 清理重建成功（130.5s），新安装包首次安装/覆盖/卸载/用户文件保留/占用阻止全部通过，正式与测试安装器载荷一致。最终安装 EXE：18738437 字节，SHA-256：9472ec365cb4f7c664d5d806196e6659a1dc78b159755ee7cbbf9a83c3c2d77f。
