@@ -97,3 +97,5 @@
 
 ## 2026-10-26 三平台补充发布
 用户要求 Windows、macOS、Android 在同一个 Release 中展示并可下载。本轮向现有 v0.1.28 补入 Windows x64 ZIP，保留已发布 Android APK / Mac DMG 的名称、签名、摘要和历史标签。Windows 使用补充提交构建，Release 明确链接其独立源码提交；不能将旧 Mac/Android 包称作本轮重新构建。下载表格列出三个实际资产，逐项校验 SHA-256。
+
+用户随后明确要求安装 EXE，并移除原 Windows ZIP。最终 v0.1.28 资产为 Windows Setup.exe、Mac DMG 和 Android APK；先验证并上传安装包，再删除旧 ZIP。安装器不变更应用二进制及原有两平台附件。

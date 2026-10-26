@@ -1,0 +1,12 @@
+tingyu Windows 0.1.28 开发版
+
+安装程序默认安装到当前用户目录，无需管理员权限。可以选择安装位置，并创建桌面快捷方式；开始菜单和系统“已安装的应用”提供启动或卸载入口。
+
+升级安装前请从系统托盘退出 tingyu。关闭主窗口通常会隐藏到托盘，并不代表已退出。卸载只移除程序与快捷方式，不删除歌单、下载、缓存或登录资料。
+
+Ctrl+F 搜索，Ctrl+, 打开设置。Windows 与 Mac 共用桌面 UI，系统字体和原生边框存在差异。
+
+本程序及安装包未进行商业代码签名。真实账号跨进程恢复、系统媒体键、完整托盘退出和物理听感仍有待人工验收。完整验证说明与源码提交见：
+https://github.com/boyl/tingyu/releases/tag/v0.1.28
+
+项目使用 MIT 许可证，见 LICENSE.txt。第三方声明位于 data/flutter_assets/NOTICES.Z；libmpv 来自原项目 media_kit_libs_windows_audio 依赖，Visual C++ 运行库来自 Microsoft 官方可再分发目录。

@@ -79,3 +79,5 @@ Windows 已接入 Mac 同源桌面工作区，保留平台独立入口及 Ctrl �
 交付完整 Release 目录，包含数据库 SQLite、libmpv、Flutter 引擎、插件及 data/app.so。不能只复制 EXE。便携分发可附带已安装 Visual Studio 的 x64 Microsoft.VC143.CRT 可再分发 DLL；否则目标机器需安装微软官方 Visual C++ x64 运行库。
 
 本次 Windows 真实窗口显示由用户确认；界面截图工具超时，系统媒体键、真实账号、物理听感与完整退出路径不据此标为通过。详细记录见 specs/windows-desktop-parity.md。
+
+Windows 公开分发已改为 Setup.exe 安装版，含全部运行库；默认安装到当前用户目录，支持快捷方式与卸载，Release 不再保留便携 ZIP。安装/覆盖/占用阻止/卸载验证见 specs/windows-installer.md。

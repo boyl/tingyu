@@ -40,14 +40,14 @@ Windows 截图为本机字体的 Flutter 组件夹具，不是原生窗口截图
 |---|---|
 | Android · arm64-v8a | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-android-arm64-v8a-release.apk) |
 | macOS 12+ · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-macos-release.dmg) |
-| Windows 10/11 · x64 | [下载开发版 ZIP](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-windows-x64-release.zip) |
+| Windows 10/11 · x64 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.28/tingyu-0.1.28-windows-x64-setup.exe) |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
 校验值见 [0.1.28 发布记录](docs/ACCEPTANCE-2026-10-25-028.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
-Windows 解压完整文件夹后运行 tingyu.exe；升级前从托盘退出旧版，不要只复制 EXE。三个平台集中在 v0.1.28 Release；Windows 为后续补充构建，源码与验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-10-26-WINDOWS.md)。Mac/Android 原附件保持不变，Windows 修复不表示两端旧包已包含同样变更。
+Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。三个平台集中在 v0.1.28 Release；Windows 为后续补充构建，源码与验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-10-26-WINDOWS.md)。Mac/Android 原附件保持不变，Windows 修复不表示两端旧包已包含同样变更。
 
 ## 主要功能
 
@@ -67,7 +67,7 @@ Windows 解压完整文件夹后运行 tingyu.exe；升级前从托盘退出旧�
 
 **为什么下载没有继续？** 应用进程被系统结束后，下载不会继续。中断任务可重试，目前不支持 HTTP Range 断点续传。
 
-**哪些平台可以使用？** 提供 Android arm64-v8a 安装包、Mac 开发版和 Windows x64 便携版。Windows x64 开发版与两端在同一 Release 下载；验证边界见[Windows 规范](docs/specs/windows-desktop-parity.md)。模拟器测试不能替代物理设备验收。
+**哪些平台可以使用？** 提供 Android arm64-v8a 安装包、Mac 开发版和 Windows x64 安装版。Windows x64 开发版与两端在同一 Release 下载；验证边界见[Windows 规范](docs/specs/windows-desktop-parity.md)。模拟器测试不能替代物理设备验收。
 
 ## 开发与文档
 

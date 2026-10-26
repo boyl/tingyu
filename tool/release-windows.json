@@ -1,13 +1,13 @@
 {
-  "bytes": 22784045,
+  "bytes": 18737996,
   "limitations": [
     "real account restart pending",
     "system media keys pending",
     "full tray exit pending",
     "physical listening pending"
   ],
-  "sha256": "371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9",
-  "filename": "tingyu-0.1.28-windows-x64-release.zip",
+  "sha256": "4e9aeb2b92dfe218bc4ada9d6a14b6f4f04c559937efb119e898ab8ee0592f94",
+  "filename": "tingyu-0.1.28-windows-x64-setup.exe",
   "version": "0.1.28+29",
   "nativeChecks": [
     "cached stream/offline/promoted decode PASS",
@@ -18,5 +18,15 @@
   "originalTagCommit": "97e7b03da0d5d6b23b3943a29b4ab67fe92ad650",
   "signing": "unsigned development build",
   "source": "Windows supplemental commit; see Release body",
-  "releaseTag": "v0.1.28"
+  "releaseTag": "v0.1.28",
+  "previousPortableSha256": "371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9",
+  "installerValidation": [
+    "fresh install PASS",
+    "same-directory upgrade PASS",
+    "locked executable rejected with exit 7 PASS",
+    "41 installed hashes PASS",
+    "shortcuts and uninstall registration PASS",
+    "uninstall preserving user file PASS"
+  ],
+  "installerSourceSha256": "865495e24be58beabf28ccb967c4b940c0d066b9e6977a924676782cf224bcc8"
 }

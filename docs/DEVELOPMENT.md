@@ -77,3 +77,5 @@ python -X utf8 tool/package_desktop.py windows-x64
 Windows C++ 工具链还需 `Microsoft.VisualStudio.Component.VC.ATL`（安全凭据插件使用 ATL）。如果首次 `pub get` 已下载完成，但提示符号链接权限不足，可执行 `pwsh -NoProfile -File tool/prepare_windows_plugins.ps1` 后重新运行；该工具只在项目生成目录建立指向已解析依赖的目录联接，不调整系统开发者模式或安全设置。依赖变化后需再次核对。
 
 不要同时运行 Windows 单元测试、原生构建和从构建目录启动的应用：SQLite 原生资产可能被占用。先结束本轮测试/预览进程，再构建、打包和换目录启动检查。
+
+Windows 安装包使用 Inno Setup 6.7.3：运行 python tool/build_windows_installer.py --bundle <完整程序目录> --output <输出目录> --compiler <ISCC.exe>。独立安装测试使用 --test-identity 构建，然后由 PowerShell 7 运行 tool/test_windows_installer.ps1；不要用用户真实安装目录做自动卸载测试。见 docs/specs/windows-installer.md。
