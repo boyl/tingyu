@@ -9,7 +9,7 @@ import zipfile
 
 def windows_bundle(root: Path) -> Path:
     bundle = root / 'build/windows/x64/runner/Release'
-    for relative in ['tingyu.exe', 'flutter_windows.dll', 'libmpv-2.dll', 'data/icudtl.dat']:
+    for relative in ['tingyu.exe', 'flutter_windows.dll', 'libmpv-2.dll', 'sqlite3.dll', 'data/app.so', 'data/icudtl.dat']:
         if not (bundle / relative).is_file():
             raise FileNotFoundError(f'Missing Windows runtime: {relative}')
     if not (bundle / 'data/flutter_assets').is_dir():

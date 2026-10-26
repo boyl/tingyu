@@ -9,7 +9,7 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
             release=root/'build/windows/x64/runner/Release'
-            for name in ['tingyu.exe','flutter_windows.dll','libmpv-2.dll','data/icudtl.dat','data/flutter_assets/AssetManifest.bin']:
+            for name in ['tingyu.exe','flutter_windows.dll','libmpv-2.dll','sqlite3.dll','data/app.so','data/icudtl.dat','data/flutter_assets/AssetManifest.bin']:
                 item=release/name;item.parent.mkdir(parents=True,exist_ok=True);item.write_bytes(b'fixture')
             archive=package(root,'windows-x64')
             with zipfile.ZipFile(archive) as contents:
@@ -29,5 +29,18 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(FileNotFoundError):
                 package(Path(directory),'macos')
+
+    def test_windows_requires_database_and_aot_runtime(self):
+        for missing in ['sqlite3.dll', 'data/app.so']:
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                release = root / 'build/windows/x64/runner/Release'
+                for name in ['tingyu.exe', 'flutter_windows.dll', 'libmpv-2.dll', 'sqlite3.dll', 'data/app.so', 'data/icudtl.dat', 'data/flutter_assets/AssetManifest.bin']:
+                    if name != missing:
+                        item = release / name
+                        item.parent.mkdir(parents=True, exist_ok=True)
+                        item.write_bytes(b'fixture')
+                with self.assertRaisesRegex(FileNotFoundError, missing):
+                    windows_bundle(root)
 
 if __name__=='__main__':unittest.main()

@@ -9,6 +9,7 @@ import sys
 from source_fingerprint import source_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
+os.environ['PYTHONUTF8'] = '1'
 parser = argparse.ArgumentParser()
 parser.add_argument('--device', help='Run native Android navigation integration test on this device')
 parser.add_argument('--live', action='store_true', help='Also run anonymous public BV playback/download probe; requires --device')
@@ -25,7 +26,7 @@ if args.device:
     os.environ['TINGYU_ACCEPTANCE_DEVICE'] = args.device
 output = ROOT / 'artifacts' / 'acceptance'
 output.mkdir(parents=True, exist_ok=True)
-flutter = ['flutter'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']
+flutter = ['pwsh', '-NoProfile', '-File', 'tool/flutterw.ps1'] if os.name == 'nt' else ['sh', 'tool/flutterw.sh']
 commands = [('icon-catalog', [sys.executable, 'tool/icon_catalog.py', '--check']), ('cached-dependencies', flutter + ['pub', 'get', '--offline']), ('analyze', flutter + ['analyze', '--no-pub']), ('offline-tests', flutter + ['test', '--no-pub', '--reporter', 'expanded']),
             ('desktop-packaging-tests', [sys.executable, 'tool/test_package_desktop.py'])]
 if args.device:
@@ -39,11 +40,11 @@ fingerprint_before = source_fingerprint(ROOT)
 results = {}
 for name, command in commands:
     print(f'Running {name}...', flush=True)
-    with (output / f'{name}.log').open('w') as log:
+    with (output / f'{name}.log').open('w', encoding='utf-8') as log:
         process = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
     results[name] = {'status': 'PASS' if process.returncode == 0 else 'FAIL', 'exitCode': process.returncode, 'log': f'{name}.log'}
     if process.returncode:
-        print((output / f'{name}.log').read_text()[-6000:])
+        print((output / f'{name}.log').read_text(encoding='utf-8', errors='replace')[-6000:])
         break
 fingerprint_after = source_fingerprint(ROOT)
 results['source-stability'] = {'status': 'PASS' if fingerprint_before == fingerprint_after else 'FAIL'}

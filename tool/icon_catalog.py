@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Export the existing Tingyu painter and inventory Material fallbacks. No app changes."""
-import argparse, hashlib, json, re, shutil
+import argparse, hashlib, json, re, shutil, os
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'resources/icons'
@@ -58,17 +58,17 @@ def svg(name):
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+a+'</svg>\n'
 def sha(b):return hashlib.sha256(b).hexdigest()
 def inventory():
- runtime=ROOT/'lib/ui/icons.dart';source=runtime.read_text();aliases=dict(re.findall(r'Icons\.(\w+): \'(\w+)\'',source))
+ runtime=ROOT/'lib/ui/icons.dart';source=runtime.read_text(encoding='utf-8');aliases=dict(re.findall(r'Icons\.(\w+): \'(\w+)\'',source))
  names=sorted(set(re.findall(r"case '(\w+)':",source)))
  usages={}
  for f in sorted((ROOT/'lib').rglob('*.dart')):
-  for i,line in enumerate(f.read_text().splitlines(),1):
-   for name in re.findall(r'\bIcons\.(\w+)',line):usages.setdefault(name,[]).append(f'{f.relative_to(ROOT)}:{i}')
+  for i,line in enumerate(f.read_text(encoding='utf-8').splitlines(),1):
+   for name in re.findall(r'\bIcons\.(\w+)',line):usages.setdefault(name,[]).append(f'{f.relative_to(ROOT).as_posix()}:{i}')
  # Register existing Material reuse for new designs, even if not yet in app call sites.
  for name in ['speed','schedule','visibility','visibility_off','tune','person_outline','storage','blur_on','logout','shield_outlined','repeat','repeat_one','shuffle','looks_one_outlined','pause_circle_outline','close']:
   usages.setdefault(name,[])
- sdk=ROOT.parent/'.toolchains/flutter';mat=sdk/'packages/flutter/lib/src/material/icons.dart'
- text=mat.read_text();glyphs={name:{'codepoint':int(cp,16),'matchTextDirection':bool(direction)} for name,cp,direction in re.findall(r'static const IconData (\w+) = IconData\(0x([0-9a-f]+), fontFamily: \'MaterialIcons\'(, matchTextDirection: true)?\);',text)}
+ sdk=Path(os.environ.get('FLUTTER_ROOT', ROOT.parent/'.toolchains/flutter'));mat=sdk/'packages/flutter/lib/src/material/icons.dart'
+ text=mat.read_text(encoding='utf-8');glyphs={name:{'codepoint':int(cp,16),'matchTextDirection':bool(direction)} for name,cp,direction in re.findall(r'static const IconData (\w+) = IconData\(0x([0-9a-f]+), fontFamily: \'MaterialIcons\'(, matchTextDirection: true)?\);',text)}
  entries=[]
  for name in names:
   entries.append({'id':name,'provider':'tingyu-painter','status':'existing','asset':f'svg/{name}.svg','runtimeSource':'lib/ui/icons.dart','aliases':[k for k,v in aliases.items() if v==name]})
@@ -79,8 +79,8 @@ def inventory():
   entries.append({'id':'material/'+name,'provider':'Flutter MaterialIcons','status':'existing-app-use' if uses else 'design-reuse','asset':'material/MaterialIcons-Regular.otf',**glyphs[name],'uses':uses})
  design_uses={}
  for f in sorted((ROOT/'design-review').rglob('*.html')):
-  for icon_id in set(re.findall(r'data-icon-id="([^"<>]+)"',f.read_text())):
-   design_uses.setdefault(icon_id,[]).append(str(f.relative_to(ROOT)))
+  for icon_id in set(re.findall(r'data-icon-id="([^"<>]+)"',f.read_text(encoding='utf-8'))):
+   design_uses.setdefault(icon_id,[]).append(f.relative_to(ROOT).as_posix())
  valid={e['id'] for e in entries}
  assert not (set(design_uses)-valid), f'Unregistered design icons: {set(design_uses)-valid}'
  for e in entries:e['designUses']=design_uses.get(e['id'],[])
@@ -90,23 +90,23 @@ def main():
  ap=argparse.ArgumentParser();ap.add_argument('--check',action='store_true');args=ap.parse_args()
  source,entries,glyphs=inventory(); assets={e['asset']:svg(e['id']) for e in entries if e['provider']=='tingyu-painter'}
  if any(e['asset']=='candidates/endPause.svg' for e in entries): assets['candidates/endPause.svg']='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h9 M7 8l4 4-4 4"/><rect x="15" y="5" width="2.5" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="20" y="5" width="2.5" height="14" rx="1" fill="currentColor" stroke="none"/></svg>\n'
- matroot=ROOT.parent/'.toolchains/flutter/bin/cache/artifacts/material_fonts'
+ matroot=Path(os.environ.get('FLUTTER_ROOT', ROOT.parent/'.toolchains/flutter'))/'bin/cache/artifacts/material_fonts'
  font=(matroot/'MaterialIcons-Regular.otf').read_bytes();license=(matroot/'MaterialIcons_LICENSE.txt').read_bytes()
  registry={'schema':1,'geometrySource':'lib/ui/icons.dart','runtimeSha256':sha(source.encode()),'fontSha256':sha(font),'note':'SVG review exports mirror runtime painter; app still reads TingyuIcon. Font glyphs are existing Flutter resources, not newly drawn icons.','tokens':{'grid':24,'stroke':1.7,'download.completed':'tokens.accent','download.idle':'tokens.text','download.failed':'tokens.danger','player.glyph':'tokens.onPlayerButton','player.button':'tokens.playerButton'},'entries':entries,'assetSha256':{p:sha(s.encode()) for p,s in assets.items()}}
  serialized=json.dumps(registry,ensure_ascii=False,indent=2)+'\n'
  if args.check:
-  assert (OUT/'registry.json').read_text()==serialized,'Catalog drift: review source/usage and rerun export'
-  for p,s in assets.items():assert (OUT/p).read_text()==s,p
+  assert (OUT/'registry.json').read_text(encoding='utf-8')==serialized,'Catalog drift: review source/usage and rerun export'
+  for p,s in assets.items():assert (OUT/p).read_text(encoding='utf-8')==s,p
   assert (OUT/'material/MaterialIcons-Regular.otf').read_bytes()==font
   assert (OUT/'material/LICENSE.txt').read_bytes()==license
   print(f'PASS: {len(assets)} SVG exports, {len(entries)-len(assets)} Material entries; source, use inventory, geometry and font hashes match');return
- for p,s in assets.items():(OUT/p).parent.mkdir(parents=True,exist_ok=True);(OUT/p).write_text(s)
+ for p,s in assets.items():(OUT/p).parent.mkdir(parents=True,exist_ok=True);(OUT/p).write_text(s, encoding='utf-8')
  (OUT/'material').mkdir(exist_ok=True);(OUT/'material/MaterialIcons-Regular.otf').write_bytes(font);(OUT/'material/LICENSE.txt').write_bytes(license)
- (OUT/'registry.json').write_text(serialized)
+ (OUT/'registry.json').write_text(serialized, encoding='utf-8')
  cards=[]
  for e in entries:
-  drawing=(OUT/e['asset']).read_text() if e['asset'].endswith('.svg') else '<span class="material">&#'+str(e['codepoint'])+';</span>'
+  drawing=(OUT/e['asset']).read_text(encoding='utf-8') if e['asset'].endswith('.svg') else '<span class="material">&#'+str(e['codepoint'])+';</span>'
   cards.append('<article>'+drawing+'<b>'+e['id']+'</b><small>'+e['status']+'</small></article>')
- (OUT/'index.html').write_text('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>tingyu 图标资源库</title><style>@font-face{font-family:MaterialIcons;src:url(material/MaterialIcons-Regular.otf)}body{font-family:-apple-system,sans-serif;background:#faf8fa;color:#19191b;padding:40px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}article{background:white;padding:20px;display:flex;flex-direction:column;gap:12px;border:1px solid #e7e7eb;border-radius:8px}svg{width:28px;height:28px}.material{font-family:MaterialIcons;font-size:28px;line-height:1}b{font-size:12px;word-break:break-all}small,p{font-size:11px;color:#68686e}</style><h1>tingyu 图标资源库</h1><p>既有图形优先 · 状态颜色由主题决定 · 本页默认中性色展示，不代表业务状态颜色</p><div class="grid">'+''.join(cards)+'</div></html>')
+ (OUT/'index.html').write_text('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>tingyu 图标资源库</title><style>@font-face{font-family:MaterialIcons;src:url(material/MaterialIcons-Regular.otf)}body{font-family:-apple-system,sans-serif;background:#faf8fa;color:#19191b;padding:40px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}article{background:white;padding:20px;display:flex;flex-direction:column;gap:12px;border:1px solid #e7e7eb;border-radius:8px}svg{width:28px;height:28px}.material{font-family:MaterialIcons;font-size:28px;line-height:1}b{font-size:12px;word-break:break-all}small,p{font-size:11px;color:#68686e}</style><h1>tingyu 图标资源库</h1><p>既有图形优先 · 状态颜色由主题决定 · 本页默认中性色展示，不代表业务状态颜色</p><div class="grid">'+''.join(cards)+'</div></html>', encoding='utf-8')
  print(f'Exported {len(assets)} SVGs and {len(entries)-len(assets)} Material registrations')
 if __name__=='__main__':main()

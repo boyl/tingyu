@@ -62,6 +62,7 @@ class DownloadManager extends ChangeNotifier {
   final _lyricQueue = <DownloadTask>[];
   final _lyricRevisions = <String, int>{};
   final _lyricWrites = <String, Future<void>>{};
+  final _lyricReads = <DownloadTask, Future<String?>>{};
   Future<void>? _lyricPumpFuture;
   bool _lyricRunning = false;
   DownloadTask? _lyricActive;
@@ -179,6 +180,7 @@ class DownloadManager extends ChangeNotifier {
     try {
       _lyricQueue.remove(t);
       _lyricRevisions[t.track.id] = (_lyricRevisions[t.track.id] ?? 0) + 1;
+      await _lyricReads[t];
       await _lyricWrites[t.track.id];
       await _coverWrites[t];
       if (_active == t) {
@@ -334,6 +336,16 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
+  Future<String?> _readEmbeddedLyrics(DownloadTask task) async {
+    final read = MediaExporter.embeddedLyrics(File(task.filePath!));
+    _lyricReads[task] = read;
+    try {
+      return await read;
+    } finally {
+      if (identical(_lyricReads[task], read)) _lyricReads.remove(task);
+    }
+  }
+
   void _queueCover(DownloadTask task) {
     if (_closed || _coverJobs.containsKey(task)) return;
     final job = _attachCover(task);
@@ -412,7 +424,7 @@ class DownloadManager extends ChangeNotifier {
           } else {
             final embedded = task.filePath == null
                 ? null
-                : await MediaExporter.embeddedLyrics(File(task.filePath!));
+                : await _readEmbeddedLyrics(task);
             if (!valid()) continue;
             final candidate = embedded != null
                 ? <String, dynamic>{

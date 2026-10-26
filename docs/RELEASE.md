@@ -94,3 +94,6 @@
 ## 0.1.28 双平台发布授权
 
 用户于 2026-10-25 授权本轮 Mac 与安卓修复在验证完成后发布。沿用 0.1.27 的双资产范围：Android arm64-v8a APK 与 Mac DMG；开发签名、Mac 未公证及真机未验范围继续如实披露。未通过必需验收前不上传。
+
+## 2026-10-26 三平台补充发布
+用户要求 Windows、macOS、Android 在同一个 Release 中展示并可下载。本轮向现有 v0.1.28 补入 Windows x64 ZIP，保留已发布 Android APK / Mac DMG 的名称、签名、摘要和历史标签。Windows 使用补充提交构建，Release 明确链接其独立源码提交；不能将旧 Mac/Android 包称作本轮重新构建。下载表格列出三个实际资产，逐项校验 SHA-256。

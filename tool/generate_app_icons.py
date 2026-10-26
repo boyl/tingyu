@@ -84,14 +84,34 @@ def generate_macos(check=False):
     print('Verified' if check else 'Generated', 'Mac icons from approved ribbon master.')
 
 
+def generate_windows(check=False):
+    sizes = (16, 24, 32, 48, 64, 128, 256)
+    images = []
+    for size in sizes:
+        icon = Image.new('RGBA', (size, size), (0, 0, 0, 255))
+        icon.alpha_composite(foreground(size, extent=.84))
+        images.append(icon)
+    target = ROOT / 'windows/runner/resources/app_icon.ico'
+    if check:
+        actual = Image.open(target)
+        assert actual.ico.sizes() == {(size, size) for size in sizes}, target
+        for expected in images:
+            assert actual.ico.getimage(expected.size).convert('RGBA').tobytes() == expected.tobytes(), expected.size
+    else:
+        images[-1].save(target, sizes=[image.size for image in images], append_images=images[:-1])
+    print('Verified' if check else 'Generated', 'Windows icons from approved ribbon master.')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--platform', choices=('android', 'macos'), default='android')
+    parser.add_argument('--platform', choices=('android', 'macos', 'windows'), default='android')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     if args.platform == 'macos':
         generate_macos(args.check)
+    elif args.platform == 'windows':
+        generate_windows(args.check)
     elif args.check:
-        parser.error('--check currently supports --platform macos')
+        parser.error('--check supports --platform macos or windows')
     else:
         generate_android()

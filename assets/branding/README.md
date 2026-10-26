@@ -18,3 +18,7 @@ Mac 已统一为同一白色折带母版，替换旧山形声波图。按用户�
 生成：`python3 tool/generate_app_icons.py --platform macos`；核对母版与全部像素尺寸：`python3 tool/generate_app_icons.py --platform macos --check`。需要 Pillow。默认无参数仍只生成 Android，不影响 Windows。
 
 macOS 26 使用 `macos/Runner/AppIcon.icon` 的 Icon Composer 分层格式：纯黑背景和同源白色折带，禁用主体玻璃、阴影与透光效果，避免旧格式被系统添加浅色外框。Xcode 与旧尺寸资源共同编译，运行时图标以实际系统读取结果验收。
+
+## Windows 应用图标（2026-10-26）
+
+Windows 从同一折带母版生成黑底白色图标，最长边占比 84%，与 Mac 相同。ICO 包含 16/24/32/48/64/128/256 七种尺寸。生成和像素核对使用工具的 --platform windows 与 --check；不修改 Mac 或 Android 资源。系统托盘仍使用原有专用小图标。

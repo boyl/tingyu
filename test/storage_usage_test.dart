@@ -20,7 +20,31 @@ void main() {
         await File(
           '${outside.path}/secret.part',
         ).writeAsBytes(List.filled(1000, 1));
-        await Link('${root.path}/outside').create(outside.path);
+        final link = Link('${root.path}/outside');
+        if (Platform.isWindows) {
+          // Junctions exercise the same no-follow boundary without requiring
+          // developer mode or administrator privileges on Windows test hosts.
+          final result = await Process.run(
+            'pwsh',
+            [
+              '-NoProfile',
+              '-NonInteractive',
+              '-Command',
+              r"New-Item -ItemType Junction -Path $env:TINGYU_TEST_LINK -Target $env:TINGYU_TEST_TARGET -ErrorAction Stop | Out-Null",
+            ],
+            environment: {
+              'TINGYU_TEST_LINK': link.path,
+              'TINGYU_TEST_TARGET': outside.path,
+            },
+          );
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+          expect(
+            await FileSystemEntity.type(link.path, followLinks: false),
+            FileSystemEntityType.link,
+          );
+        } else {
+          await link.create(outside.path);
+        }
         final usage = await StorageUsage.scan(root);
         expect(usage.total, 100);
         expect(usage.bytes['已下载音频'], 80);

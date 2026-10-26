@@ -59,3 +59,21 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi
 ## 维护入口
 
 [功能清单](FEATURES.md) · [界面规范](UI.md) · [验收标准](ACCEPTANCE.md) · [重构约定](REFACTORING.md) · [发布准则](RELEASE.md)
+
+## Windows PowerShell 7 入口
+
+完整官方 SDK 解压后，设置当前进程的 `FLUTTER_ROOT`，再执行：
+
+```powershell
+$env:FLUTTER_ROOT = '<Flutter SDK 目录>'
+pwsh -NoProfile -File tool/flutterw.ps1 doctor --verbose
+pwsh -NoProfile -File tool/windows.ps1 build
+python -X utf8 tool/run_acceptance.py
+python -X utf8 tool/package_desktop.py windows-x64
+```
+
+`flutterw.ps1` 通过 SDK 自带 Dart snapshot 运行 Flutter CLI；不会改动全局 PATH。Flutter/MSBuild 原生构建仍使用其官方内部构建工具。SDK、依赖缓存和编译产物不纳入 Git。
+
+Windows C++ 工具链还需 `Microsoft.VisualStudio.Component.VC.ATL`（安全凭据插件使用 ATL）。如果首次 `pub get` 已下载完成，但提示符号链接权限不足，可执行 `pwsh -NoProfile -File tool/prepare_windows_plugins.ps1` 后重新运行；该工具只在项目生成目录建立指向已解析依赖的目录联接，不调整系统开发者模式或安全设置。依赖变化后需再次核对。
+
+不要同时运行 Windows 单元测试、原生构建和从构建目录启动的应用：SQLite 原生资产可能被占用。先结束本轮测试/预览进程，再构建、打包和换目录启动检查。

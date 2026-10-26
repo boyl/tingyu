@@ -1,0 +1,22 @@
+{
+  "bytes": 22784045,
+  "limitations": [
+    "real account restart pending",
+    "system media keys pending",
+    "full tray exit pending",
+    "physical listening pending"
+  ],
+  "sha256": "371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9",
+  "filename": "tingyu-0.1.28-windows-x64-release.zip",
+  "version": "0.1.28+29",
+  "nativeChecks": [
+    "cached stream/offline/promoted decode PASS",
+    "tray initialize/hide/restore PASS",
+    "isolated secure storage write/read/delete PASS"
+  ],
+  "sourceSha256": "cc1402015369f6ce8783a65bb44cdd287d2bd1493fce78e6d3521ce2c7ab792a",
+  "originalTagCommit": "97e7b03da0d5d6b23b3943a29b4ab67fe92ad650",
+  "signing": "unsigned development build",
+  "source": "Windows supplemental commit; see Release body",
+  "releaseTag": "v0.1.28"
+}

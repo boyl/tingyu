@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:tingyu/services/playback_cache.dart';
 import 'package:tingyu/models/music.dart';
 import '../test/support/export_fixture.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isWindows) {
+    JustAudioMediaKit.ensureInitialized(windows: true, linux: false);
+  }
   testWidgets('native cached streaming, offline decode and durable promotion', (
     tester,
   ) async {
@@ -18,6 +22,16 @@ void main() {
     final root = await Directory.systemTemp.createTemp('tingyu-native-cache-');
     final cache = PlaybackCache(Directory('${root.path}/playback-cache'));
     final player = AudioPlayer();
+    Future<void> playAndObserveProgress() async {
+      // Backends differ in when play() completes; observe decoded playback
+      // progress rather than treating that Future as proof of elapsed audio.
+      final progress = player.positionStream.firstWhere(
+        (position) => position > const Duration(milliseconds: 100),
+      );
+      await Future.wait([player.play(), progress]).timeout(
+        const Duration(seconds: 15),
+      );
+    }
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final tone = exportTone();
     var requests = 0;
@@ -45,7 +59,7 @@ void main() {
         standard: false,
       );
       await player.setAudioSource(source).timeout(const Duration(seconds: 20));
-      await player.play().timeout(const Duration(seconds: 15));
+      await playAndObserveProgress();
       expect(player.position, greaterThan(const Duration(milliseconds: 100)));
       final file = await cache.availablePath(track, standard: false);
       expect(file, isNotNull);
@@ -55,7 +69,7 @@ void main() {
       await server.close(force: true);
       await player.pause();
       await player.setFilePath(file!);
-      await player.play().timeout(const Duration(seconds: 15));
+      await playAndObserveProgress();
       expect(player.position, greaterThan(const Duration(milliseconds: 100)));
       await cache.downloaded(track);
       await player.stop();
@@ -63,7 +77,7 @@ void main() {
       expect(await File(file).exists(), false);
       await player.pause();
       await player.setFilePath(destination.path);
-      await player.play().timeout(const Duration(seconds: 15));
+      await playAndObserveProgress();
       expect(player.position, greaterThan(const Duration(milliseconds: 100)));
     } finally {
       await player.dispose();

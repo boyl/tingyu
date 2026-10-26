@@ -1,19 +1,47 @@
 part of 'app.dart';
 
-/// Mac presentation only. All durable state and effects belong to LibraryController.
+/// Mac-specific entry; shared presentation lives in DesktopWorkspace.
 class MacWorkspace extends StatelessWidget {
   const MacWorkspace({super.key, this.initialPage = 'auto'});
   final String initialPage;
   @override
+  Widget build(BuildContext context) => DesktopWorkspace(
+    initialPage: initialPage,
+    platform: TargetPlatform.macOS,
+  );
+}
+
+/// Windows-specific entry, independently extensible without changing the Mac entry.
+class WindowsWorkspace extends StatelessWidget {
+  const WindowsWorkspace({super.key, this.initialPage = 'auto'});
+  final String initialPage;
+  @override
+  Widget build(BuildContext context) => DesktopWorkspace(
+    initialPage: initialPage,
+    platform: TargetPlatform.windows,
+  );
+}
+
+/// Shared desktop presentation. Durable state and effects remain in the controller.
+class DesktopWorkspace extends StatelessWidget {
+  const DesktopWorkspace({
+    super.key,
+    required this.platform,
+    this.initialPage = 'auto',
+  });
+  final TargetPlatform platform;
+  final String initialPage;
+  @override
   Widget build(BuildContext context) => PressableStyle(
     desktop: true,
-    child: _MacWorkspaceBody(initialPage: initialPage),
+    child: _MacWorkspaceBody(initialPage: initialPage, platform: platform),
   );
 }
 
 class _MacWorkspaceBody extends ConsumerStatefulWidget {
-  const _MacWorkspaceBody({required this.initialPage});
+  const _MacWorkspaceBody({required this.initialPage, required this.platform});
   final String initialPage;
+  final TargetPlatform platform;
   @override
   ConsumerState<_MacWorkspaceBody> createState() => _MacWorkspaceState();
 }
@@ -280,6 +308,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
   @override
   Widget build(BuildContext context) {
     final p = ref.watch(libraryProvider), t = context.tokens;
+    final command = widget.platform == TargetPlatform.macOS;
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         trackHeight: TingyuTokens.macSliderTrack,
@@ -295,9 +324,17 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
           const SingleActivator(LogicalKeyboardKey.escape): () {
             if (overlay != null) closeOverlay();
           },
-          const SingleActivator(LogicalKeyboardKey.comma, meta: true): () =>
+          SingleActivator(
+            LogicalKeyboardKey.comma,
+            meta: command,
+            control: !command,
+          ): () =>
               openSettings(),
-          const SingleActivator(LogicalKeyboardKey.keyF, meta: true): () {
+          SingleActivator(
+            LogicalKeyboardKey.keyF,
+            meta: command,
+            control: !command,
+          ): () {
             if (page == 'search') {
               searchFocus.requestFocus();
             } else if ([

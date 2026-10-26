@@ -12,12 +12,18 @@ import 'package:tingyu/ui/theme.dart';
 import 'support/fakes.dart';
 
 void main() {
-  const capture = bool.fromEnvironment('CAPTURE_MAC_PREVIEW');
+  const windows = bool.fromEnvironment('WINDOWS_WORKSPACE');
+  const capture =
+      bool.fromEnvironment('CAPTURE_MAC_PREVIEW') ||
+      bool.fromEnvironment('CAPTURE_WINDOWS_PREVIEW');
+  createWorkspaceRouter() => createRouter(macOS: !windows, windows: windows);
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     if (!capture) return;
     final font = await File(
-      '/System/Library/Fonts/STHeiti Light.ttc',
+      windows
+          ? '${Platform.environment['SystemRoot']}/Fonts/msyh.ttc'
+          : '/System/Library/Fonts/STHeiti Light.ttc',
     ).readAsBytes();
     for (final family in ['Roboto', '.SF UI Text', '.SF UI Display']) {
       await (FontLoader(
@@ -39,10 +45,11 @@ void main() {
     await tester.runAsync(() async {
       final image = await boundary.toImage(pixelRatio: 1);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await Directory('artifacts/mac-flat-controls').create(recursive: true);
-      await File(
-        'artifacts/mac-flat-controls/$name.png',
-      ).writeAsBytes(bytes!.buffer.asUint8List());
+      final folder = windows
+          ? 'artifacts/windows-flat-controls'
+          : 'artifacts/mac-flat-controls';
+      await Directory(folder).create(recursive: true);
+      await File('$folder/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
       image.dispose();
     });
   }
@@ -51,7 +58,7 @@ void main() {
     tester,
   ) async {
     final fixture = (await tester.runAsync(TestLibrary.create))!;
-    final router = createRouter(macOS: true);
+    final router = createWorkspaceRouter();
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -179,7 +186,7 @@ void main() {
       final fixture = (await tester.runAsync(
         () => TestLibrary.create(dataDirectory: data),
       ))!;
-      final router = createRouter(macOS: true);
+      final router = createWorkspaceRouter();
       tester.view.physicalSize = const Size(1024, 768);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -229,8 +236,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('storage-clear-temporary')));
       await tester.pumpAndSettle();
       expect(find.text('选择本次要清理的内容'), findsOneWidget);
+      await tester.ensureVisible(find.text('取消'));
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
+      expect(find.text('选择本次要清理的内容'), findsNothing);
       expect(await tester.runAsync(temporary.exists), isTrue);
       expect(find.byType(MacSettingsPanel), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -243,8 +252,12 @@ void main() {
     },
   );
 
-  for (final theme in ['bili', 'night']) {
-    for (final size in [const Size(800, 600), const Size(1280, 800)]) {
+  for (final theme in ['bili', 'sunrise', 'moon', 'night']) {
+    for (final size in [
+      const Size(800, 600),
+      const Size(1024, 768),
+      const Size(1280, 800),
+    ]) {
       testWidgets('Mac $theme large text and long title at $size', (
         tester,
       ) async {
@@ -267,9 +280,16 @@ void main() {
           await fixture.controller.setTheme(theme);
           return fixture;
         }))!;
-        final router = createRouter(macOS: true);
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = 1;
+        final router = createWorkspaceRouter();
+        final dpi = windows
+            ? (size.width == 800
+                  ? 1.25
+                  : size.width == 1024
+                  ? 1.5
+                  : 2.0)
+            : 1.0;
+        tester.view.physicalSize = size * dpi;
+        tester.view.devicePixelRatio = dpi;
         tester.platformDispatcher.textScaleFactorTestValue = 1.5;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
@@ -336,7 +356,7 @@ void main() {
       await tester.runAsync(
         () => fixture.controller.importFolder({'id': 7, 'title': '导入的收藏'}),
       );
-      final router = createRouter(macOS: true);
+      final router = createWorkspaceRouter();
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -413,7 +433,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('mac-open-imported')));
       await tester.pumpAndSettle();
       expect(find.byType(AccountPanel), findsNothing);
-      expect(find.byType(MacWorkspace), findsOneWidget);
+      expect(
+        find.byType(windows ? WindowsWorkspace : MacWorkspace),
+        findsOneWidget,
+      );
       expect(find.byKey(ValueKey('mac-local-${imported.id}')), findsOneWidget);
       expect(router.routeInformationProvider.value.uri.path, '/');
       await tester.tap(find.byKey(const ValueKey('mac-nav-songs')));
@@ -451,7 +474,7 @@ void main() {
         return fixture;
       }))!;
       fixture.controller.history.add(secondTrack.id);
-      final router = createRouter(macOS: true);
+      final router = createWorkspaceRouter();
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -468,7 +491,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(MacWorkspace), findsOneWidget);
+      expect(
+        find.byType(windows ? WindowsWorkspace : MacWorkspace),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('返回来源')), findsNothing);
       expect(find.text('主页'), findsNothing);
       expect(find.byKey(const ValueKey('mac-recent-grid')), findsOneWidget);

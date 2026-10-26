@@ -84,28 +84,26 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
                       'playback' => playback(context),
                       _ => StoragePanel(widget.p, desktop: true),
                     },
-                    const SizedBox(height: TingyuTokens.space),
-                    Divider(height: 1, color: t.line),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'tingyu $tingyuVersion',
-                            style: TextStyle(
-                              color: t.muted,
-                              fontSize: TingyuTokens.macCaption,
-                            ),
-                          ),
-                        ),
-                        labelButton(
-                          '关于 tingyu',
-                          () => showAboutTingyu(context),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
+            ),
+
+            const SizedBox(height: TingyuTokens.space),
+            Divider(height: 1, color: t.line),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'tingyu $tingyuVersion',
+                    style: TextStyle(
+                      color: t.muted,
+                      fontSize: TingyuTokens.macCaption,
+                    ),
+                  ),
+                ),
+                labelButton('关于 tingyu', () => showAboutTingyu(context)),
+              ],
             ),
           ],
         ),

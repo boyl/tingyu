@@ -23,7 +23,7 @@ python3 tool/package_desktop.py macos
 1. 在自己的 Windows 登录会话安装 Git、Flutter stable 3.47.7、Visual Studio 2022/后续兼容版本的 Desktop development with C++ 工作负载及 Windows SDK。
 2. 由当前用户打开 PowerShell，克隆仓库到自己的工作目录，不使用服务账户或沙箱账户持有仓库。
 3. 执行 `flutter doctor -v`，确认 Windows toolchain 无缺项。
-4. `powershell -File tool/windows.ps1 check` 执行静态分析与测试；`run` 启动应用；`build` 构建 Release。
+4. `pwsh -File tool/windows.ps1 check` 执行静态分析与测试；`run` 启动应用；`build` 构建 Release。
 5. 构建目录为 `build/windows/x64/runner/Release`。完整目录应包含 tingyu.exe、flutter_windows.dll、libmpv-2.dll、其他插件 DLL 及 data 文件夹；不要只传 EXE。
 6. 可安装 Python 后执行 `python tool/package_desktop.py windows-x64`，生成完整便携 ZIP 和 SHA-256 元数据。
 
@@ -71,3 +71,11 @@ Mac 现行入口与视觉见 `docs/specs/macos-desktop-polish.md`，确认图库
 ## 0.1.27 开发发行
 
 用户授权提供 Mac DMG，构建使用 `sh tool/build_macos_release.sh`，保留沙箱，以 ad-hoc 签名分发。未做 Apple Developer ID 签名或公证，Gatekeeper 可能阻止打开；不得以禁用系统安全设置绕过。正常退出曾出现超时，播放队列重启恢复尚未完整验收。
+
+## Windows 本地开发版（2026-10-26）
+
+Windows 已接入 Mac 同源桌面工作区，保留平台独立入口及 Ctrl 快捷键。构建需要 Visual Studio C++、Windows SDK 和 ATL。PowerShell 7 入口、目录联接适配与 UTF-8 验收见 DEVELOPMENT.md。
+
+交付完整 Release 目录，包含数据库 SQLite、libmpv、Flutter 引擎、插件及 data/app.so。不能只复制 EXE。便携分发可附带已安装 Visual Studio 的 x64 Microsoft.VC143.CRT 可再分发 DLL；否则目标机器需安装微软官方 Visual C++ x64 运行库。
+
+本次 Windows 真实窗口显示由用户确认；界面截图工具超时，系统媒体键、真实账号、物理听感与完整退出路径不据此标为通过。详细记录见 specs/windows-desktop-parity.md。
