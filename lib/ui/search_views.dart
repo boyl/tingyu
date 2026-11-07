@@ -99,8 +99,11 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
       final t = context.tokens;
       final loading = !d.initialized || d.loading;
       final placeholder = loading && d.tracks.isEmpty;
-      final tracks = d.tracks.map(knownTrack).toList();
-      final moreTracks = d.moreTracks.map(knownTrack).toList();
+      // Keep presentation identity tied to the search result. Playback resolves
+      // its provisional CID, which must not unmount an already decoded cover.
+      final candidates = d.tracks, moreCandidates = d.moreTracks;
+      final tracks = candidates.map(knownTrack).toList();
+      final moreTracks = moreCandidates.map(knownTrack).toList();
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: TingyuTokens.space * 2),
         child: Column(
@@ -266,13 +269,17 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
                         }
                         final track = tracks[index];
                         return SizedBox(
-                          key: ValueKey('discovery-card-${track.id}'),
+                          key: ValueKey(
+                            'discovery-card-${candidates[index].id}',
+                          ),
                           width: card,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Pressable(
-                                key: ValueKey('discovery-play-${track.id}'),
+                                key: ValueKey(
+                                  'discovery-play-${candidates[index].id}',
+                                ),
                                 label: '播放${track.title}',
                                 padding: EdgeInsets.zero,
                                 radius: TingyuTokens.artworkRadius,
@@ -329,8 +336,12 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
               const SizedBox(height: TingyuTokens.space * 3),
               Text('继续发现', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: TingyuTokens.space),
-              for (final track in moreTracks)
-                TrackRow(track, key: ValueKey('discovery-more-${track.id}')),
+              for (final (index, track) in moreTracks.indexed)
+                TrackRow(
+                  track,
+                  key: ValueKey('discovery-more-${moreCandidates[index].id}'),
+                  presentationId: moreCandidates[index].id,
+                ),
             ],
             if (d.loadMoreFailed) errorBox(context, d.error, d.retry),
             if (tracks.isNotEmpty && !d.exhausted && !d.loadMoreFailed)

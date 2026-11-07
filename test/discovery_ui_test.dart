@@ -136,9 +136,10 @@ void main() {
     ),
   );
 
-  for (final desktop in [false, true]) {
+  for (final platform in ['mobile', 'macOS', 'windows']) {
+    final desktop = platform != 'mobile';
     testWidgets(
-      'real search page auto paginates and stops on failure desktop=$desktop',
+      'real search page auto paginates and stops on failure platform=$platform',
       (tester) async {
         final f = (await tester.runAsync(TestLibrary.create))!;
         final pending = Completer<List<Track>>();
@@ -165,7 +166,9 @@ void main() {
             child: desktop
                 ? MaterialApp(
                     theme: tingyuTheme('bili'),
-                    home: const MacWorkspace(initialPage: 'search'),
+                    home: platform == 'windows'
+                        ? const WindowsWorkspace(initialPage: 'search')
+                        : const MacWorkspace(initialPage: 'search'),
                   )
                 : TingyuApp(router: router),
           ),

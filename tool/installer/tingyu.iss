@@ -4,10 +4,13 @@
 #ifndef AppName
   #define AppName "tingyu"
 #endif
+#ifndef AppVersion
+  #error AppVersion must be read from the payload executable
+#endif
 [Setup]
 AppId={#AppId}
 AppName={#AppName}
-AppVersion=0.1.28
+AppVersion={#AppVersion}
 AppPublisher=boyl
 AppPublisherURL=https://github.com/boyl/tingyu
 DefaultDirName={localappdata}\Programs\tingyu
@@ -19,7 +22,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#OutputPath}
-OutputBaseFilename=tingyu-0.1.28-windows-x64-setup
+OutputBaseFilename=tingyu-{#AppVersion}-windows-x64-setup
 SetupIconFile=..\..\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\tingyu.exe
 LicenseFile={#SourcePath}\LICENSE.txt

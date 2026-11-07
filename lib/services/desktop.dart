@@ -44,6 +44,7 @@ class DesktopIntegration with TrayListener, WindowListener {
         Platform.isWindows ? 'assets/tray.ico' : 'assets/tray.png',
         isTemplate: Platform.isMacOS,
       );
+      await trayManager.setToolTip('tingyu');
       await trayManager.setContextMenu(
         Menu(
           items: [

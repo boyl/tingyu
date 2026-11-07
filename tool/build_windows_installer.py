@@ -2,8 +2,23 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
+
+
+def product_version(executable: Path) -> str:
+    # 从实际载荷读取版本，避免工作区版本变化后误标旧二进制。
+    literal = str(executable).replace("'", "''")
+    result = subprocess.run(
+        ['pwsh', '-NoProfile', '-NonInteractive', '-Command',
+         f"$ErrorActionPreference = 'Stop'; (Get-Item -LiteralPath '{literal}').VersionInfo.ProductVersion"],
+        check=True, capture_output=True, text=True, encoding='utf-8',
+    )
+    version = result.stdout.strip()
+    if not re.fullmatch(r'\d+\.\d+\.\d+(?:\+\d+)?', version):
+        raise ValueError(f'载荷版本缺失或不是受支持的发行版本：{version!r}')
+    return version
 
 
 def build(bundle: Path, output: Path, compiler: Path, test_identity: bool = False):
@@ -13,12 +28,19 @@ def build(bundle: Path, output: Path, compiler: Path, test_identity: bool = Fals
     for name in required:
         if not (bundle / name).is_file():
             raise ValueError(f'缺少运行文件：{name}')
+    version = product_version(bundle / 'tingyu.exe')
+    release = version.split('+')[0]
     output.mkdir(parents=True, exist_ok=True)
     files = []
     entries = []
     sources = [(file, str(file.relative_to(bundle))) for file in sorted(bundle.rglob('*'))
                if file.name != '使用说明.md']
-    sources.append((Path(__file__).parent / 'installer/usage-zh-CN.txt', '使用说明.txt'))
+    usage = output / '使用说明.txt'
+    usage.write_text(
+        (Path(__file__).parent / 'installer/usage-zh-CN.txt').read_text(encoding='utf-8')
+        .replace('@APP_VERSION@', release), encoding='utf-8-sig',
+    )
+    sources.append((usage, '使用说明.txt'))
     for file, relative in sources:
         if file.is_symlink() or file.is_junction():
             raise ValueError(f'载荷不能包含链接：{file}')
@@ -33,14 +55,14 @@ def build(bundle: Path, output: Path, compiler: Path, test_identity: bool = Fals
         files.append({'path': relative, 'sha256': digest, 'bytes': file.stat().st_size})
     payload = output / 'payload.iss'
     payload.write_text('\n'.join(entries) + '\n', encoding='utf-8-sig')
-    command = [str(compiler), '/Qp', f'/DSourcePath={bundle}', f'/DOutputPath={output}',
+    command = [str(compiler), '/Qp', f'/DAppVersion={release}', f'/DSourcePath={bundle}', f'/DOutputPath={output}',
                f'/DPayloadList={payload}']
     if test_identity:
         command += ['/DAppId=tingyu.installer.regression', '/DAppName=tingyu 安装测试']
     command += [str(Path(__file__).parent / 'installer/tingyu.iss')]
     subprocess.run(command, check=True)
-    exe = output / 'tingyu-0.1.28-windows-x64-setup.exe'
-    manifest = {'installer': exe.name, 'sha256': hashlib.sha256(exe.read_bytes()).hexdigest(),
+    exe = output / f'tingyu-{release}-windows-x64-setup.exe'
+    manifest = {'installer': exe.name, 'productVersion': version, 'sha256': hashlib.sha256(exe.read_bytes()).hexdigest(),
                 'bytes': exe.stat().st_size, 'testIdentity': test_identity, 'files': files}
     (output / 'installer-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in manifest.items() if k != 'files'}))

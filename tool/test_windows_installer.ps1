@@ -17,6 +17,10 @@ function Invoke-Install([string]$Phase) {
     return $process.ExitCode
 }
 function Assert-Payload {
+    $installedVersion = (Get-Item -LiteralPath (Join-Path $target 'tingyu.exe')).VersionInfo.ProductVersion
+    if ($installedVersion -ne $manifest.productVersion) { throw '已安装 EXE 版本与清单不符。' }
+    $registeredVersion = (Get-ItemProperty -LiteralPath $registry).DisplayVersion
+    if ($registeredVersion -ne ($installedVersion -split '\+')[0]) { throw '卸载登记版本与载荷不符。' }
     foreach ($file in $manifest.files) {
         $installed = Join-Path $target $file.path
         if (-not (Test-Path -LiteralPath $installed) -or (Get-FileHash -LiteralPath $installed).Hash.ToLowerInvariant() -ne $file.sha256) {

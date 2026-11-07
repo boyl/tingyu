@@ -57,6 +57,29 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# tray_manager 0.5.3 reads nid.hIcon and nid.szTip before initializing them.
+# Build a local corrected copy; never modify the shared Pub cache. Recheck this
+# narrow patch when upgrading the plugin (0.7+ replaces its native API).
+get_target_property(TRAY_SOURCE_DIR tray_manager_plugin SOURCE_DIR)
+get_target_property(TRAY_SOURCES tray_manager_plugin SOURCES)
+if(NOT TRAY_SOURCES STREQUAL "tray_manager_plugin.cpp")
+  message(FATAL_ERROR "tray_manager sources changed: review the Windows initialization patch")
+endif()
+set(TRAY_SOURCE "${TRAY_SOURCE_DIR}/tray_manager_plugin.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${TRAY_SOURCE}")
+file(READ "${TRAY_SOURCE}" TRAY_CODE)
+foreach(DECLARATION "NOTIFYICONDATA nid" "NOTIFYICONIDENTIFIER niif")
+  string(FIND "${TRAY_CODE}" "${DECLARATION};" DECLARATION_INDEX)
+  if(DECLARATION_INDEX EQUAL -1)
+    message(FATAL_ERROR "tray_manager changed: review the Windows initialization patch")
+  endif()
+  string(REPLACE "${DECLARATION};" "${DECLARATION}{};" TRAY_CODE "${TRAY_CODE}")
+endforeach()
+set(TRAY_PATCHED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/tray_manager_initialized.cpp")
+file(WRITE "${TRAY_PATCHED_SOURCE}" "${TRAY_CODE}")
+set_property(TARGET tray_manager_plugin PROPERTY SOURCES "${TRAY_PATCHED_SOURCE}")
+target_include_directories(tray_manager_plugin PRIVATE "${TRAY_SOURCE_DIR}")
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can

@@ -20,6 +20,8 @@ python3 tool/package_desktop.py macos
 
 ## Windows 接手
 
+Windows 托盘提示固定为 `tingyu`。当前锁定的 tray_manager 0.5.3 在首次创建图标前读取未初始化的原生结构；`windows/CMakeLists.txt` 在构建目录生成仅补充零初始化的源码副本，不修改 Pub 缓存。升级依赖时必须复核该补丁；源文件或结构声明不匹配会中止构建。应用按插件 API 顺序在设置图标后明确设置提示，避免随机乱码。对应回归：`test/desktop_tooltip_test.dart`，原生隐藏/恢复仍由 `integration_test/windows_desktop_test.dart` 覆盖。
+
 1. 在自己的 Windows 登录会话安装 Git、Flutter stable 3.47.7、Visual Studio 2022/后续兼容版本的 Desktop development with C++ 工作负载及 Windows SDK。
 2. 由当前用户打开 PowerShell，克隆仓库到自己的工作目录，不使用服务账户或沙箱账户持有仓库。
 3. 执行 `flutter doctor -v`，确认 Windows toolchain 无缺项。
@@ -81,3 +83,7 @@ Windows 已接入 Mac 同源桌面工作区，保留平台独立入口及 Ctrl �
 本次 Windows 真实窗口显示由用户确认；界面截图工具超时，系统媒体键、真实账号、物理听感与完整退出路径不据此标为通过。详细记录见 specs/windows-desktop-parity.md。
 
 Windows 公开分发已改为 Setup.exe 安装版，含全部运行库；默认安装到当前用户目录，支持快捷方式与卸载，Release 不再保留便携 ZIP。安装/覆盖/占用阻止/卸载验证见 specs/windows-installer.md。
+
+## Windows 0.1.30 本地对齐（2026-11-07）
+
+Windows 已构建包含同源搜索推荐的 0.1.30+31 本地开发安装版，补充 Windows 推荐/原生布局回归并修复小窗口空状态溢出。安装版本改为读取实际载荷 EXE；安装、覆盖、占用阻止及卸载保留文件均通过独立 AppId 验证。完整结果与尚未通过的人工项目见 [Windows 规范](specs/windows-desktop-parity.md) 当前 P01–P05；本轮没有更新公开下载或覆盖用户安装。

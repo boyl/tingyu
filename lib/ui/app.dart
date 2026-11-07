@@ -439,9 +439,9 @@ class EmptyView extends StatelessWidget {
   final String title, description;
   final Widget? child;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-    child: Center(
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1480,7 +1480,11 @@ class TrackRow extends ConsumerWidget {
     this.selecting = false,
     this.selected = false,
     this.onSelect,
+    this.presentationId,
   });
+
+  /// Stable result identity when playback replaces a provisional track CID.
+  final String? presentationId;
   final bool selecting, selected;
   final VoidCallback? onSelect;
   final Playlist? addToPlaylist;
@@ -1530,7 +1534,9 @@ class TrackRow extends ConsumerWidget {
           Expanded(
             child: Pressable(
               key: ValueKey(
-                selecting ? 'select-${track.id}' : 'play-${track.id}',
+                selecting
+                    ? 'select-${presentationId ?? track.id}'
+                    : 'play-${presentationId ?? track.id}',
               ),
               label: selecting ? '选择 ${track.title}' : '播放 ${track.title}',
               selected: selecting && selected,
