@@ -1,6 +1,6 @@
 {
-  "version": "0.1.30+31",
-  "sourceSha256": "a5c85586f7e883478dd0d41f204ea3c6599a529e11cfd7bd3b00dd72fd8b0371",
+  "version": "0.1.31+32",
+  "sourceSha256": "f5af89e5aec8053928ceaded983d8e4f01fc3d52bb81120a6199f51712b9c86b",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,15 +8,15 @@
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.30-android-arm64-v8a-release.apk",
+      "path": "artifacts/tingyu-0.1.31-android-arm64-v8a-release.apk",
       "bytes": 23900167,
-      "sha256": "21ba8273f3978e746b1d5049f4039bc5fba8f34283a86f61f0b7be7026595ef9",
+      "sha256": "5e895e68e32cd3b8b1211c71704041935caeda9929986d27f646c458bf9707b2",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2031"
+      "versionCode": "2032"
     }
   ],
-  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; docs/screenshots/2026-11-07-discovery/android-search.png",
+  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/bars-remain-visible.png",
   "limitations": [
     "physical Android lockscreen/Bluetooth/calls/background scenarios pending",
     "screenshot-related audible output on physical Android devices pending",

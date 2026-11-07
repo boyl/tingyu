@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/models/music.dart';
@@ -84,6 +86,70 @@ void main() {
       await dir.delete(recursive: true);
     },
   );
+  test(
+    'search and playback CDN aliases reuse one artwork transfer and disk entry',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('tingyu-cover-alias-');
+      var requests = 0;
+      final dio = Dio()
+        ..httpClientAdapter = Transfer((_) async {
+          requests++;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return File('assets/tray.png').readAsBytesSync();
+        });
+      const search = 'https://i0.hdslb.com/bfs/archive/same.jpg';
+      const detail = 'http://i2.hdslb.com/bfs/archive/same.jpg';
+      final cache = CoverCache(dir, dio: dio);
+      final hits = await Future.wait([cache.get(search), cache.get(detail)]);
+      expect(requests, 1);
+      expect(hits[0]!.path, hits[1]!.path);
+      expect(cache.peek(detail)?.path, hits[0]!.path);
+      await cache.close();
+      final reopened = CoverCache(dir, dio: dio);
+      expect((await reopened.get(detail))?.path, hits[0]!.path);
+      expect(requests, 1);
+      for (final url in [
+        'https://i1.hdslb.com/bfs/archive/other.jpg',
+        '$search@200w',
+        '$search?size=200',
+        'https://images.test/bfs/archive/same.jpg',
+        'http://images.test/bfs/archive/same.jpg',
+        'https://i0.hdslb.com/other/same.jpg',
+        'https://i2.hdslb.com/other/same.jpg',
+      ]) {
+        await reopened.get(url);
+      }
+      expect(requests, 8);
+      await reopened.close();
+      await dir.delete(recursive: true);
+    },
+  );
+
+  test(
+    'existing artwork cache remains readable after CDN identity normalization',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('tingyu-cover-legacy-');
+      const url = 'http://i2.hdslb.com/bfs/archive/legacy.jpg';
+      final legacy = File(
+        '${dir.path}/${sha256.convert(utf8.encode(url))}.cover',
+      );
+      await legacy.writeAsBytes(File('assets/tray.png').readAsBytesSync());
+      var requests = 0;
+      final cache = CoverCache(
+        dir,
+        dio: Dio()
+          ..httpClientAdapter = Transfer((_) {
+            requests++;
+            return [1];
+          }),
+      );
+      expect((await cache.get(url))?.path, legacy.path);
+      expect(requests, 0);
+      await cache.close();
+      await dir.delete(recursive: true);
+    },
+  );
+
   test(
     'removing downloaded audio never waits for a slow shared cover request',
     () async {

@@ -100,8 +100,10 @@ class FixtureApi extends BilibiliClient {
     return text == '空' ? [] : [firstTrack, secondTrack];
   }
 
+  Future<List<Track>> Function(String)? detailsAnswer;
   @override
   Future<List<Track>> details(String bvid) async {
+    if (detailsAnswer != null) return detailsAnswer!(bvid);
     if (offline) throw const AppFailure('网络断开');
     return [bvid == firstTrack.bvid ? firstTrack : secondTrack];
   }
@@ -263,7 +265,10 @@ class TestLibrary {
   final DownloadManager downloads;
   final FakePlayback playback;
   final LibraryController controller;
-  static Future<TestLibrary> create({Directory? dataDirectory}) async {
+  static Future<TestLibrary> create({
+    Directory? dataDirectory,
+    Dio? downloadDio,
+  }) async {
     final directory =
         dataDirectory ??
         await Directory.systemTemp.createTemp('tingyu-interactions-');
@@ -275,6 +280,7 @@ class TestLibrary {
       api,
       db,
       directory,
+      dio: downloadDio,
       lyricsClient: FixtureLyrics(),
     );
     final controller = LibraryController(

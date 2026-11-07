@@ -44,30 +44,48 @@ class CoverCache {
   }
 
   static const maxBytes = 64 * 1024 * 1024;
-  File? peek(String url) => _ready[url];
+  // Bilibili search and view endpoints can return different CDN shards and
+  // schemes for the same immutable image. Keep variants and other hosts distinct.
+  static String _key(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null ||
+        !['http', 'https'].contains(uri.scheme) ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasPort ||
+        !RegExp(r'^i[0-9]+\.hdslb\.com$').hasMatch(uri.host) ||
+        !uri.path.startsWith('/bfs/')) {
+      return url;
+    }
+    return uri.replace(scheme: 'https', host: 'i0.hdslb.com').toString();
+  }
+
+  File? peek(String url) => _ready[_key(url)];
   File _file(String url) =>
       File('${directory.path}/${sha256.convert(utf8.encode(url))}.cover');
 
   Future<File?> get(String url) {
     if (_closed || url.isEmpty) return Future.value(null);
-    final ready = _ready[url];
+    final key = _key(url);
+    final ready = _ready[key];
     if (ready != null) return Future.value(ready);
     final failure = _failed[url];
     if (failure != null &&
         DateTime.now().difference(failure) < const Duration(minutes: 1)) {
       return Future.value(null);
     }
-    return _inFlight.putIfAbsent(url, () => _load(url));
+    return _inFlight.putIfAbsent(key, () => _load(url, key));
   }
 
-  Future<File?> _load(String url) async {
-    final file = _file(url), temp = File('${_file(url).path}.part');
+  Future<File?> _load(String url, String key) async {
+    final file = _file(key), temp = File('${_file(key).path}.part');
     var acquired = false;
     try {
       await directory.create(recursive: true);
-      if (await file.exists() && await file.length() > 0) {
-        await file.setLastModified(DateTime.now());
-        return _ready[url] = file;
+      for (final cached in [file, if (url != key) _file(url)]) {
+        if (await cached.exists() && await cached.length() > 0) {
+          await cached.setLastModified(DateTime.now());
+          return _ready[key] = cached;
+        }
       }
       final uri = Uri.tryParse(url);
       if (uri == null || !['http', 'https'].contains(uri.scheme)) return null;
@@ -87,7 +105,7 @@ class CoverCache {
       );
       if (_closed || await temp.length() == 0) return null;
       await temp.rename(file.path);
-      _ready[url] = file;
+      _ready[key] = file;
       await _trim(keep: file);
       return file;
     } on DioException {
@@ -98,7 +116,7 @@ class CoverCache {
       return null;
     } finally {
       if (acquired) _release();
-      _inFlight.remove(url);
+      _inFlight.remove(key);
       if (await temp.exists()) await temp.delete();
     }
   }
