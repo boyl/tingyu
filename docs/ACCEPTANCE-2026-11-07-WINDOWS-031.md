@@ -21,4 +21,6 @@
 
 - Windows 安装包：`tingyu-0.1.31-windows-x64-setup.exe`，18,747,197 字节，SHA-256 `51c6abfa3bca315361db3a7f45ca4d2cb81f93a01cbd35fea995b1e558fb0c25`；摘要与来源记录在 `tool/release-windows.json`。
 - 工程记录：`artifacts/acceptance/report.json`；原生日志：`artifacts/windows-031-native.log`；Release 日志：`artifacts/windows-031-release-release-build.log`；安装清单与回归：`artifacts/windows-031-release-installer*/`。
-- 发布目标：[v0.1.31](https://github.com/boyl/tingyu/releases/tag/v0.1.31)，独立源码标签 `v0.1.31-windows`。上传后核对三项附件、保留的 Mac/Android 摘要与原标签、下载表链接和远端提交，回读结果另行追加。
+- 已发布：[v0.1.31](https://github.com/boyl/tingyu/releases/tag/v0.1.31)，状态为非草稿、非预发布。Windows 独立源码标签 `v0.1.31-windows` 指向 `0ee301907aa2453958344400d7869f47eaa8803f`；原 `v0.1.31` 仍指向 `f2ec84866772ede4e5e976160b1fb5df893418f0`。
+- GitHub 回读 PASS：总计三项附件；Windows 文件名、18,747,197 字节和服务端 digest 与上述 SHA-256 完全一致；下载表三条链接及摘要均与实际附件一致。原 Android/Mac 附件 ID、大小、摘要保持不变（分别为 `5e895e68e32cd3b8b1211c71704041935caeda9929986d27f646c458bf9707b2`、`198fbc624b40163df61f65e3d7ae6bb18adf862ee71c10d3fc5911b4d29883d8`）。
+- 源码与标签通过普通原子推送发布，未强推。此后的发布回执提交仅修改本记录，不改变已验收源码、安装包或独立 Windows 标签。原有未跟踪 FOLLOWUP 文件未纳入提交、内容哈希保持不变。
