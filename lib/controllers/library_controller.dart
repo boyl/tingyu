@@ -12,6 +12,7 @@ import '../services/lyrics.dart';
 import '../services/playback.dart';
 import '../services/storage.dart';
 import '../services/sleep_timer.dart';
+import 'discovery_controller.dart';
 
 class LibraryController extends ChangeNotifier {
   LibraryController(
@@ -77,6 +78,18 @@ class LibraryController extends ChangeNotifier {
   final List<Playlist> playlists = [];
   final Map<String, String> collectionSort = {};
   final List<String> queue = [], likes = [], history = [];
+  late final discovery = DiscoveryController(
+    search: api.search,
+    seeds: () => {
+      ...likes.reversed,
+      ...history,
+    }.map((id) => library[id]).whereType<Track>().take(12).toList(),
+    recent: () => history
+        .take(30)
+        .map((id) => library[id]?.bvid)
+        .whereType<String>()
+        .toSet(),
+  );
   final SleepTimer sleepTimer = SleepTimer();
   String? _waitingForTrack;
   bool get waitingForTrack => _waitingForTrack != null;
@@ -1505,6 +1518,7 @@ class LibraryController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    discovery.dispose();
     lyricsClient.cancelRequests();
     ++_playEpoch;
     ++_searchEpoch;

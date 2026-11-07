@@ -815,6 +815,7 @@ void main() {
       final pages = <int>[];
       var failed = false;
       fixture.api.searchAnswer = (query, page) async {
+        if (query != '音乐' && query != '空') return [];
         pages.add(page);
         if (query == '空') return [];
         if (page == 2 && !failed) {
@@ -1376,7 +1377,7 @@ void main() {
     },
   );
   testWidgets(
-    'approved library entry points, topic search and Bilibili theme remain connected',
+    'approved library entry points, discovery and Bilibili theme remain connected',
     (tester) async {
       await mount(tester);
       expect(fixture.controller.theme, 'bili');
@@ -1392,7 +1393,12 @@ void main() {
         find.byKey(const ValueKey('open-bilibili-external')),
         findsOneWidget,
       );
-      await tap(tester, 'search-topic-0');
+      await tap(tester, 'discovery-tag-轻音乐');
+      expect(fixture.controller.query, isEmpty);
+      expect(fixture.controller.discovery.tag, '轻音乐');
+      await tester.enterText(find.byType(TextField).first, '晚风');
+      await tester.pump(const Duration(milliseconds: 500));
+      await settle(tester);
       expect(fixture.controller.query, '晚风');
       expect(find.byType(SearchDiscovery), findsNothing);
       expect(

@@ -190,8 +190,44 @@ void main() {
       }
 
       try {
+        api.searchAnswer = (_, _) async => List.generate(
+          40,
+          (i) => Track(
+            bvid: 'BVdiscoveryNative$i',
+            cid: 2000 + i,
+            title: '推荐回归曲目$i',
+            artist: '音乐创作者$i',
+            cover: '',
+            duration: 60,
+          ),
+        );
         await tap('tab-search');
-        await tester.pump();
+        await waitFor(() => p.discovery.moreTracks.length == 10);
+        expect(find.byKey(const ValueKey('discovery-load-more')), findsNothing);
+        await capture('discovery-native-first');
+        final discoveryViewport = find.byType(DiscoveryPagination).last;
+        final discoveryScroll = tester.state<ScrollableState>(
+          find
+              .descendant(
+                of: discoveryViewport,
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        discoveryScroll.position.jumpTo(
+          discoveryScroll.position.maxScrollExtent -
+              discoveryScroll.position.viewportDimension / 2 -
+              100,
+        );
+        await settleAnimations();
+        await tester.drag(discoveryViewport, const Offset(0, -180));
+        await waitFor(() => p.discovery.moreTracks.length == 20);
+        expect(p.discovery.tracks.length, 6);
+        expect(p.discovery.tracks.first.bvid, 'BVdiscoveryNative0');
+        await capture('discovery-native-appended');
+        discoveryScroll.position.jumpTo(0);
+        await settleAnimations();
+        api.searchAnswer = null;
         await capture('search-external-entry');
         await tester.enterText(find.byType(TextField), '音乐');
         await waitFor(() => p.results.length == 2);

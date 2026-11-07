@@ -783,7 +783,7 @@
       "codepoint": 61031,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:448"
+        "lib/ui/app.dart:449"
       ],
       "designUses": []
     },
@@ -809,7 +809,7 @@
       "codepoint": 57687,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1511",
+        "lib/ui/app.dart:1521",
         "lib/ui/library_views.dart:433",
         "lib/ui/preferences_views.dart:563"
       ],
@@ -823,7 +823,7 @@
       "codepoint": 57688,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1511",
+        "lib/ui/app.dart:1521",
         "lib/ui/library_views.dart:433",
         "lib/ui/preferences_views.dart:563"
       ],
@@ -854,7 +854,7 @@
         "lib/ui/mac_settings_views.dart:38",
         "lib/ui/mac_workspace.dart:259",
         "lib/ui/mac_workspace.dart:535",
-        "lib/ui/mac_workspace.dart:1168",
+        "lib/ui/mac_workspace.dart:1184",
         "lib/ui/playlist_add_views.dart:120"
       ],
       "designUses": []
@@ -881,7 +881,7 @@
       "codepoint": 61453,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1224"
+        "lib/ui/app.dart:1234"
       ],
       "designUses": []
     },
@@ -893,8 +893,8 @@
       "codepoint": 57912,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1357",
-        "lib/ui/app.dart:1433"
+        "lib/ui/app.dart:1367",
+        "lib/ui/app.dart:1443"
       ],
       "designUses": []
     },
@@ -906,8 +906,8 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4070",
-        "lib/ui/app.dart:4350",
+        "lib/ui/app.dart:4080",
+        "lib/ui/app.dart:4360",
         "lib/ui/mac_account_views.dart:289",
         "lib/ui/mac_workspace.dart:658"
       ],
@@ -933,7 +933,7 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3336"
+        "lib/ui/app.dart:3346"
       ],
       "designUses": []
     },
@@ -945,7 +945,7 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4255"
+        "lib/ui/app.dart:4265"
       ],
       "designUses": []
     },
@@ -969,7 +969,7 @@
       "codepoint": 58389,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4075",
+        "lib/ui/app.dart:4085",
         "lib/ui/mac_workspace.dart:638",
         "lib/ui/mac_workspace.dart:796",
         "lib/ui/preferences_views.dart:148"
@@ -979,13 +979,11 @@
     {
       "id": "material/nights_stay_outlined",
       "provider": "Flutter MaterialIcons",
-      "status": "existing-app-use",
+      "status": "design-reuse",
       "asset": "material/MaterialIcons-Regular.otf",
       "codepoint": 61974,
       "matchTextDirection": false,
-      "uses": [
-        "lib/ui/search_views.dart:16"
-      ],
+      "uses": [],
       "designUses": []
     },
     {
@@ -1010,7 +1008,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4573"
+        "lib/ui/app.dart:4583"
       ],
       "designUses": []
     },
@@ -1034,7 +1032,7 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4372"
+        "lib/ui/app.dart:4382"
       ],
       "designUses": []
     },
@@ -1046,7 +1044,7 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4372"
+        "lib/ui/app.dart:4382"
       ],
       "designUses": []
     },
@@ -1071,7 +1069,7 @@
       "codepoint": 58655,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1962"
+        "lib/ui/app.dart:1972"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1094,7 +1092,7 @@
       "codepoint": 58657,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1960"
+        "lib/ui/app.dart:1970"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -1108,7 +1106,7 @@
       "codepoint": 58710,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1434",
+        "lib/ui/app.dart:1444",
         "lib/ui/library_views.dart:343",
         "lib/ui/operation_feedback.dart:163",
         "lib/ui/playback_settings_views.dart:167",
@@ -1156,7 +1154,7 @@
       "codepoint": 58785,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1959"
+        "lib/ui/app.dart:1969"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
@@ -1235,7 +1233,7 @@
       "codepoint": 62537,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:1487",
+        "lib/ui/mac_workspace.dart:1503",
         "lib/ui/playback_settings_views.dart:353"
       ],
       "designUses": []
@@ -1294,8 +1292,8 @@
       "codepoint": 59077,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1653",
-        "lib/ui/mac_workspace.dart:1834",
+        "lib/ui/app.dart:1663",
+        "lib/ui/mac_workspace.dart:1850",
         "lib/ui/volume_views.dart:73"
       ],
       "designUses": []
@@ -1303,25 +1301,21 @@
     {
       "id": "material/waves",
       "provider": "Flutter MaterialIcons",
-      "status": "existing-app-use",
+      "status": "design-reuse",
       "asset": "material/MaterialIcons-Regular.otf",
       "codepoint": 59091,
       "matchTextDirection": false,
-      "uses": [
-        "lib/ui/search_views.dart:18"
-      ],
+      "uses": [],
       "designUses": []
     },
     {
       "id": "material/wb_twilight",
       "provider": "Flutter MaterialIcons",
-      "status": "existing-app-use",
+      "status": "design-reuse",
       "asset": "material/MaterialIcons-Regular.otf",
       "codepoint": 59099,
       "matchTextDirection": false,
-      "uses": [
-        "lib/ui/search_views.dart:17"
-      ],
+      "uses": [],
       "designUses": []
     }
   ],

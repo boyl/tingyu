@@ -1,6 +1,6 @@
 {
-  "version": "0.1.28+29",
-  "sourceSha256": "9ddc29160a908cc73e763df25e156413c8faa29ef1b54191815bb1ca138858c4",
+  "version": "0.1.30+31",
+  "sourceSha256": "a5c85586f7e883478dd0d41f204ea3c6599a529e11cfd7bd3b00dd72fd8b0371",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,19 +8,19 @@
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.28-android-arm64-v8a-release.apk",
-      "bytes": 23769539,
-      "sha256": "7de2d5e6eda6365029a62f551000329b30e28f57ab709cc618512c379e599f59",
+      "path": "artifacts/tingyu-0.1.30-android-arm64-v8a-release.apk",
+      "bytes": 23900167,
+      "sha256": "21ba8273f3978e746b1d5049f4039bc5fba8f34283a86f61f0b7be7026595ef9",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2029"
+      "versionCode": "2031"
     }
   ],
-  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/launcher-icon.png",
+  "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; docs/screenshots/2026-11-07-discovery/android-search.png",
   "limitations": [
     "physical Android lockscreen/Bluetooth/calls/background scenarios pending",
     "screenshot-related audible output on physical Android devices pending",
-    "Mac native cache decode PASS; physical listening and Intel hardware pending",
+    "native desktops pending",
     "physical glass scrolling smoothness pending; software emulator raster overhead remains high"
   ]
 }

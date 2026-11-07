@@ -14,14 +14,14 @@
 
 <p align="center">
   <img src="docs/screenshots/android-phone/01-library.jpg" alt="tingyu Android 音乐库" width="240">
-  <img src="docs/screenshots/android-phone/04-search.jpg" alt="tingyu Android 搜索" width="240">
+  <img src="docs/screenshots/2026-11-07-discovery/android-search.png" alt="tingyu Android 搜索" width="240">
   <img src="docs/screenshots/android-phone/06-player.jpg" alt="tingyu Android 播放器" width="240">
 </p>
 
 ### macOS
 
 <p><img src="docs/screenshots/2026-10-24-macos/1280-recent.png" alt="tingyu Mac 最近播放" width="720"></p>
-<p><img src="docs/screenshots/2026-10-24-macos/1280-queue-actions.png" alt="tingyu Mac 待播操作" width="720"></p>
+<p><img src="docs/screenshots/2026-11-07-discovery/mac-search.png" alt="tingyu Mac 待播操作" width="720"></p>
 <p><img src="docs/screenshots/2026-10-25-cache/mac-storage.png" alt="tingyu Mac 存储设置" width="720"></p>
 
 ### Windows
@@ -30,28 +30,28 @@
 <p><img src="docs/screenshots/2026-10-26-windows/queue.png" alt="tingyu Windows 待播操作" width="720"></p>
 <p><img src="docs/screenshots/2026-10-26-windows/storage.png" alt="tingyu Windows 存储设置" width="720"></p>
 
-Windows 截图为本机字体的 Flutter 组件夹具，不是原生窗口截图。Android 截图来自 0.1.23；Mac 截图为 0.1.27–0.1.28 的 Flutter 组件夹具，验证范围见[桌面开发说明](docs/DESKTOP.md)。
+Windows 截图为本机字体的 Flutter 组件夹具，不是原生窗口截图。Android 搜索截图来自 0.1.30 Release，其他 Android 截图来自 0.1.23；Mac 搜索截图为 0.1.30 真实匿名推荐内容的 Flutter 组件运行截图，其他 Mac 截图为 0.1.27–0.1.28 组件夹具，验证范围见[桌面开发说明](docs/DESKTOP.md)。
 
 ## 下载与安装
 
-Mac 最新版本为 **0.1.29**；Android 与 Windows 继续提供 **0.1.28**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android 与 Mac 最新版本为 **0.1.30**；Windows 继续提供 **0.1.28**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a · 0.1.28 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.29/tingyu-0.1.28-android-arm64-v8a-release.apk) |
-| macOS 12+ · 0.1.29 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.29/tingyu-0.1.29-macos-release.dmg) |
+| Android · arm64-v8a · 0.1.30 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.30/tingyu-0.1.30-android-arm64-v8a-release.apk) |
+| macOS 12+ · 0.1.30 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.30/tingyu-0.1.30-macos-release.dmg) |
 | Windows 10/11 · x64 · 0.1.28 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.29/tingyu-0.1.28-windows-x64-setup.exe) |
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Mac 0.1.29 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-10-26-029.md)；其他平台校验值见 [0.1.28 发布记录](docs/ACCEPTANCE-2026-10-25-028.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.30 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-07-030.md)；其他平台校验值见 [0.1.28 发布记录](docs/ACCEPTANCE-2026-10-25-028.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
-Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。三个平台集中在 v0.1.28 Release；Windows 为后续补充构建，源码与验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-10-26-WINDOWS.md)。Mac/Android 原附件保持不变，Windows 修复不表示两端旧包已包含同样变更。
+Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 安装包的源码与验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-10-26-WINDOWS.md)。本次推荐页更新随 Android 与 Mac 0.1.30 发布；Windows 保持原版本。
 
 ## 主要功能
 
-- **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放。
+- **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放；Android 与 Mac 0.1.30 搜索页提供精选横滑、下滑自动加载的推荐列表、换一批和探索标签，保留「前往哔哩哔哩」。
 - **整理音乐**：带封面的全部歌单列表、本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
 - **离线播放**：下载音频及可用的封面、歌词，支持导出 M4A。
 - **自动缓存**：默认开启，最多 2 GB，优先淘汰较早使用的缓存；关闭后保留已有缓存。下载复用匹配音质的完整缓存或同一活动传输，缓存与下载分开保存。

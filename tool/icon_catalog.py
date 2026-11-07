@@ -65,7 +65,7 @@ def inventory():
   for i,line in enumerate(f.read_text(encoding='utf-8').splitlines(),1):
    for name in re.findall(r'\bIcons\.(\w+)',line):usages.setdefault(name,[]).append(f'{f.relative_to(ROOT).as_posix()}:{i}')
  # Register existing Material reuse for new designs, even if not yet in app call sites.
- for name in ['speed','schedule','visibility','visibility_off','tune','person_outline','storage','blur_on','logout','shield_outlined','repeat','repeat_one','shuffle','looks_one_outlined','pause_circle_outline','close']:
+ for name in ['nights_stay_outlined','wb_twilight','waves','speed','schedule','visibility','visibility_off','tune','person_outline','storage','blur_on','logout','shield_outlined','repeat','repeat_one','shuffle','looks_one_outlined','pause_circle_outline','close']:
   usages.setdefault(name,[])
  sdk=Path(os.environ.get('FLUTTER_ROOT', ROOT.parent/'.toolchains/flutter'));mat=sdk/'packages/flutter/lib/src/material/icons.dart'
  text=mat.read_text(encoding='utf-8');glyphs={name:{'codepoint':int(cp,16),'matchTextDirection':bool(direction)} for name,cp,direction in re.findall(r'static const IconData (\w+) = IconData\(0x([0-9a-f]+), fontFamily: \'MaterialIcons\'(, matchTextDirection: true)?\);',text)}

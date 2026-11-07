@@ -858,6 +858,10 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                   ? const LinearProgressIndicator()
                   : null,
             ),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: BilibiliExternalLink(compact: true),
+            ),
             if (p.searchError.isNotEmpty && !(debounce?.isActive ?? false))
               errorBox(
                 context,
@@ -868,7 +872,19 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
         ),
       ),
       Expanded(
-        child: (debounce?.isActive ?? false)
+        child: search.text.trim().isEmpty
+            ? DiscoveryPagination(
+                controller: p.discovery,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  key: const PageStorageKey('mac-discovery-scroll'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: TingyuTokens.macPadding,
+                  ),
+                  child: SearchDiscovery(p),
+                ),
+              )
+            : (debounce?.isActive ?? false)
             ? Center(
                 child: Text(search.text.trim().isEmpty ? '听点新鲜的' : '正在搜索…'),
               )

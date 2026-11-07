@@ -15,6 +15,7 @@ import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../main.dart';
 import '../controllers/library_controller.dart';
+import '../controllers/discovery_controller.dart';
 import '../models/music.dart';
 import '../services/media_export.dart';
 import '../services/bilibili_link.dart';
@@ -747,14 +748,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             child: BilibiliExternalLink(compact: true),
           ),
           if (search.text.isEmpty && widget.playlistId == null)
-            SearchDiscovery(
-              p,
-              onSearch: (value) {
-                search.text = value;
-                unawaited(p.search(value));
-                setState(() {});
-              },
-            ),
+            SearchDiscovery(p),
           if (!p.searching &&
               search.text.isNotEmpty &&
               p.results.isEmpty &&
@@ -967,66 +961,82 @@ class _AppShellState extends ConsumerState<AppShell> {
                                     : ScrollToTop(
                                         enabled: widget.playlistId != null,
                                         controller: pageScroll,
-                                        builder: (scroll) => CustomScrollView(
-                                          controller: scroll,
-                                          key: PageStorageKey(
-                                            'page-${widget.page}-${widget.playlistId}',
+                                        builder: (scroll) => DiscoveryPagination(
+                                          controller:
+                                              widget.page == 'search' &&
+                                                  widget.playlistId == null &&
+                                                  search.text.isEmpty
+                                              ? p.discovery
+                                              : null,
+                                          child: CustomScrollView(
+                                            physics:
+                                                widget.page == 'search' &&
+                                                    widget.playlistId == null &&
+                                                    search.text.isEmpty
+                                                ? const AlwaysScrollableScrollPhysics()
+                                                : null,
+                                            controller: scroll,
+                                            key: PageStorageKey(
+                                              'page-${widget.page}-${widget.playlistId}',
+                                            ),
+                                            slivers: [
+                                              SliverPadding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  desktop ? 36 : 20,
+                                                  desktop ? 36 : 20,
+                                                  desktop
+                                                      ? 36
+                                                      : widget.page == 'library'
+                                                      ? 0
+                                                      : 20,
+                                                  0,
+                                                ),
+                                                sliver: SliverToBoxAdapter(
+                                                  child:
+                                                      !desktop &&
+                                                          widget.page ==
+                                                              'library'
+                                                      ? Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            for (final child
+                                                                in content
+                                                                    .children)
+                                                              if (child
+                                                                  is HomeShelves)
+                                                                child
+                                                              else
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.only(
+                                                                        right:
+                                                                            20,
+                                                                      ),
+                                                                  child: child,
+                                                                ),
+                                                          ],
+                                                        )
+                                                      : content,
+                                                ),
+                                              ),
+                                              SliverPadding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  desktop ? 36 : 20,
+                                                  0,
+                                                  desktop ? 36 : 20,
+                                                  TingyuTokens.space * 10 +
+                                                      (desktop
+                                                          ? 0
+                                                          : MediaQuery.paddingOf(
+                                                              context,
+                                                            ).bottom),
+                                                ),
+                                                sliver: rowSliver,
+                                              ),
+                                            ],
                                           ),
-                                          slivers: [
-                                            SliverPadding(
-                                              padding: EdgeInsets.fromLTRB(
-                                                desktop ? 36 : 20,
-                                                desktop ? 36 : 20,
-                                                desktop
-                                                    ? 36
-                                                    : widget.page == 'library'
-                                                    ? 0
-                                                    : 20,
-                                                0,
-                                              ),
-                                              sliver: SliverToBoxAdapter(
-                                                child:
-                                                    !desktop &&
-                                                        widget.page == 'library'
-                                                    ? Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          for (final child
-                                                              in content
-                                                                  .children)
-                                                            if (child
-                                                                is HomeShelves)
-                                                              child
-                                                            else
-                                                              Padding(
-                                                                padding:
-                                                                    const EdgeInsets.only(
-                                                                      right: 20,
-                                                                    ),
-                                                                child: child,
-                                                              ),
-                                                        ],
-                                                      )
-                                                    : content,
-                                              ),
-                                            ),
-                                            SliverPadding(
-                                              padding: EdgeInsets.fromLTRB(
-                                                desktop ? 36 : 20,
-                                                0,
-                                                desktop ? 36 : 20,
-                                                TingyuTokens.space * 10 +
-                                                    (desktop
-                                                        ? 0
-                                                        : MediaQuery.paddingOf(
-                                                            context,
-                                                          ).bottom),
-                                              ),
-                                              sliver: rowSliver,
-                                            ),
-                                          ],
                                         ),
                                       ),
                               ),
