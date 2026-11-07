@@ -6,7 +6,7 @@ tingyu Windows @APP_VERSION@ 开发版
 
 Ctrl+F 搜索，Ctrl+, 打开设置。Windows 与 Mac 共用桌面 UI，系统字体和原生边框存在差异。
 
-本程序及安装包未进行商业代码签名。真实账号跨进程恢复、系统媒体键、完整托盘退出和物理听感仍有待人工验收。完整验证说明与源码提交见：
+本程序及安装包未进行商业代码签名。本轮封面、托盘提示、实际播放、媒体键及退出重启恢复已获用户实机确认；真实账号重新登录/有效性尚未专项验收。完整验证说明与源码提交见：
 https://github.com/boyl/tingyu/blob/main/docs/specs/windows-desktop-parity.md
 
 项目使用 MIT 许可证，见 LICENSE.txt。第三方声明位于 data/flutter_assets/NOTICES.Z；libmpv 来自原项目 media_kit_libs_windows_audio 依赖，Visual C++ 运行库来自 Microsoft 官方可再分发目录。

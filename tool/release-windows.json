@@ -1,24 +1,21 @@
 {
-  "bytes": 18738437,
+  "bytes": 18747197,
   "limitations": [
-    "real account restart pending",
-    "system media keys pending",
-    "full tray exit pending",
-    "physical listening pending"
+    "真实账号重新登录/有效性尚未专项验收",
+    "未逐项验收全部鼠标键盘、蓝牙等系统场景",
+    "用户核心实机确认来自整合前的本轮 Windows 0.1.30 修复包；最终 0.1.31 使用独立工程、原生和安装回归"
   ],
-  "sha256": "9472ec365cb4f7c664d5d806196e6659a1dc78b159755ee7cbbf9a83c3c2d77f",
-  "filename": "tingyu-0.1.28-windows-x64-setup.exe",
-  "version": "0.1.28+29",
+  "sha256": "51c6abfa3bca315361db3a7f45ca4d2cb81f93a01cbd35fea995b1e558fb0c25",
+  "filename": "tingyu-0.1.31-windows-x64-setup.exe",
+  "version": "0.1.31+32",
   "nativeChecks": [
-    "cached stream/offline/promoted decode PASS",
-    "tray initialize/hide/restore PASS",
-    "isolated secure storage write/read/delete PASS"
+    "Windows 原生 12 项 PASS：卡片稳定性、CDN 等价图片逐帧保留、托盘初始化/隐藏/恢复、隔离凭据和推荐布局"
   ],
-  "sourceSha256": "993db8bd15ba40eb258127370e0df0ac22c7835982cc490138572e51012fdef2",
-  "originalTagCommit": "97e7b03da0d5d6b23b3943a29b4ab67fe92ad650",
-  "signing": "unsigned development build",
-  "source": "Windows supplemental commit; see Release body",
-  "releaseTag": "v0.1.28",
+  "sourceSha256": "5528282315421cb43209e381b6e7f452265faed6012951bddb3f23acf233de6d",
+  "originalTagCommit": "f2ec84866772ede4e5e976160b1fb5df893418f0",
+  "signing": "未商业签名的开发版",
+  "source": "Windows 补充源码标签 v0.1.31-windows；Mac/Android 保留原标签",
+  "releaseTag": "v0.1.31",
   "previousPortableSha256": "371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9",
   "installerValidation": [
     "fresh install PASS",
@@ -28,5 +25,13 @@
     "shortcuts and uninstall registration PASS",
     "uninstall preserving user file PASS"
   ],
-  "installerSourceSha256": "993db8bd15ba40eb258127370e0df0ac22c7835982cc490138572e51012fdef2"
+  "installerSourceSha256": "5528282315421cb43209e381b6e7f452265faed6012951bddb3f23acf233de6d",
+  "sourceTag": "v0.1.31-windows",
+  "acceptance": "docs/ACCEPTANCE-2026-11-07-WINDOWS-031.md",
+  "verification": {
+    "offlineTests": 321,
+    "packagingTests": 6,
+    "skipped": 3,
+    "windowsNativeTests": 12
+  }
 }

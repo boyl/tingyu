@@ -13,10 +13,12 @@ import 'package:tingyu/main.dart';
 import 'package:tingyu/models/music.dart';
 import '../test/support/fakes.dart';
 import '../test/discovery_artwork_test.dart' as artwork;
+import '../test/artwork_playback_test.dart' as cdn_artwork;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   artwork.main();
+  cdn_artwork.main();
   testWidgets(
     'Windows native tray hide restore and isolated credential storage',
     (tester) async {
