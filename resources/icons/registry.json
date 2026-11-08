@@ -852,9 +852,9 @@
         "lib/ui/library_views.dart:62",
         "lib/ui/mac_account_views.dart:81",
         "lib/ui/mac_settings_views.dart:38",
-        "lib/ui/mac_workspace.dart:259",
-        "lib/ui/mac_workspace.dart:535",
-        "lib/ui/mac_workspace.dart:1184",
+        "lib/ui/mac_workspace.dart:273",
+        "lib/ui/mac_workspace.dart:545",
+        "lib/ui/mac_workspace.dart:1194",
         "lib/ui/playlist_add_views.dart:120"
       ],
       "designUses": []
@@ -909,7 +909,7 @@
         "lib/ui/app.dart:4086",
         "lib/ui/app.dart:4366",
         "lib/ui/mac_account_views.dart:289",
-        "lib/ui/mac_workspace.dart:658"
+        "lib/ui/mac_workspace.dart:668"
       ],
       "designUses": []
     },
@@ -921,7 +921,7 @@
       "codepoint": 58132,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:637"
+        "lib/ui/mac_workspace.dart:647"
       ],
       "designUses": []
     },
@@ -970,8 +970,8 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/app.dart:4091",
-        "lib/ui/mac_workspace.dart:638",
-        "lib/ui/mac_workspace.dart:796",
+        "lib/ui/mac_workspace.dart:648",
+        "lib/ui/mac_workspace.dart:806",
         "lib/ui/preferences_views.dart:148"
       ],
       "designUses": []
@@ -1233,7 +1233,7 @@
       "codepoint": 62537,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:1503",
+        "lib/ui/mac_workspace.dart:1513",
         "lib/ui/playback_settings_views.dart:353"
       ],
       "designUses": []
@@ -1246,7 +1246,7 @@
       "codepoint": 59011,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/mac_workspace.dart:670"
+        "lib/ui/mac_workspace.dart:680"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -1293,7 +1293,7 @@
       "matchTextDirection": false,
       "uses": [
         "lib/ui/app.dart:1669",
-        "lib/ui/mac_workspace.dart:1850",
+        "lib/ui/mac_workspace.dart:1860",
         "lib/ui/volume_views.dart:73"
       ],
       "designUses": []

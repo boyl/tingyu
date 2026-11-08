@@ -1,11 +1,11 @@
 {
-  "version": "0.1.31+32",
-  "sourceSha256": "f5af89e5aec8053928ceaded983d8e4f01fc3d52bb81120a6199f51712b9c86b",
+  "version": "0.1.32+33",
+  "sourceSha256": "49a1a31b4742b924c2b77301966ce02f1726d6a06f641b8b589901f9b441e2e9",
   "macos": {
-    "path": "artifacts/tingyu-0.1.31-macos-release.dmg",
-    "bytes": 27711346,
-    "sha256": "198fbc624b40163df61f65e3d7ae6bb18adf862ee71c10d3fc5911b4d29883d8",
-    "version": "0.1.31",
+    "path": "artifacts/tingyu-0.1.32-macos-release.dmg",
+    "bytes": 27707807,
+    "sha256": "355812d6218760ebbe66890e9108a7edf094e25f64911289378e662ccd2519bb",
+    "version": "0.1.32",
     "rebuilt": true,
     "architectures": [
       "x86_64",
@@ -18,10 +18,10 @@
   },
   "reusedAssets": [
     {
-      "version": "0.1.28",
+      "version": "0.1.31",
       "rebuilt": false,
-      "url": "https://github.com/boyl/tingyu/releases/download/v0.1.29/tingyu-0.1.28-windows-x64-setup.exe",
-      "sha256": "9472ec365cb4f7c664d5d806196e6659a1dc78b159755ee7cbbf9a83c3c2d77f"
+      "url": "https://github.com/boyl/tingyu/releases/download/v0.1.31/tingyu-0.1.31-windows-x64-setup.exe",
+      "sha256": "51c6abfa3bca315361db3a7f45ca4d2cb81f93a01cbd35fea995b1e558fb0c25"
     }
   ]
 }

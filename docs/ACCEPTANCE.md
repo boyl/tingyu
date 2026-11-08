@@ -7,6 +7,8 @@ Windows 0.1.30 对齐见 [Windows 规范](specs/windows-desktop-parity.md) 当�
 
 当前功能基线见 [FEATURES.md](FEATURES.md)，风格定义见 [UI.md](UI.md)，红绿重构见 [REFACTORING.md](REFACTORING.md)，发布范围见 [RELEASE.md](RELEASE.md)。以下“当前功能契约”和“视觉验收”是长期门禁；后面的版本补充保留历史来源，冲突以当前已确认基线为准。新增、变更或移除功能必须在同次发布同步更新功能清单、验收条件、回归证据与发布说明；视觉变更还须更新 UI 规范与批准截图。
 
+桌面文本输入回归：搜索及本地筛选获得焦点时，空格必须交给原生输入法/文本输入，不能仅验证没有误播放；离开编辑框后空格播放快捷键保持有效。专项测试见 `test/desktop_text_input_test.dart`。
+
 ## 体验目标
 
 Windows 托盘补充：首次启动与再次启动后，悬停提示应为 `tingyu`，不显示随机字符或异常长文本；关闭窗口后可由托盘恢复，显式退出仍正常保存。方法通道回归、Windows 原生运行与人工悬停观察须分开记录。

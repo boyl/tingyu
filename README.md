@@ -28,17 +28,19 @@ Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 搜�
 
 ## 下载与安装
 
-Android、Mac 与 Windows 最新版本均为 **0.1.31**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android 与 Mac 最新版本为 **0.1.32**；Windows 继续提供 **0.1.31**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a · 0.1.31 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.31/tingyu-0.1.31-android-arm64-v8a-release.apk) |
-| macOS 12+ · 0.1.31 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.31/tingyu-0.1.31-macos-release.dmg) |
+| Android · arm64-v8a · 0.1.32 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.32/tingyu-0.1.32-android-arm64-v8a-release.apk) |
+| macOS 12+ · 0.1.32 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.32/tingyu-0.1.32-macos-release.dmg) |
 | Windows 10/11 · x64 · 0.1.31 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.31/tingyu-0.1.31-windows-x64-setup.exe) |
+
+Mac 0.1.32 修复搜索输入法无法用空格确认候选词的问题。
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Android 与 Mac 0.1.31 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-07-031.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-07-WINDOWS-031.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.32 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-08-032.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-07-WINDOWS-031.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
 Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 安装包的源码与验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-07-WINDOWS-031.md)。Windows 0.1.31 同步推荐页与封面修复，并修复托盘提示乱码及小窗口空状态裁切；安装包未进行商业代码签名。

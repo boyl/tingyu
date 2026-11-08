@@ -57,6 +57,20 @@ class _MacCollectionState {
   }
 }
 
+// Reject the shortcut before CallbackShortcuts consumes the key, so native IMEs
+// and ordinary text entry can receive Space while an editor has focus.
+class _PlaybackSpaceActivator extends SingleActivator {
+  const _PlaybackSpaceActivator() : super(LogicalKeyboardKey.space);
+
+  @override
+  bool accepts(KeyEvent event, HardwareKeyboard state) {
+    if (!super.accepts(event, state)) return false;
+    final focus = FocusManager.instance.primaryFocus?.context;
+    return focus?.widget is! EditableText &&
+        focus?.findAncestorWidgetOfExactType<EditableText>() == null;
+  }
+}
+
 class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     with WidgetsBindingObserver {
   @override
@@ -352,13 +366,9 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
               localFocus.requestFocus();
             }
           },
-          const SingleActivator(LogicalKeyboardKey.space): () {
-            final focus = FocusManager.instance.primaryFocus?.context;
-            if (focus?.findAncestorWidgetOfExactType<EditableText>() == null &&
-                focus?.widget is! EditableText) {
-              if (p.current != null && !p.opening) {
-                unawaited(report(context, p.toggle));
-              }
+          const _PlaybackSpaceActivator(): () {
+            if (p.current != null && !p.opening) {
+              unawaited(report(context, p.toggle));
             }
           },
         },
