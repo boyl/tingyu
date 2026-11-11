@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'bilibili.dart';
 
 /// URL-addressed persistent artwork, shared by all pages and thumbnail sizes.
@@ -22,6 +23,7 @@ class CoverCache {
   final _inFlight = <String, Future<File?>>{};
   final _failed = <String, DateTime>{};
   final _cancel = CancelToken();
+  Future<void> _maintenance = Future.value();
   bool _closed = false;
   int _active = 0;
   final _waiting = <Completer<void>>[];
@@ -106,7 +108,7 @@ class CoverCache {
       if (_closed || await temp.length() == 0) return null;
       await temp.rename(file.path);
       _ready[key] = file;
-      await _trim(keep: file);
+      await _scheduleTrim(keep: file);
       return file;
     } on DioException {
       _failed[url] = DateTime.now();
@@ -120,6 +122,17 @@ class CoverCache {
       if (await temp.exists()) await temp.delete();
     }
   }
+
+  Future<void> _scheduleTrim({required File keep}) =>
+      _maintenance = _maintenance.then((_) async {
+        // 清理串行执行，避免并发任务重复删除同一旧文件。
+        // 维护失败不应覆盖已经成功落盘的图片结果。
+        try {
+          await _trim(keep: keep);
+        } on FileSystemException catch (error) {
+          debugPrint('封面缓存清理失败：${error.message} (${error.osError?.errorCode})');
+        }
+      });
 
   Future<void> _trim({required File keep}) async {
     final entries = <(File, FileStat)>[];

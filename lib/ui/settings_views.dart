@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.35';
+const tingyuVersion = '0.1.36';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

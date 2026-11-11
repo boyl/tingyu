@@ -1,11 +1,11 @@
 {
-  "version": "0.1.35+36",
-  "sourceSha256": "8d475e04559b41d6a17b747dddaf1d2a9fe8e4e7319028d4e9aea3a7034dec35",
+  "version": "0.1.36+37",
+  "sourceSha256": "ea897d83b65e5b2ed3d1b0630d0b148e7920c328aabbffe264a95335695ed47e",
   "macos": {
-    "path": "artifacts/tingyu-0.1.35-macos-release.dmg",
-    "bytes": 27767188,
-    "sha256": "d56b12ca260c6dc63d227498719721f5907d9ba638859e157178b122fa3d69fc",
-    "version": "0.1.35",
+    "path": "artifacts/tingyu-0.1.36-macos-release.dmg",
+    "bytes": 27769338,
+    "sha256": "64c9e03d3e18a7d3feeee286970c899d79ffdf568fb35e0226e1f988eff70582",
+    "version": "0.1.36",
     "rebuilt": true,
     "architectures": [
       "x86_64",
