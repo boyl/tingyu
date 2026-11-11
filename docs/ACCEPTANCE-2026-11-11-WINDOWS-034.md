@@ -29,4 +29,8 @@
 
 - 真实输入法候选选词、真实账号、屏幕阅读器、系统媒体键、物理听感及 Release 完整人工流程本轮 NOT RUN。Windows 上的共享 Mac/手机组件回归不代表另外两平台真机验收。
 - 既有 CMake CMP0175 和 integration_test 插件提示保留；未通过改动预期或抹除警告制造通过结果。
-- 发布回读待执行：核对原标签对象 `7e3412d983ded15f05a1ac68408cc4d782c16a8e` / 源码 `df1290c9f63773b70a397a982d310d158c3b64fb` 保持，Windows 源码标签指向本次提交，三项资产名称/大小/digest 与正文链接正确；另下载 Windows EXE 复核 SHA-256。
+- 发布回读 PASS：[v0.1.34](https://github.com/boyl/tingyu/releases/tag/v0.1.34) 非草稿、非预发布，正文及三端下载表与准备文本一致。Windows 资产 ID `734789011`，18,769,325 字节，服务端 digest 与安装包 SHA-256 完全一致。
+- Windows 源码标签 `v0.1.34-windows` 指向 `0da4bd77ba0e1ea3c1401e028c32bfc937c33687`。原 v0.1.34 标签对象 `7e3412d983ded15f05a1ac68408cc4d782c16a8e` / 源码 `df1290c9f63773b70a397a982d310d158c3b64fb` 保持。
+- 原 Android 资产 ID `734701648`、Mac 资产 ID `734701645` 的名称、大小与 digest 保持；没有覆盖原包或重建其他平台。发布前后快照见 `artifacts/windows-034/release-before.json`、`release-published.json`。
+- 从 GitHub 重新下载 Windows EXE 后，文件长度及 SHA-256 再次一致；`artifacts/windows-034/final-verification.json` 保存发布状态、服务端摘要、下载复核与源码标签证据。
+- 发布后的回执提交仅更新本记录，不改变已验收源码指纹、安装包或 Windows 源码标签。原用户 FOLLOWUP 文件保留且未提交。
