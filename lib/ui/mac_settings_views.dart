@@ -81,7 +81,15 @@ class _MacSettingsPanelState extends State<MacSettingsPanel> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [heading('主题'), themes(context)],
                       ),
-                      'playback' => playback(context),
+                      'playback' => Column(
+                        children: [
+                          playback(context),
+                          labelButton(
+                            '清除推荐偏好',
+                            () => showClearDiscovery(context, widget.p),
+                          ),
+                        ],
+                      ),
                       _ => StoragePanel(widget.p, desktop: true),
                     },
                   ],

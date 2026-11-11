@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.32';
+const tingyuVersion = '0.1.33';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -222,6 +222,7 @@ class SettingsPanel extends StatelessWidget {
           ),
         ),
         Divider(height: 1, color: t.line),
+        labelButton('清除推荐偏好', () => showClearDiscovery(context, p)),
         SettingsRow(
           icon: Icons.download_outlined,
           title: '存储空间',
@@ -522,5 +523,45 @@ class ThemePreview extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> showClearDiscovery(
+  BuildContext context,
+  LibraryController p,
+) async {
+  final feedback = OperationFeedback();
+  try {
+    await showContentActions(
+      context,
+      (ctx) => SimpleDialog(
+        title: const Text('清除推荐偏好？'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(TingyuTokens.space * 2),
+            child: Text('清除推荐曝光、收听反馈和不感兴趣记录。喜欢与播放历史保留。'),
+          ),
+          feedback.status(ctx),
+          labelButton('取消', feedback.busy ? null : () => Navigator.pop(ctx)),
+          labelButton(
+            '清除',
+            feedback.busy
+                ? null
+                : () async {
+                    if (await feedback.run(
+                          p.clearDiscoveryPreferences,
+                          '已清除',
+                        ) &&
+                        ctx.mounted) {
+                      Navigator.pop(ctx);
+                    }
+                  },
+          ),
+        ],
+      ),
+      listenable: feedback,
+    );
+  } finally {
+    feedback.dispose();
   }
 }

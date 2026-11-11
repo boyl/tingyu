@@ -1,4 +1,6 @@
 import 'dart:convert';
+import '../models/discovery_policy.dart';
+import '../models/discovery_listening.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -24,6 +26,7 @@ class LibraryController extends ChangeNotifier {
   }) : lyricsClient = lyricsClient ?? LyricsClient(subtitleClient: api) {
     playback.onNext = () => unawaited(next());
     playback.onPrevious = () => unawaited(next(-1));
+    playback.onSeek = discoveryListening.resetSample;
     playback.onCompleted = () => unawaited(_completed());
     sleepTimer.onExpire = _expireTimer;
     sleepTimer.addListener(_timerChanged);
@@ -34,11 +37,26 @@ class LibraryController extends ChangeNotifier {
             current != null &&
             playback.player.processingState != ProcessingState.idle) {
           position = v;
+          discoveryListening.sample(
+            v,
+            DateTime.now(),
+            active:
+                playback.player.playing &&
+                playback.player.processingState == ProcessingState.ready,
+            speed: speed,
+          );
+          if (discoveryListening.bvid == current!.bvid &&
+              discoveryListening.qualifies(current!.duration)) {
+            discoveryListening.rewarded = true;
+            discoveryPreferences.listen(current!.bvid, positive: true);
+            _saveDiscoveryInBackground();
+          }
         }
       }),
     );
     _subscriptions.add(
       playback.player.playerStateStream.listen((_) {
+        discoveryListening.resetSample();
         if (!_disposed) notifyListeners();
       }),
     );
@@ -49,6 +67,7 @@ class LibraryController extends ChangeNotifier {
     );
     _subscriptions.add(
       playback.player.errorStream.listen((e) {
+        discoveryListening.failed = true;
         if (_disposed || opening) return;
         if (_waitingForTrack != null) {
           _waitingForTrack = null;
@@ -78,12 +97,92 @@ class LibraryController extends ChangeNotifier {
   final List<Playlist> playlists = [];
   final Map<String, String> collectionSort = {};
   final List<String> queue = [], likes = [], history = [];
+  final discoveryPreferences = DiscoveryPreferences();
+  final discoveryListening = DiscoveryListening();
+  Future<void> _discoveryWrites = Future.value();
+  String discoverySaveError = '';
+  Future<void> _queueDiscoveryWrite(Future<void> Function() action) {
+    final task = _discoveryWrites.then((_) => action());
+    _discoveryWrites = task.then<void>(
+      (_) {
+        final hadError = discoverySaveError.isNotEmpty;
+        discoverySaveError = '';
+        if (hadError && !_disposed) notifyListeners();
+      },
+      onError: (Object e) {
+        discoverySaveError = '推荐偏好保存失败，请重试';
+        if (!_disposed) notifyListeners();
+      },
+    );
+    return task;
+  }
+
+  Future<void> flushDiscovery() => _discoveryWrites;
+  Future<void> saveDiscovery() => _queueDiscoveryWrite(
+    () => db.writeState('discovery', discoveryPreferences.toJson()),
+  );
+  void _saveDiscoveryInBackground() {
+    unawaited(
+      saveDiscovery().then<void>(
+        (_) {},
+        onError: (Object e) {
+          // saveDiscovery exposes the failure through discoverySaveError.
+        },
+      ),
+    );
+  }
+
+  void recordDiscoveryExposure(Track track) {
+    discoveryPreferences.expose(track);
+    _saveDiscoveryInBackground();
+  }
+
+  Future<void> setDiscoveryBlocked(String bv, bool blocked) =>
+      _queueDiscoveryWrite(() async {
+        final draft = DiscoveryPreferences()
+          ..restore(
+            jsonDecode(jsonEncode(discoveryPreferences.toJson()))
+                as Map<String, dynamic>,
+          );
+        if (blocked) {
+          draft.blocked.add(bv);
+        } else {
+          draft.blocked.remove(bv);
+        }
+        await db.writeState('discovery', draft.toJson());
+        if (blocked) {
+          discoveryPreferences.blocked.add(bv);
+        } else {
+          discoveryPreferences.blocked.remove(bv);
+        }
+        discoveryPreferences.revision++;
+        if (!_disposed) discovery.preferencesChanged();
+      });
+  Future<void> clearDiscoveryPreferences() => _queueDiscoveryWrite(() async {
+    await db.writeState('discovery', DiscoveryPreferences().toJson());
+    discoveryPreferences.clear();
+    if (!_disposed) discovery.preferencesChanged();
+  });
+  void _finishDiscoveryListening({bool skipped = false}) {
+    final id = discoveryListening.bvid;
+    if (id != null && skipped && discoveryListening.earlySkip) {
+      discoveryPreferences.listen(id, positive: false);
+      _saveDiscoveryInBackground();
+    }
+    discoveryListening.bvid = null;
+    discoveryListening.resetSample();
+  }
+
   late final discovery = DiscoveryController(
     search: api.search,
-    seeds: () => {
-      ...likes.reversed,
-      ...history,
-    }.map((id) => library[id]).whereType<Track>().take(12).toList(),
+    preferences: discoveryPreferences,
+    seeds: () => likes.reversed
+        .map((id) => library[id])
+        .whereType<Track>()
+        .take(50)
+        .toList(),
+    history: () =>
+        history.map((id) => library[id]).whereType<Track>().take(50).toList(),
     recent: () => history
         .take(30)
         .map((id) => library[id]?.bvid)
@@ -113,6 +212,7 @@ class LibraryController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    _finishDiscoveryListening();
     ++_playEpoch;
     opening = false;
     await playback.pause();
@@ -122,6 +222,7 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> _completed() async {
     if (_disposed || opening) return;
+    _finishDiscoveryListening();
     if (mode == 'once' || _waitingForTrack != null) {
       _waitingForTrack = null;
       await playback.pause();
@@ -300,6 +401,7 @@ class LibraryController extends ChangeNotifier {
         _resolved['${track.bvid}:0'] = track;
       }
     }
+    discoveryPreferences.restore(await db.readState('discovery'));
     final s = await db.readState('library');
     double volume = 1;
     if (s != null) {
@@ -613,6 +715,7 @@ class LibraryController extends ChangeNotifier {
     Track input, {
     Duration at = Duration.zero,
     bool advancing = false,
+    bool recommendationSkip = true,
   }) async {
     if (_waitingForTrack != null) {
       _waitingForTrack = null;
@@ -620,6 +723,9 @@ class LibraryController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    _finishDiscoveryListening(
+      skipped: recommendationSkip && current?.bvid != input.bvid,
+    );
     final epoch = ++_playEpoch;
     opening = true;
     error = '';
@@ -670,6 +776,7 @@ class LibraryController extends ChangeNotifier {
       });
       if (epoch != _playEpoch) return;
       current = t;
+      discoveryListening.start(t.bvid);
       position = at;
       quality = downloaded != null
           ? '离线文件'
@@ -866,7 +973,11 @@ class LibraryController extends ChangeNotifier {
               ? (delta < 0 ? ids.length - 1 : 0)
               : (index + delta) % ids.length];
     }
-    await play(library[id]!, advancing: true);
+    await play(
+      library[id]!,
+      advancing: true,
+      recommendationSkip: !automatic && delta > 0,
+    );
     if (_disposed) return;
     final expected = _resolved[id]?.id ?? id;
     if (current?.id != expected) _playOrder.failed(expected, current?.id);
@@ -1528,6 +1639,7 @@ class LibraryController extends ChangeNotifier {
     sleepTimer.removeListener(_timerChanged);
     sleepTimer.dispose();
     playback.onSpeedChange = null;
+    playback.onSeek = null;
     for (final sub in _subscriptions) {
       unawaited(sub.cancel());
     }

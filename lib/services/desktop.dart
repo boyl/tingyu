@@ -14,11 +14,15 @@ class DesktopIntegration with TrayListener, WindowListener {
         await windowManager.show();
         await windowManager.focus();
       },
-      persist: controller.save,
+      persist: () async {
+        await controller.save();
+        await controller.flushDiscovery();
+      },
       stopPlayback: controller.playback.stop,
       destroyWindow: () async {
         await controller.downloads.prepareForExit();
         await controller.save();
+        await controller.flushDiscovery();
         controller.dispose();
         controller.downloads.dispose();
         await controller.playback.close();

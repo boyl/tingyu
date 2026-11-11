@@ -220,7 +220,7 @@ class FakePlayback extends BaseAudioHandler implements PlaybackHandler {
   @override
   final FakePlayer player = FakePlayer();
   @override
-  void Function()? onNext, onPrevious, onCompleted;
+  void Function()? onNext, onPrevious, onCompleted, onSeek;
   @override
   Future<void> Function(double)? onSpeedChange;
   final List<String> opened = [];

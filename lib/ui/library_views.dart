@@ -108,7 +108,7 @@ Future<void> showContentActions(
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: context.tokens.line,
+                        color: ctx.tokens.line,
                         borderRadius: BorderRadius.circular(
                           TingyuTokens.radius,
                         ),

@@ -36,6 +36,7 @@ class _DiscoveryPaginationState extends State<DiscoveryPagination> {
         d.loading ||
         d.error.isNotEmpty ||
         d.exhausted ||
+        d.needsMoreSearch ||
         d.tracks.isEmpty ||
         notification.metrics.extentAfter >
             notification.metrics.viewportDimension / 2) {
@@ -144,21 +145,41 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
               ],
             ),
             const SizedBox(height: TingyuTokens.space),
-            Wrap(
-              spacing: TingyuTokens.space,
-              runSpacing: TingyuTokens.space,
-              children: [
-                for (final tag in DiscoveryController.tags)
-                  Pressable(
-                    key: ValueKey('discovery-tag-$tag'),
-                    label: '探索$tag',
-                    selected: d.tag == tag,
-                    onPressed: () => d.selectTag(tag),
-                    child: Text(tag),
-                  ),
-              ],
+            SingleChildScrollView(
+              key: const PageStorageKey('discovery-tags'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final tag in DiscoveryController.tags)
+                    Padding(
+                      padding: const EdgeInsets.only(right: TingyuTokens.space),
+                      child: Builder(
+                        builder: (tagContext) => Pressable(
+                          key: ValueKey('discovery-tag-$tag'),
+                          label: '探索$tag',
+                          selected: d.tag == tag,
+                          onPressed: () {
+                            Scrollable.of(tagContext).position.ensureVisible(
+                              tagContext.findRenderObject()!,
+                              alignment: .5,
+                            );
+                            d.selectTag(tag);
+                          },
+                          child: Text(tag, maxLines: 1),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: TingyuTokens.space * 2),
+            if (widget.p.discoverySaveError.isNotEmpty)
+              errorBox(
+                context,
+                widget.p.discoverySaveError,
+                widget.p.saveDiscovery,
+              ),
+            if (d.needsMoreSearch) labelButton('暂未找到更多，继续查找', d.loadMore),
             if (d.error.isNotEmpty && !d.loadMoreFailed)
               errorBox(context, d.error, d.retry),
             if (d.tracks.isEmpty && !loading && d.error.isEmpty)
@@ -268,63 +289,101 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
                           );
                         }
                         final track = tracks[index];
-                        return SizedBox(
-                          key: ValueKey(
-                            'discovery-card-${candidates[index].id}',
-                          ),
-                          width: card,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Pressable(
-                                key: ValueKey(
-                                  'discovery-play-${candidates[index].id}',
-                                ),
-                                label: '播放${track.title}',
-                                padding: EdgeInsets.zero,
-                                radius: TingyuTokens.artworkRadius,
-                                onPressed: () =>
-                                    report(context, () => widget.p.play(track)),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        return DiscoveryExposure(
+                          track: track,
+                          onExposed: widget.p.recordDiscoveryExposure,
+                          child: SizedBox(
+                            key: ValueKey(
+                              'discovery-card-${candidates[index].id}',
+                            ),
+                            width: card,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Stack(
                                   children: [
-                                    Artwork(
-                                      track,
-                                      size: card - TingyuTokens.space / 2,
+                                    Pressable(
+                                      key: ValueKey(
+                                        'discovery-play-${candidates[index].id}',
+                                      ),
+                                      label: '播放${track.title}',
+                                      padding: EdgeInsets.zero,
+                                      radius: TingyuTokens.artworkRadius,
+                                      onPressed: () => report(
+                                        context,
+                                        () => widget.p.play(track),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Artwork(
+                                            track,
+                                            size: card - TingyuTokens.space / 2,
+                                          ),
+                                          const SizedBox(
+                                            height: TingyuTokens.space,
+                                          ),
+                                          Text(
+                                            track.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: titleStyle,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: TingyuTokens.space),
-                                    Text(
-                                      track.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: titleStyle,
+                                    Positioned(
+                                      top: 0,
+                                      right: TingyuTokens.space / 2,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: t.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            TingyuTokens.radius,
+                                          ),
+                                        ),
+                                        child: action(
+                                          Icons.more_horiz,
+                                          '推荐歌曲操作${track.title}',
+                                          () => showTrackActions(
+                                            context,
+                                            widget.p,
+                                            track,
+                                            null,
+                                            discovery: true,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      track.artist,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: artistStyle,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        track.artist,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: artistStyle,
+                                      ),
                                     ),
-                                  ),
-                                  action(
-                                    widget.p.likes.contains(track.id)
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    widget.p.likes.contains(track.id)
-                                        ? '取消喜欢${track.title}'
-                                        : '喜欢${track.title}',
-                                    () => widget.p.toggleLike(track),
-                                    selected: widget.p.likes.contains(track.id),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    action(
+                                      widget.p.likes.contains(track.id)
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      widget.p.likes.contains(track.id)
+                                          ? '取消喜欢${track.title}'
+                                          : '喜欢${track.title}',
+                                      () => widget.p.toggleLike(track),
+                                      selected: widget.p.likes.contains(
+                                        track.id,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -337,10 +396,15 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
               Text('继续发现', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: TingyuTokens.space),
               for (final (index, track) in moreTracks.indexed)
-                TrackRow(
-                  track,
-                  key: ValueKey('discovery-more-${moreCandidates[index].id}'),
-                  presentationId: moreCandidates[index].id,
+                DiscoveryExposure(
+                  track: track,
+                  onExposed: widget.p.recordDiscoveryExposure,
+                  child: TrackRow(
+                    track,
+                    discovery: true,
+                    key: ValueKey('discovery-more-${moreCandidates[index].id}'),
+                    presentationId: moreCandidates[index].id,
+                  ),
                 ),
             ],
             if (d.loadMoreFailed) errorBox(context, d.error, d.retry),
@@ -373,4 +437,89 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
       );
     },
   );
+}
+
+/// Measures actual clipping by both the horizontal shelf and outer viewport.
+class DiscoveryExposure extends StatefulWidget {
+  const DiscoveryExposure({
+    super.key,
+    required this.track,
+    required this.onExposed,
+    required this.child,
+  });
+  final Track track;
+  final ValueChanged<Track> onExposed;
+  final Widget child;
+  @override
+  State<DiscoveryExposure> createState() => _DiscoveryExposureState();
+}
+
+class _DiscoveryExposureState extends State<DiscoveryExposure> {
+  Timer? timer;
+  Duration visibleFor = Duration.zero;
+  String? recorded;
+  @override
+  void initState() {
+    super.initState();
+    timer = Timer.periodic(const Duration(milliseconds: 250), (_) => check());
+  }
+
+  @override
+  void didUpdateWidget(covariant DiscoveryExposure oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track.bvid != widget.track.bvid) {
+      recorded = null;
+      visibleFor = Duration.zero;
+    }
+  }
+
+  void check() {
+    if (!mounted || recorded == widget.track.bvid) return;
+    final render = context.findRenderObject();
+    if (render is! RenderBox || !render.hasSize) return;
+    var visible = Offset.zero & MediaQuery.sizeOf(context);
+    context.visitAncestorElements((element) {
+      final ancestor = element.renderObject;
+      if (ancestor is RenderAbstractViewport) {
+        final box = ancestor as RenderBox;
+        if (box.hasSize) {
+          visible = visible.intersect(
+            box.localToGlobal(Offset.zero) & box.size,
+          );
+        }
+      }
+      return true;
+    });
+    final rect = render.localToGlobal(Offset.zero) & render.size;
+    final intersection = visible.intersect(rect);
+    final active =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    final enough =
+        active &&
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        !intersection.isEmpty &&
+        rect.width * rect.height > 0 &&
+        intersection.width * intersection.height >=
+            rect.width * rect.height / 2;
+    if (!enough) {
+      visibleFor = Duration.zero;
+      return;
+    }
+    visibleFor += const Duration(milliseconds: 250);
+    if (visibleFor >= const Duration(seconds: 1)) {
+      recorded = widget.track.bvid;
+      widget.onExposed(widget.track);
+    }
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

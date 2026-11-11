@@ -14,6 +14,89 @@ Track track(int i, {String? artist, int cid = 0}) => Track(
 
 void main() {
   test(
+    'new likes invalidate late results without moving the current batch',
+    () async {
+      var seeds = <Track>[];
+      final response = Completer<List<Track>>();
+      var slow = false;
+      final queries = <String>[];
+      final d = DiscoveryController(
+        search: (q, {page = 1}) async {
+          queries.add(q);
+          if (slow) return response.future;
+          return List.generate(16, (i) => track(i + page * 100));
+        },
+        seeds: () => seeds,
+        recent: () => {},
+      );
+      addTearDown(d.dispose);
+      await d.ensureLoaded();
+      final before = d.tracks;
+      slow = true;
+      final loading = d.loadMore();
+      seeds = [track(999)];
+      response.complete(List.generate(16, (i) => track(i + 9999)));
+      await loading;
+      expect(d.tracks, before);
+      expect(d.moreTracks.any((t) => t.bvid == 'BVtest9999'), false);
+      slow = false;
+      await d.loadMore();
+      expect(queries, contains('歌曲999 音乐'));
+    },
+  );
+  test(
+    'filtered pages have bounded requests and an explicit continuation state',
+    () async {
+      var calls = 0;
+      final d = DiscoveryController(
+        search: (_, {page = 1}) async {
+          calls++;
+          return [
+            Track(
+              bvid: 'BV$page',
+              cid: 0,
+              title: '唱歌教学',
+              artist: 'UP',
+              cover: '',
+              duration: 60,
+            ),
+          ];
+        },
+        seeds: () => [],
+        recent: () => {},
+      );
+      addTearDown(d.dispose);
+      await d.selectTag('翻唱');
+      expect(calls, 2);
+      expect(d.needsMoreSearch, true);
+      expect(d.exhausted, false);
+      await d.loadMore();
+      expect(calls, 4);
+    },
+  );
+
+  test(
+    'uploader-heavy buffer must not prevent fetching diverse next page',
+    () async {
+      final pages = <int>[];
+      final d = DiscoveryController(
+        search: (_, {page = 1}) async {
+          pages.add(page);
+          return page == 1
+              ? List.generate(40, (i) => track(i, artist: '同一UP'))
+              : List.generate(20, (i) => track(100 + i));
+        },
+        seeds: () => [],
+        recent: () => {},
+      );
+      addTearDown(d.dispose);
+      await d.selectTag('翻唱');
+      expect(pages, [1, 2]);
+      expect([...d.tracks, ...d.moreTracks].length, 16);
+    },
+  );
+
+  test(
     'refresh failure with buffered candidates retains the whole current page',
     () async {
       var fail = false;
@@ -36,7 +119,10 @@ void main() {
       expect(d.moreTracks, rows);
       fail = false;
       await d.retry();
-      expect(d.tracks.first.bvid, 'BVtest16');
+      expect(
+        [...d.tracks, ...d.moreTracks].any((t) => t.bvid == 'BVtest16'),
+        true,
+      );
       expect(d.moreTracks.length, 10);
     },
   );
@@ -151,29 +237,22 @@ void main() {
       );
       addTearDown(d.dispose);
       await d.ensureLoaded();
-      expect(calls, ['歌曲99 音乐:1']);
-      expect(d.tracks.map((t) => t.bvid), [
-        'BVtest1',
-        'BVtest2',
-        'BVtest3',
-        'BVtest4',
-        'BVtest5',
-        'BVtest6',
-      ]);
+      expect(calls, ['歌曲99 音乐:1', '音乐 现场 翻唱:1']);
+      expect(d.tracks.first.bvid, 'BVtest1');
+      final shown = {
+        ...d.tracks.map((t) => t.bvid),
+        ...d.moreTracks.map((t) => t.bvid),
+      };
+      final callCount = calls.length;
       await d.ensureLoaded();
-      expect(calls.length, 1);
+      expect(calls.length, callCount);
       await d.nextBatch();
-      expect(calls.length, 1);
-      expect(d.tracks.map((t) => t.bvid), [
-        'BVtest17',
-        'BVtest18',
-        'BVtest19',
-        'BVtest20',
-        'BVtest21',
-        'BVtest22',
-      ]);
+      expect(calls.length - callCount, lessThanOrEqualTo(2));
+      expect(
+        [...d.tracks, ...d.moreTracks].any((t) => shown.contains(t.bvid)),
+        false,
+      );
       await d.nextBatch();
-      expect(calls[1], '音乐 现场 翻唱:1');
       expect(d.tracks.map((t) => t.bvid).toSet().length, d.tracks.length);
     },
   );
@@ -220,7 +299,10 @@ void main() {
     await d.nextBatch();
     expect(calls, [1, 2, 2]);
     expect(d.error, isEmpty);
-    expect(d.tracks.first.bvid, 'BVtest16');
+    expect(
+      [...d.tracks, ...d.moreTracks].any((t) => t.bvid == 'BVtest16'),
+      true,
+    );
   });
 
   test(

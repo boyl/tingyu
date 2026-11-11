@@ -1481,10 +1481,12 @@ class TrackRow extends ConsumerWidget {
     this.selected = false,
     this.onSelect,
     this.presentationId,
+    this.discovery = false,
   });
 
   /// Stable result identity when playback replaces a provisional track CID.
   final String? presentationId;
+  final bool discovery;
   final bool selecting, selected;
   final VoidCallback? onSelect;
   final Playlist? addToPlaylist;
@@ -1625,7 +1627,13 @@ class TrackRow extends ConsumerWidget {
             action(
               Icons.more_horiz,
               '更多 ${track.title}',
-              () => showTrackActions(context, p, track, playlist),
+              () => showTrackActions(
+                context,
+                p,
+                track,
+                playlist,
+                discovery: discovery,
+              ),
             ),
         ],
       ),
@@ -1639,6 +1647,7 @@ Future<void> showTrackActions(
   Track track,
   Playlist? list, {
   bool includeVolume = false,
+  bool discovery = false,
 }) async {
   // The originating list row can disappear after unliking/removing its item.
   final feedbackContext = Navigator.of(context, rootNavigator: true).context;
@@ -1662,6 +1671,23 @@ Future<void> showTrackActions(
           ),
           children: [
             session.status(ctx),
+            if (discovery)
+              labelButton(
+                p.discoveryPreferences.blocked.contains(track.bvid)
+                    ? '撤销不感兴趣'
+                    : '不感兴趣',
+                session.busy
+                    ? null
+                    : () => session.run(
+                        () => p.setDiscoveryBlocked(
+                          track.bvid,
+                          !p.discoveryPreferences.blocked.contains(track.bvid),
+                        ),
+                        p.discoveryPreferences.blocked.contains(track.bvid)
+                            ? '已恢复推荐'
+                            : '已设为不感兴趣，可撤销',
+                      ),
+              ),
             if (includeVolume)
               labelButton(
                 '播放音量',

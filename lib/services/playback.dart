@@ -9,7 +9,7 @@ import '../models/music.dart';
 
 class PlaybackHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer player = AudioPlayer(useProxyForRequestHeaders: false);
-  void Function()? onNext, onPrevious, onCompleted;
+  void Function()? onNext, onPrevious, onCompleted, onSeek;
   Future<void> Function(double)? onSpeedChange;
   @override
   Future<void> setSpeed(double speed) =>
@@ -102,7 +102,11 @@ class PlaybackHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> pause() => player.pause();
   @override
-  Future<void> seek(Duration position) => player.seek(position);
+  Future<void> seek(Duration position) {
+    onSeek?.call();
+    return player.seek(position);
+  }
+
   @override
   Future<void> skipToNext() async => onNext?.call();
   @override

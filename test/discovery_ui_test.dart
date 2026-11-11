@@ -98,7 +98,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(f.controller.discovery.moreTracks.length, 10);
       await tester.drag(
-        find.byType(SingleChildScrollView),
+        find.byType(SingleChildScrollView).first,
         const Offset(0, -100),
       );
       final offset = scroll.position.pixels;
@@ -110,7 +110,7 @@ void main() {
       scroll.position.jumpTo(scroll.position.maxScrollExtent - 350);
       await tester.pumpAndSettle();
       await tester.drag(
-        find.byType(SingleChildScrollView),
+        find.byType(SingleChildScrollView).first,
         const Offset(0, -100),
       );
       await tester.pumpAndSettle();
@@ -282,7 +282,7 @@ void main() {
     expect(calls, 2);
     expect(f.controller.discovery.moreTracks, isEmpty);
     await tester.drag(
-      find.byType(SingleChildScrollView),
+      find.byType(SingleChildScrollView).first,
       const Offset(0, -200),
     );
     await tester.pumpAndSettle();
@@ -418,6 +418,26 @@ void main() {
                 .left,
             closeTo(shelf.left, .01),
           );
+          final tags = ['全部', '轻音乐', '翻唱', '现场', '纯音乐'];
+          final tops = tags
+              .map(
+                (tag) => tester
+                    .getTopLeft(find.byKey(ValueKey('discovery-tag-$tag')))
+                    .dy,
+              )
+              .toSet();
+          expect(tops.length, 1, reason: '标签必须始终保持单行');
+          for (final tag in tags) {
+            expect(
+              tester.getSize(find.byKey(ValueKey('discovery-tag-$tag'))).height,
+              greaterThanOrEqualTo(48),
+            );
+          }
+          await tester.drag(
+            find.byKey(const PageStorageKey('discovery-tags')),
+            const Offset(-500, 0),
+          );
+          await tester.pumpAndSettle();
           await tester.tap(find.byKey(const ValueKey('discovery-tag-纯音乐')));
           await tester.pumpAndSettle();
           expect(f.controller.query, isEmpty);
