@@ -1,5 +1,7 @@
 # tingyu 验收标准
 
+Windows 0.1.33：通过正式 Windows 路由检查 800×600 / 1280×800 下标签同排且横滑不触发纵向加载；“不感兴趣”/撤销和清除推荐偏好的取消/确认须保持喜欢、播放历史、当前曲目与暂停状态。回归 `test/windows_discovery_feedback_test.dart` 同时纳入 Windows 原生入口；文本焦点空格及非编辑播放快捷键由 `desktop_text_input_test.dart` 覆盖。验证与真实输入法等未验边界见 [本版记录](ACCEPTANCE-2026-11-11-WINDOWS-033.md)。
+
 搜索推荐专项验收见 [search-discovery](specs/search-discovery.md)：保留搜索/外部入口，检查去重、换批、标签缓存、下滑自动追加与慢请求防重入、失败暂停及原页重试、过期请求隔离；播放解析切换 CDN 地址时复用已显示封面，不闪回占位或重复请求；真实网络与组件测试分开记录。
 
 Windows 0.1.30 对齐见 [Windows 规范](specs/windows-desktop-parity.md) 当前 P01–P05：新增 Windows 推荐三尺寸/四主题、三端分页契约、短视口空状态入口可达性，以及安装器版本与实际载荷一致性检查；本地开发包与公开发布状态分开记录。

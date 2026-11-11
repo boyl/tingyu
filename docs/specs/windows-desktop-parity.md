@@ -1,5 +1,39 @@
 # tingyu Windows 实施与验收规范
 
+## 2026-11-11：Windows 0.1.33 发布与安装授权
+
+用户在获知工程通过及人工待验边界后明确要求“发布安装”。本次授权覆盖本轮源码提交/正常推送、独立 `v0.1.33-windows` 标签、向既有 `v0.1.33` Release 补充 Windows EXE，以及保留数据并备份旧程序后覆盖本机安装。原 `v0.1.33` 标签和 Android/Mac 附件不变；以下“未发布/未安装”描述保留为此前开发阶段记录。发布与安装结果集中见 [本版记录](../ACCEPTANCE-2026-11-11-WINDOWS-033.md)。
+
+## 2026-11-11：Windows 对齐 0.1.33（工程与本地包完成，人工待验）
+
+用户确认按 Windows 对齐新版继续。基线 `1c58c08` / `0.1.33+34`，已从 `cc6af86` 快进同步；原有未跟踪 FOLLOWUP 验收记录保留。
+
+目标：让 Windows 本地构建包含 0.1.32 输入法空格修复与 0.1.33 推荐供给、兴趣轮换、本地反馈、不感兴趣/撤销、清除推荐偏好及单行横滑标签。现有共享 DesktopWorkspace 已接入这些能力，优先验证真实缺口，不复制桌面业务或改变已确认交互。
+
+兼容与范围：沿用共享 MVC、现有依赖和数据库；保留 Ctrl/Command 差异、托盘初始化修复、封面缓存及用户歌单/下载/凭据。本轮不提交、推送、发布或自动覆盖用户安装；公开 Windows 下载仍为 0.1.31。
+
+任务与验收：
+- [x] N01：核对仓库及 Git 元数据所有权、远端、分支与工作区，快进拉取最新 main。
+- [x] N02：验证 Windows 推荐标签、反馈屏蔽/撤销、偏好清除取消/确认、输入焦点空格与非输入播放快捷键；共享功能已完整接入，无须改动生产业务代码。
+- [x] N03：执行 `tool/run_acceptance.py`，记录静态分析、离线测试、资源/打包校验与源码指纹；Windows 原生回归独立记录。
+- [x] N04：顺序构建完整 Windows Release，生成版本一致的本地安装包；独立 AppId 验证首次/覆盖安装、占用拒绝、卸载保留资料及载荷摘要。
+- [x] N05：同步本轮实际证据与交付说明。原生输入法候选确认、真实账号、实际听感及未执行的人工路径单列 NOT RUN，不以模拟输入或构建代替。
+
+验证记录：
+- PowerShell 7.6.4；Flutter 3.47.7 / Dart 3.13.5；Visual Studio Windows 工具链可用。Android SDK 不在当前主机，本轮不变更 Android 导航，也不宣称完成 Android 原生验收。
+- 已核对新版 shared DesktopWorkspace、MacSettingsPanel 和 SearchDiscovery：Windows 路由使用相同功能实现。新增功能不需要另建 Windows 实现，待专项验证。
+- 首次工程门禁的图标目录检查 FAIL：上游 registry 含未入库的本地设计稿引用。按仓库实际文件重新生成后 PASS；79 个登记、运行时图形、字体、应用调用位置保持一致，差异仅为 designUses。首次失败报告保存在 `artifacts/windows-033/baseline-report.json`。
+- 首轮完整工程门禁 PASS：338 项离线测试通过、3 项按配置跳过。新增 `windows_discovery_feedback_test.dart`，通过正式 Windows 路由验证 800×600 / 1280×800 下标签同排、横滑不加载纵向页、屏蔽/撤销、偏好清除取消/确认及喜欢/历史/当前曲目保留；与已有两端文本输入回归合计 4 项 PASS。
+- Windows 原生 `windows_desktop_test.dart` PASS：14 个功能场景（Flutter 输出含 tearDownAll 为 15），覆盖封面、两种窗口大小的新增反馈交互、托盘隐藏/恢复、隔离凭据和推荐布局。另一个原生缓存场景 PASS：流播放、停服后缓存解码及转存下载可播。日志 `artifacts/windows-033/native.log`、`native-cache.log`；原生截图已检查并存为 `native-screenshots/800.png`、`1280.png`，旧图单独保留。
+- 原生 driver 收到成功结果且进程退出码 0；日志仍有既有 integration_test 插件提示和 libmpv `osc` / file cache 警告，未隐藏或将其称为零警告。缓存解码以位置前进断言验证，不代表物理听感。
+- PowerShell 入口的短参数 `-d` 会与通用参数发生绑定歧义；本次原生命令使用 `--device-id=windows` 后正常运行。首次未选择设备的日志保留为 `native-device-argument.log`，不算测试失败或通过。
+- 最终工程验收 PASS：340 项离线测试通过、3 项按配置跳过；analyze、图标目录、离线依赖、6 项打包测试及源码稳定性通过。指纹 `3e4c30821b9e9fadd754641f217e13b740bf3f5f2f3e3cd5d749a9931e0f24f0`；报告及日志归档于 `artifacts/windows-033/engineering/`。
+- Release 清理后顺序构建 PASS（122.0 秒），版本 `0.1.33+34`；第三方 CMake CMP0175 开发警告保留。正式与独立测试安装包的 41 项载荷路径/摘要完全一致，包含 Flutter、libmpv、SQLite、插件、官方 VC++ 运行库、资源与许可证。
+- 独立 AppId 安装回归全部 PASS：首次安装、覆盖安装、41 文件摘要、版本/快捷方式登记、占用阻止（退出码 7）、卸载及额外用户文件保留。日志与清单位于 `artifacts/windows-033/installer-test/`；不使用真实安装目录执行自动卸载测试。
+- 正式本地包 `tingyu-0.1.33-windows-x64-setup.exe`：18,765,211 字节，SHA-256 `4b3f6bd0df49da08ca7f889cd8cebd010dd9a67ec1f9fa73c398e6c2f3287ef0`。为未商业签名、未发布的人工验收候选；不称为全场景已验收发行版。
+- 从本轮完整载荷目录启动成品，进程响应正常，Flutter、SQLite、libmpv、凭据插件和 VC++ 模块均从该目录加载；证据 `production-launch.json`。CUA 首次 `FrameArrived timed out: timed out waiting on channel`，重新选择/绑定并激活窗口后仍为 `window capture timed out: timed out waiting on channel`，停止界面输入。成品窗口视觉、真实输入法选词、真实账号和物理听感仍 NOT RUN；进程及模块信息不代替这些检查。
+- 未覆盖当前用户安装（实读仍为 `0.1.30+31`）；本轮预览进程从独立载荷目录运行。安装候选和交付说明已复制至当前聊天 outputs，复制后摘要一致。无提交、推送或公开发布；保留用户原有 FOLLOWUP 文件。
+
 ## 2026-11-07：发布时整合 0.1.31
 
 用户完成核心实机检查后明确要求发布。远端在此期间新增 `f2ec848` / 0.1.31，故保留本轮所有修复并正常整合远端，重新构建 Windows 0.1.31+32，向现有同版本 Release 补入安装 EXE。源码以 `v0.1.31-windows` 单独追溯，原 Mac/Android 附件与 `v0.1.31` 标签保持。两套封面修复分别保护推荐卡片状态和 CDN 等价图片缓存；针对性 17 项与 Windows 原生 12 项 PASS。工程、载荷与发布证据统一维护在 [0.1.31 Windows 验收记录](../ACCEPTANCE-2026-11-07-WINDOWS-031.md)。此前用户实机确认属于本轮 0.1.30 修复包，不冒称合并后的最终包已完整重走人工路径。

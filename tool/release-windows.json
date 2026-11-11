@@ -1,37 +1,25 @@
 {
-  "bytes": 18747197,
-  "limitations": [
-    "真实账号重新登录/有效性尚未专项验收",
-    "未逐项验收全部鼠标键盘、蓝牙等系统场景",
-    "用户核心实机确认来自整合前的本轮 Windows 0.1.30 修复包；最终 0.1.31 使用独立工程、原生和安装回归"
-  ],
-  "sha256": "51c6abfa3bca315361db3a7f45ca4d2cb81f93a01cbd35fea995b1e558fb0c25",
-  "filename": "tingyu-0.1.31-windows-x64-setup.exe",
-  "version": "0.1.31+32",
-  "nativeChecks": [
-    "Windows 原生 12 项 PASS：卡片稳定性、CDN 等价图片逐帧保留、托盘初始化/隐藏/恢复、隔离凭据和推荐布局"
-  ],
-  "sourceSha256": "5528282315421cb43209e381b6e7f452265faed6012951bddb3f23acf233de6d",
-  "originalTagCommit": "f2ec84866772ede4e5e976160b1fb5df893418f0",
+  "filename": "tingyu-0.1.33-windows-x64-setup.exe",
+  "version": "0.1.33+34",
+  "bytes": 18765211,
+  "sha256": "4b3f6bd0df49da08ca7f889cd8cebd010dd9a67ec1f9fa73c398e6c2f3287ef0",
+  "sourceSha256": "3e4c30821b9e9fadd754641f217e13b740bf3f5f2f3e3cd5d749a9931e0f24f0",
+  "baseCommit": "1c58c08d87ca22ac7b23ee12b4eb8fdd47e2b2d5",
+  "releaseTag": "v0.1.33",
+  "sourceTag": "v0.1.33-windows",
   "signing": "未商业签名的开发版",
-  "source": "Windows 补充源码标签 v0.1.31-windows；Mac/Android 保留原标签",
-  "releaseTag": "v0.1.31",
-  "previousPortableSha256": "371a07efca306fa463b2b00b04c3ece45a3977e85139bb1e24616cb86791f9c9",
-  "installerValidation": [
-    "fresh install PASS",
-    "same-directory upgrade PASS",
-    "locked executable rejected with exit 7 PASS",
-    "41 installed hashes PASS",
-    "shortcuts and uninstall registration PASS",
-    "uninstall preserving user file PASS"
-  ],
-  "installerSourceSha256": "5528282315421cb43209e381b6e7f452265faed6012951bddb3f23acf233de6d",
-  "sourceTag": "v0.1.31-windows",
-  "acceptance": "docs/ACCEPTANCE-2026-11-07-WINDOWS-031.md",
+  "acceptance": "docs/ACCEPTANCE-2026-11-11-WINDOWS-033.md",
   "verification": {
-    "offlineTests": 321,
-    "packagingTests": 6,
+    "windowsNativeScenarios": 14,
+    "offlineTests": 340,
     "skipped": 3,
-    "windowsNativeTests": 12
-  }
+    "payloadFiles": 41,
+    "windowsCacheScenarios": 1,
+    "packagingTests": 6
+  },
+  "limitations": [
+    "真实输入法选词、真实账号及物理听感本轮未专项验收",
+    "成品窗口截图工具超时，进程和原生夹具不代替完整人工验收",
+    "完整系统媒体键与鼠标键盘组合未逐项复验"
+  ]
 }

@@ -72,6 +72,12 @@ python -X utf8 tool/run_acceptance.py
 python -X utf8 tool/package_desktop.py windows-x64
 ```
 
+Windows 原生专项使用长参数指定设备，避免 PowerShell 将 `-d` 绑定为自身通用参数：
+
+```powershell
+pwsh -NoProfile -File tool/flutterw.ps1 drive --no-pub --driver=test_driver/integration_driver.dart --target=integration_test/windows_desktop_test.dart --device-id=windows
+```
+
 `flutterw.ps1` 通过 SDK 自带 Dart snapshot 运行 Flutter CLI；不会改动全局 PATH。Flutter/MSBuild 原生构建仍使用其官方内部构建工具。SDK、依赖缓存和编译产物不纳入 Git。
 
 Windows C++ 工具链还需 `Microsoft.VisualStudio.Component.VC.ATL`（安全凭据插件使用 ATL）。如果首次 `pub get` 已下载完成，但提示符号链接权限不足，可执行 `pwsh -NoProfile -File tool/prepare_windows_plugins.ps1` 后重新运行；该工具只在项目生成目录建立指向已解析依赖的目录联接，不调整系统开发者模式或安全设置。依赖变化后需再次核对。
