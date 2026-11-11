@@ -107,7 +107,7 @@ void main() {
           bar,
         );
         expect(tester.takeException(), isNull);
-        if (capture && theme == 'bili') {
+        if (capture) {
           final boundary = tester.renderObject<RenderRepaintBoundary>(
             find.byKey(const ValueKey('windows-discovery-capture')),
           );
@@ -120,7 +120,7 @@ void main() {
               'artifacts/windows-discovery',
             ).create(recursive: true);
             await File(
-              'artifacts/windows-discovery/${size.width.toInt()}.png',
+              'artifacts/windows-discovery/$theme-${size.width.toInt()}.png',
             ).writeAsBytes(bytes!.buffer.asUint8List());
             image.dispose();
           });

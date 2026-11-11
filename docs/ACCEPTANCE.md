@@ -319,7 +319,8 @@ Mac 待播入口在 800/1024/1280 宽度均使用限宽对话框与 × 关闭；
 
 以 [搜索推荐 Spec](specs/search-discovery.md) 的三阶段方案及验证记录为准。候选供给需覆盖同 UP 主溢出、全过滤、分页失败与兴趣变化时的迟到请求；曝光仅计实际可见内容，重启保留且按容量/期限裁剪；显式屏蔽、撤销和清除必须验证保存失败与并发顺序。实际收听与跳过区分暂停/缓冲/拖动/自然结束/定时停止。手机标签在四主题、小屏与大字下单行可滑到所有项；原生手势和组件矩阵分别记录，真实推荐听感不以单元测试代替。
 
-### 手机长按与 Mac 右键菜单
+### 手机长按与桌面右键菜单
 - 精选卡片不显示封面三点，长按封面/标题打开推荐菜单；列表长按与行尾更多打开相同菜单，仅推荐上下文提供不感兴趣。
-- 长按松手不播放；滑动不弹菜单；多选不受影响；Mac 精选卡片右键菜单且没有三点覆盖；Mac 歌曲行右键与 Shift+F10 / 菜单键不播放，列表行尾入口保留，Windows 卡片入口不变。
-- 回归：`test/song_long_press_test.dart`、`test/discovery_feedback_ui_test.dart`、独立 Android `integration_test/discovery_test.dart`；验证记录见 `docs/specs/search-discovery.md`。
+- 长按松手不播放；滑动不弹菜单；多选不受影响；Mac/Windows 精选卡片右键菜单且没有三点覆盖；桌面歌曲行右键与 Shift+F10 / 菜单键不播放，列表行尾入口保留。
+- 实际桌面待播清单右键显示既有内联操作，重复右键保持打开，不切歌或改变播放状态。
+- 回归：`test/song_long_press_test.dart`、`test/discovery_feedback_ui_test.dart`、`test/windows_discovery_feedback_test.dart`、独立 Android/Windows `integration_test/discovery_test.dart`；验证记录见 `docs/specs/search-discovery.md` 与 `docs/specs/windows-desktop-parity.md`。Windows 0.1.34 发布及安装证据见 `docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md`，公开下载按 README。

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/main.dart';
 import 'package:tingyu/models/music.dart';
 import 'package:tingyu/ui/app.dart';
+import 'package:tingyu/ui/theme.dart';
 import 'support/fakes.dart';
 
 void main() {
@@ -76,8 +79,40 @@ void main() {
       await tester.pumpAndSettle();
       expect(f.controller.discovery.tag, '纯音乐');
       final track = f.controller.discovery.tracks.first;
-      await tester.tap(find.byKey(ValueKey('推荐歌曲操作${track.title}')));
+      expect(find.byKey(ValueKey('推荐歌曲操作${track.title}')), findsNothing);
+      final card = find.byKey(ValueKey('discovery-play-${track.id}'));
+      await tester.tap(card, buttons: kSecondaryMouseButton);
       await tester.pumpAndSettle();
+      expect(f.controller.current?.id, firstTrack.id);
+      expect(f.controller.playing, isFalse);
+      Navigator.of(tester.element(find.text('不感兴趣'))).pop();
+      await tester.pumpAndSettle();
+      Focus.of(
+        tester.element(
+          find.descendant(of: card, matching: find.byType(Text)).first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('不感兴趣'), findsOneWidget);
+      expect(f.controller.current?.id, firstTrack.id);
+      expect(f.controller.playing, isFalse);
+      Navigator.of(tester.element(find.text('不感兴趣'))).pop();
+      await tester.pumpAndSettle();
+      Focus.of(
+        tester.element(
+          find.descendant(of: card, matching: find.byType(Text)).first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pumpAndSettle();
+      expect(find.text('不感兴趣'), findsOneWidget);
+      expect(f.controller.current?.id, firstTrack.id);
+      expect(f.controller.playing, isFalse);
       await tester.runAsync(() async {
         await tester.tap(find.text('不感兴趣'));
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -124,6 +159,53 @@ void main() {
       expect(f.controller.discoveryPreferences.behavior, isEmpty);
       expect(f.controller.likes, likes);
       expect(f.controller.history, history);
+      expect(f.controller.current?.id, firstTrack.id);
+      expect(f.controller.playing, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
+  for (final windows in [false, true]) {
+    testWidgets('desktop queue context preserves playback windows=$windows', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final f = (await tester.runAsync(TestLibrary.create))!;
+      final router = createRouter(windows: windows, macOS: !windows);
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        router.dispose();
+        await tester.runAsync(() => f.close(disposeController: false));
+      });
+      await tester.runAsync(() async {
+        await f.controller.play(firstTrack);
+        await f.controller.toggle();
+        await f.controller.enqueue(secondTrack);
+      });
+      final queue = List<String>.of(f.controller.queue);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [libraryProvider.overrideWith((_) => f.controller)],
+          child: TingyuApp(router: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('待播清单')));
+      await tester.pumpAndSettle();
+      final row = find.byWidgetPredicate(
+        (widget) =>
+            widget is Pressable && widget.label == '播放 ${secondTrack.title}',
+      );
+      await tester.tap(row, buttons: kSecondaryMouseButton);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('从队列移除')), findsOneWidget);
+      expect(find.byType(SimpleDialog), findsNothing);
+      await tester.tap(row, buttons: kSecondaryMouseButton);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('从队列移除')), findsOneWidget);
+      expect(f.controller.queue, queue);
       expect(f.controller.current?.id, firstTrack.id);
       expect(f.controller.playing, isFalse);
       expect(tester.takeException(), isNull);

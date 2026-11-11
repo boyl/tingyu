@@ -24,30 +24,30 @@
 <p><img src="docs/screenshots/2026-11-11-context/mac-search.png" alt="tingyu Mac 搜索" width="720"></p>
 <p><img src="docs/screenshots/2026-10-25-cache/mac-storage.png" alt="tingyu Mac 存储设置" width="720"></p>
 
-Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 Mac 搜索截图对应 0.1.34，来源与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)。其他 Android 截图来自 0.1.23，其他 Mac 截图为 0.1.27–0.1.28 组件夹具，桌面边界见[开发说明](docs/DESKTOP.md)。
+Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 Mac 搜索截图对应 0.1.34，来源与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 0.1.34 的原生截图与验证见[Windows 记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。其他 Android 截图来自 0.1.23，其他 Mac 截图为 0.1.27–0.1.28 组件夹具，桌面边界见[开发说明](docs/DESKTOP.md)。
 
 ## 下载与安装
 
-Android 与 Mac 最新版本为 **0.1.34**；Windows 继续提供 **0.1.33**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android、Mac 与 Windows 最新版本均为 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
 | Android · arm64-v8a · 0.1.34 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-android-arm64-v8a-release.apk) |
 | macOS 12+ · 0.1.34 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-macos-release.dmg) |
-| Windows 10/11 · x64 · 0.1.33 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.33/tingyu-0.1.33-windows-x64-setup.exe) |
+| Windows 10/11 · x64 · 0.1.34 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-windows-x64-setup.exe) |
 
-Android 精选卡片改为长按、Mac 改为右键打开操作菜单，移除封面三点覆盖；歌曲列表沿用相同操作，并保留行尾更多入口。手机队列通过右侧拖动柄排序。
+Android 精选卡片改为长按、Mac/Windows 改为右键打开操作菜单，移除封面三点覆盖；歌曲列表沿用相同操作，并保留行尾更多入口。桌面待播清单右键显示操作，手机队列通过右侧拖动柄排序。
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Android 与 Mac 0.1.34 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-033.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.34 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
-Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.33 同步新版推荐与输入法空格修复，保留封面及托盘修复；安装包未进行商业代码签名，真实输入法选词和本轮完整人工验收边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-033.md)。
+Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.34 补齐右键菜单和键盘菜单入口，保留新版推荐、输入法空格及封面/托盘修复；安装包未进行商业代码签名，真实输入法选词和本轮完整人工验收边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。
 
 ## 主要功能
 
-- **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放；三端搜索页提供精选横滑、下滑自动加载的推荐列表、换一批和单行横滑探索标签，结合喜欢与近期收听轮换兴趣；支持“不感兴趣”、撤销和清除本地推荐偏好；Android 长按、Mac 右键打开歌曲操作，保留「前往哔哩哔哩」。
+- **搜索与收听**：搜索歌曲、粘贴 BV 号或 B 站链接，支持分 P 和后台播放；三端搜索页提供精选横滑、下滑自动加载的推荐列表、换一批和单行横滑探索标签，结合喜欢与近期收听轮换兴趣；支持“不感兴趣”、撤销和清除本地推荐偏好；Android 长按、Mac/Windows 右键打开歌曲操作，保留「前往哔哩哔哩」。
 - **整理音乐**：带封面的全部歌单列表、本地歌单、喜欢、播放队列、排序与多选；支持打开 B 站确认登录与二维码备用；登录后可导入收藏夹。
 - **离线播放**：下载音频及可用的封面、歌词，支持导出 M4A。
 - **自动缓存**：默认开启，最多 2 GB，优先淘汰较早使用的缓存；关闭后保留已有缓存。下载复用匹配音质的完整缓存或同一活动传输，缓存与下载分开保存。

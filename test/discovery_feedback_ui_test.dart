@@ -91,14 +91,12 @@ void main() {
           await tester.longPress(
             find.byKey(const ValueKey('discovery-play-BV1:0')),
           );
-        } else if (platform == TargetPlatform.macOS) {
+        } else {
           expect(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')), findsNothing);
           await tester.tap(
             find.byKey(const ValueKey('discovery-play-BV1:0')),
             buttons: kSecondaryMouseButton,
           );
-        } else {
-          await tester.tap(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')));
         }
         expect(f.controller.current, isNull);
         await tester.pumpAndSettle();

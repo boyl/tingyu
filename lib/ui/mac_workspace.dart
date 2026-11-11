@@ -1224,6 +1224,8 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
             Expanded(
               child: Pressable(
                 label: '${current ? '当前歌曲' : '播放'} ${track.title}',
+                onSecondaryPressed: () =>
+                    setState(() => queueActions = track.id),
                 selected: current,
                 selectionFill: false,
                 padding: const EdgeInsets.symmetric(

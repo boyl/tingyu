@@ -92,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
     if (Platform.isAndroid) {
       await tester.longPress(card);
-    } else if (Platform.isMacOS) {
+    } else if (Platform.isMacOS || Platform.isWindows) {
       await tester.tap(card, buttons: kSecondaryMouseButton);
     } else {
       await tester.tap(find.byKey(ValueKey('推荐歌曲操作${track.title}')));

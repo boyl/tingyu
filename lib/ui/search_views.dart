@@ -352,32 +352,6 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
                                         ],
                                       ),
                                     ),
-                                    if (!mobileSongGestures(context) &&
-                                        Theme.of(context).platform !=
-                                            TargetPlatform.macOS)
-                                      Positioned(
-                                        top: 0,
-                                        right: TingyuTokens.space / 2,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: t.surface,
-                                            borderRadius: BorderRadius.circular(
-                                              TingyuTokens.radius,
-                                            ),
-                                          ),
-                                          child: action(
-                                            Icons.more_horiz,
-                                            '推荐歌曲操作${track.title}',
-                                            () => showTrackActions(
-                                              context,
-                                              widget.p,
-                                              track,
-                                              null,
-                                              discovery: true,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                   ],
                                 ),
                                 Row(

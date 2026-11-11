@@ -139,7 +139,11 @@ void main() {
     });
   }
 
-  for (final platform in [TargetPlatform.android, TargetPlatform.macOS]) {
+  for (final platform in [
+    TargetPlatform.android,
+    TargetPlatform.macOS,
+    TargetPlatform.windows,
+  ]) {
     for (final discovery in [false, true]) {
       testWidgets(
         'shared row long press uses existing menu discovery=$discovery $platform',
@@ -264,37 +268,43 @@ void main() {
       );
     }
   }
-  testWidgets('selection rows preserve selection without action menu', (
-    tester,
-  ) async {
-    final f = (await tester.runAsync(TestLibrary.create))!;
-    var selections = 0;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox());
-      await tester.runAsync(() => f.close(disposeController: false));
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [libraryProvider.overrideWith((_) => f.controller)],
-        child: MaterialApp(
-          theme: tingyuTheme('bili'),
-          home: Scaffold(
-            body: TrackRow(
-              firstTrack,
-              selecting: true,
-              onSelect: () {
-                selections++;
-              },
+  for (final platform in [TargetPlatform.android, TargetPlatform.windows]) {
+    testWidgets(
+      'selection rows preserve selection without action menu $platform',
+      (tester) async {
+        final f = (await tester.runAsync(TestLibrary.create))!;
+        var selections = 0;
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => f.close(disposeController: false));
+        });
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [libraryProvider.overrideWith((_) => f.controller)],
+            child: MaterialApp(
+              theme: tingyuTheme('bili').copyWith(platform: platform),
+              home: Scaffold(
+                body: TrackRow(
+                  firstTrack,
+                  selecting: true,
+                  onSelect: () {
+                    selections++;
+                  },
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+        final row = find.byKey(ValueKey('select-${firstTrack.id}'));
+        expect(tester.widget<Pressable>(row).onLongPress, isNull);
+        expect(tester.widget<Pressable>(row).onSecondaryPressed, isNull);
+        await tester.tap(row, buttons: kSecondaryMouseButton);
+        expect(selections, 0);
+        await tester.tap(row);
+        expect(selections, 1);
+        expect(find.text('下一首播放'), findsNothing);
+        expect(f.controller.current, isNull);
+      },
     );
-    final row = find.byKey(ValueKey('select-${firstTrack.id}'));
-    expect(tester.widget<Pressable>(row).onLongPress, isNull);
-    await tester.tap(row);
-    expect(selections, 1);
-    expect(find.text('下一首播放'), findsNothing);
-    expect(f.controller.current, isNull);
-  });
+  }
 }
