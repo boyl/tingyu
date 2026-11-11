@@ -28,19 +28,19 @@ Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 M
 
 ## 下载与安装
 
-Android、Mac 与 Windows 最新版本均为 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android 与 Mac 最新版本为 **0.1.35**；Windows 继续提供 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a · 0.1.34 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-android-arm64-v8a-release.apk) |
-| macOS 12+ · 0.1.34 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-macos-release.dmg) |
+| Android · arm64-v8a · 0.1.35 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.35/tingyu-0.1.35-android-arm64-v8a-release.apk) |
+| macOS 12+ · 0.1.35 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.35/tingyu-0.1.35-macos-release.dmg) |
 | Windows 10/11 · x64 · 0.1.34 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-windows-x64-setup.exe) |
 
-Android 精选卡片改为长按、Mac/Windows 改为右键打开操作菜单，移除封面三点覆盖；歌曲列表沿用相同操作，并保留行尾更多入口。桌面待播清单右键显示操作，手机队列通过右侧拖动柄排序。
+0.1.35 修复 Mac 部分推荐歌曲首次播放失败、再次点击才能播放的问题，Android 同步音频流处理修复。界面没有变化，沿用现有截图。
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Android 与 Mac 0.1.34 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.35 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-035.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
 Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.34 补齐右键菜单和键盘菜单入口，保留新版推荐、输入法空格及封面/托盘修复；安装包未进行商业代码签名，真实输入法选词和本轮完整人工验收边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。

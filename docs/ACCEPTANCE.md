@@ -324,3 +324,10 @@ Mac 待播入口在 800/1024/1280 宽度均使用限宽对话框与 × 关闭；
 - 长按松手不播放；滑动不弹菜单；多选不受影响；Mac/Windows 精选卡片右键菜单且没有三点覆盖；桌面歌曲行右键与 Shift+F10 / 菜单键不播放，列表行尾入口保留。
 - 实际桌面待播清单右键显示既有内联操作，重复右键保持打开，不切歌或改变播放状态。
 - 回归：`test/song_long_press_test.dart`、`test/discovery_feedback_ui_test.dart`、`test/windows_discovery_feedback_test.dart`、独立 Android/Windows `integration_test/discovery_test.dart`；验证记录见 `docs/specs/search-discovery.md` 与 `docs/specs/windows-desktop-parity.md`。Windows 0.1.34 发布及安装证据见 `docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md`，公开下载按 README。
+
+### 0.1.35 首次网络播放与音频类型
+
+- B 站 DASH 解析须保留实际选中音频流的 `mimeType`，标准/高音质使用同一类型契约，不按平台添加另一套回退逻辑。
+- 缓存代理遇到 CDN `Content-Type` 缺失或为 `application/octet-stream` 时，使用解析结果的音频类型；已提供具体类型时保留 CDN 值，不一律覆盖为 M4A。
+- 隔离缓存后验证首次网络播放、完整缓存后的再次播放及已有下载播放；Mac 原生解码与 Android 原生回归分别记录，播放器进度推进不代替物理听感。检查失败/重试与取消行为仍遵守 G05/G06/G13。
+- 本轮先整合远端 Windows 0.1.34，再测试共享链路；Windows 源码/自动回归与 Windows 原生验证分开，既有 0.1.34 EXE 不声称包含本轮修复。实际命令、结果、证据和未验项见 [0.1.35 验收记录](ACCEPTANCE-2026-11-11-035.md)。

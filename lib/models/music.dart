@@ -39,8 +39,11 @@ class Track {
 }
 
 class AudioStream {
-  const AudioStream(this.url, this.headers, this.quality);
+  const AudioStream(this.url, this.headers, this.quality, {this.mimeType});
   final String url, quality;
+
+  /// Container MIME reported by the selected source; null means unknown.
+  final String? mimeType;
   final Map<String, String> headers;
 }
 

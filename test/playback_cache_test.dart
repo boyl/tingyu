@@ -14,6 +14,7 @@ void main() {
   late PlaybackCache cache;
   late HttpServer server;
   late AudioStream remote;
+  String? responseContentType;
   int requests = 0;
   setUp(() async {
     root = await Directory.systemTemp.createTemp('tingyu-cache-test-');
@@ -24,6 +25,7 @@ void main() {
     await cache.initialize();
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     requests = 0;
+    responseContentType = 'audio/mp4';
     server.listen((request) async {
       requests++;
       final range = request.headers.value('range');
@@ -36,7 +38,11 @@ void main() {
         request.response.headers.set('content-range', 'bytes $from-$end/8000');
       }
       request.response.contentLength = end - from + 1;
-      request.response.headers.contentType = ContentType('audio', 'mp4');
+      if (responseContentType != null) {
+        request.response.headers.set('content-type', responseContentType!);
+      } else {
+        request.response.headers.removeAll(HttpHeaders.contentTypeHeader);
+      }
       try {
         for (var offset = from; offset <= end; offset += 1000) {
           final count = (end - offset + 1).clamp(0, 1000);
@@ -70,6 +76,53 @@ void main() {
     while (cache.transferring) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
+  }
+
+  for (final scenario in <({String? cdn, String? source, String expected})>[
+    (
+      cdn: 'application/octet-stream',
+      source: 'audio/mp4',
+      expected: 'audio/mp4',
+    ),
+    (
+      cdn: 'application/octet-stream',
+      source: 'audio/webm',
+      expected: 'audio/webm',
+    ),
+    (
+      cdn: 'Application/Octet-Stream; charset=binary',
+      source: 'audio/mp4',
+      expected: 'audio/mp4',
+    ),
+    (
+      cdn: 'audio/webm; codecs=opus',
+      source: 'audio/mp4',
+      expected: 'audio/webm; codecs=opus',
+    ),
+    (cdn: null, source: 'audio/webm', expected: 'audio/webm'),
+    (
+      cdn: 'application/octet-stream',
+      source: null,
+      expected: 'application/octet-stream',
+    ),
+    (cdn: null, source: null, expected: 'application/octet-stream'),
+  ]) {
+    test('缓存 MIME：CDN ${scenario.cdn} / 解析 ${scenario.source}', () async {
+      responseContentType = scenario.cdn;
+      final source = await cache.source(
+        firstTrack,
+        AudioStream(
+          remote.url,
+          remote.headers,
+          remote.quality,
+          mimeType: scenario.source,
+        ),
+        standard: false,
+      );
+      final response = await source.request();
+      await response.stream.drain<void>();
+      expect(response.contentType, scenario.expected);
+    });
   }
 
   test('播放与并发下载共享一次传输，重启复用且不保存签名 URL', () async {
@@ -221,6 +274,13 @@ void main() {
     }
   });
   test('尾部 Range 立即读取且主传输可完整保存', () async {
+    responseContentType = 'application/octet-stream';
+    remote = AudioStream(
+      remote.url,
+      remote.headers,
+      remote.quality,
+      mimeType: 'audio/mp4',
+    );
     await cache.activate(firstTrack);
     final source = await cache.source(firstTrack, remote, standard: false);
     final tail = await source.request(7000, 8000);
@@ -228,6 +288,8 @@ void main() {
       await tail.stream.expand((x) => x).toList(),
       List.generate(1000, (i) => (7000 + i) % 251),
     );
+    expect(tail.contentType, 'audio/mp4');
+    expect(requests, 2);
     while (cache.transferring) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }

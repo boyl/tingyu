@@ -231,7 +231,7 @@ class _CacheTransfer {
   final _headers = Completer<void>();
   Completer<void> _changed = Completer<void>();
   int received = 0, length = 0;
-  String contentType = 'audio/mp4';
+  late String contentType;
   bool finished = false;
   Object? error;
   Future<void>? _running;
@@ -268,7 +268,15 @@ class _CacheTransfer {
         throw const AppFailure('该音频暂不支持缓存');
       }
       await owner.trim();
-      contentType = response.headers.value('content-type') ?? 'audio/mp4';
+      final cdnType = response.headers.value('content-type')?.trim();
+      final mediaType = cdnType?.split(';').first.trim().toLowerCase();
+      // CDN 的通用二进制类型不描述容器；保留解析接口提供的真实类型。
+      contentType =
+          mediaType == null ||
+              mediaType.isEmpty ||
+              mediaType == 'application/octet-stream'
+          ? source.mimeType ?? 'application/octet-stream'
+          : cdnType!;
       output = await temp.open(mode: FileMode.write);
       _headers.complete();
       await for (final chunk in body.stream) {

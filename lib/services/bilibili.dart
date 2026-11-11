@@ -299,10 +299,17 @@ class BilibiliClient {
     if (url is! String || Uri.tryParse(url)?.scheme != 'https') {
       throw const AppFailure('音频地址不完整，请重新解析');
     }
-    return AudioStream(url, {
-      'User-Agent': userAgent,
-      'Referer': 'https://www.bilibili.com/video/${track.bvid}',
-    }, '${((audio['bandwidth'] as num) / 1000).round()} kbps');
+    final rawMimeType = audio['mimeType'];
+    final mimeType = rawMimeType is String ? rawMimeType.trim() : null;
+    return AudioStream(
+      url,
+      {
+        'User-Agent': userAgent,
+        'Referer': 'https://www.bilibili.com/video/${track.bvid}',
+      },
+      '${((audio['bandwidth'] as num) / 1000).round()} kbps',
+      mimeType: mimeType == null || mimeType.isEmpty ? null : mimeType,
+    );
   }
 
   /// Player subtitle tracks are separate from the DASH audio resource.

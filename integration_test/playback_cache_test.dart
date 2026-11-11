@@ -28,16 +28,22 @@ void main() {
       final progress = player.positionStream.firstWhere(
         (position) => position > const Duration(milliseconds: 100),
       );
-      await Future.wait([player.play(), progress]).timeout(
-        const Duration(seconds: 15),
-      );
+      await Future.wait([
+        player.play(),
+        progress,
+      ]).timeout(const Duration(seconds: 15));
     }
+
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final tone = exportTone();
     var requests = 0;
     server.listen((request) async {
       requests++;
-      request.response.headers.contentType = ContentType('audio', 'mp4');
+      // 真实 CDN 可能只返回通用类型，原生播放器必须使用解析出的 MIME。
+      request.response.headers.contentType = ContentType(
+        'application',
+        'octet-stream',
+      );
       request.response.contentLength = tone.length;
       request.response.add(tone);
       await request.response.close();
@@ -55,7 +61,12 @@ void main() {
       await cache.activate(track);
       final source = await cache.source(
         track,
-        AudioStream('http://127.0.0.1:${server.port}/tone', {}, 'high'),
+        AudioStream(
+          'http://127.0.0.1:${server.port}/tone',
+          {},
+          'high',
+          mimeType: 'audio/mp4',
+        ),
         standard: false,
       );
       await player.setAudioSource(source).timeout(const Duration(seconds: 20));
