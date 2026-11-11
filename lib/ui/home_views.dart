@@ -42,6 +42,12 @@ class HomeShelves extends StatelessWidget {
                   child: Pressable(
                     key: ValueKey('continue-${history[i].id}'),
                     label: '继续收听 ${history[i].title}',
+                    onSecondaryPressed: mobileSongGestures(context)
+                        ? null
+                        : () => showTrackActions(context, p, history[i], null),
+                    onLongPress: mobileSongGestures(context)
+                        ? () => showTrackActions(context, p, history[i], null)
+                        : null,
                     padding: EdgeInsets.zero,
                     onPressed: () => p.playFromCollection(
                       history[i],

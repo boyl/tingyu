@@ -1470,6 +1470,13 @@ class _TrackDownloadActionState extends ConsumerState<TrackDownloadAction> {
   }
 }
 
+// Use the platform, not viewport width: resizing a desktop window must not
+// remove its visible menu entry, and Android tablets retain touch gestures.
+bool mobileSongGestures(BuildContext context) =>
+    !PressableStyle.isDesktop(context) &&
+    (Theme.of(context).platform == TargetPlatform.android ||
+        Theme.of(context).platform == TargetPlatform.iOS);
+
 class TrackRow extends ConsumerWidget {
   const TrackRow(
     this.track, {
@@ -1541,6 +1548,24 @@ class TrackRow extends ConsumerWidget {
                     : 'play-${presentationId ?? track.id}',
               ),
               label: selecting ? '选择 ${track.title}' : '播放 ${track.title}',
+              onSecondaryPressed: selecting || mobileSongGestures(context)
+                  ? null
+                  : () => showTrackActions(
+                      context,
+                      p,
+                      track,
+                      playlist,
+                      discovery: discovery,
+                    ),
+              onLongPress: selecting || !mobileSongGestures(context)
+                  ? null
+                  : () => showTrackActions(
+                      context,
+                      p,
+                      track,
+                      playlist,
+                      discovery: discovery,
+                    ),
               selected: selecting && selected,
               selectionFill: false,
               onPressed: selecting
@@ -2922,7 +2947,9 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                         Text('播放队列 · ${p.queue.length} 首'),
                         const SizedBox(height: 4),
                         Text(
-                          '长按歌曲或拖动手柄排序',
+                          mobileSongGestures(context)
+                              ? '拖动手柄排序'
+                              : '长按歌曲或拖动手柄排序',
                           style: TextStyle(fontSize: 11, color: t.muted),
                         ),
                       ],
@@ -3001,6 +3028,7 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                               current = track.id == p.current?.id;
                           return ReorderableDelayedDragStartListener(
                             key: ValueKey('queue-row-${track.id}'),
+                            enabled: !mobileSongGestures(context),
                             index: i,
                             child: ColoredBox(
                               color: current ? t.tint : t.background,
@@ -3025,6 +3053,27 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                                   Expanded(
                                     child: Pressable(
                                       key: ValueKey('queue-track-${track.id}'),
+                                      onSecondaryPressed:
+                                          mobileSongGestures(context)
+                                          ? null
+                                          : () => showQueueTrackActions(
+                                              context,
+                                              p,
+                                              track.id,
+                                            ),
+                                      onLongPress: mobileSongGestures(context)
+                                          ? () async {
+                                              await showQueueTrackActions(
+                                                context,
+                                                p,
+                                                track.id,
+                                              );
+                                              if (mounted &&
+                                                  p.current?.id == track.id) {
+                                                locate(p);
+                                              }
+                                            }
+                                          : null,
                                       label:
                                           '${current ? '当前歌曲，' : ''}${track.title}',
                                       selected: current,
@@ -3119,11 +3168,14 @@ class _QueuePanelState extends ConsumerState<QueuePanel> {
                                       child: SizedBox.square(
                                         key: ValueKey('queue-drag-${track.id}'),
                                         dimension: TingyuTokens.controlSize,
-                                        child: Center(
-                                          child: TingyuIcon(
-                                            Icons.drag_indicator,
-                                            color: t.muted,
-                                            size: 20,
+                                        child: ColoredBox(
+                                          color: Colors.transparent,
+                                          child: Center(
+                                            child: TingyuIcon(
+                                              Icons.drag_indicator,
+                                              color: t.muted,
+                                              size: 20,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -3206,6 +3258,12 @@ class DownloadsPanel extends StatelessWidget {
                       child: Pressable(
                         key: ValueKey('play-downloaded-${d.track.id}'),
                         label: '播放已下载歌曲 ${d.track.title}',
+                        onSecondaryPressed: mobileSongGestures(context)
+                            ? null
+                            : () => showDownloadActions(context, p, d),
+                        onLongPress: mobileSongGestures(context)
+                            ? () => showDownloadActions(context, p, d)
+                            : null,
                         onPressed: d.status == DownloadStatus.completed
                             ? () => p.playDownloaded(d.track)
                             : () => showDownloadActions(context, p, d),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tingyu/main.dart';
@@ -56,44 +57,70 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(exposed, {'BV2'});
   });
-  testWidgets('recommendation menu blocks and undoes without changing likes', (
-    tester,
-  ) async {
-    final f = (await tester.runAsync(TestLibrary.create))!;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox());
-      await tester.runAsync(() => f.close(disposeController: false));
-    });
-    f.api.searchAnswer = (_, _) async => List.generate(16, (i) => t(i + 1));
-    await tester.runAsync(f.controller.discovery.ensureLoaded);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [libraryProvider.overrideWith((_) => f.controller)],
-        child: MaterialApp(
-          theme: tingyuTheme('bili'),
-          home: Scaffold(
-            body: SingleChildScrollView(child: SearchDiscovery(f.controller)),
+  for (final platform in [
+    TargetPlatform.android,
+    TargetPlatform.macOS,
+    TargetPlatform.windows,
+  ]) {
+    testWidgets(
+      'recommendation menu blocks and undoes without changing likes $platform',
+      (tester) async {
+        final f = (await tester.runAsync(TestLibrary.create))!;
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox());
+          await tester.runAsync(() => f.close(disposeController: false));
+        });
+        f.api.searchAnswer = (_, _) async => List.generate(16, (i) => t(i + 1));
+        await tester.runAsync(f.controller.discovery.ensureLoaded);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [libraryProvider.overrideWith((_) => f.controller)],
+            child: MaterialApp(
+              theme: tingyuTheme('bili').copyWith(platform: platform),
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SearchDiscovery(f.controller),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+        await tester.pumpAndSettle();
+        if (platform == TargetPlatform.android) {
+          expect(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')), findsNothing);
+          await tester.longPress(
+            find.byKey(const ValueKey('discovery-play-BV1:0')),
+          );
+        } else if (platform == TargetPlatform.macOS) {
+          expect(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')), findsNothing);
+          await tester.tap(
+            find.byKey(const ValueKey('discovery-play-BV1:0')),
+            buttons: kSecondaryMouseButton,
+          );
+        } else {
+          await tester.tap(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')));
+        }
+        expect(f.controller.current, isNull);
+        await tester.pumpAndSettle();
+        await tester.runAsync(() async {
+          await tester.tap(find.text('不感兴趣'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+        expect(f.controller.discoveryPreferences.blocked, {'BV1'});
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byKey(const ValueKey('discovery-card-BV1:0')),
+          findsNothing,
+        );
+        expect(f.controller.likes, isEmpty);
+        await tester.runAsync(() async {
+          await tester.tap(find.text('撤销不感兴趣'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+        expect(f.controller.discoveryPreferences.blocked, isEmpty);
+      },
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('推荐歌曲操作歌曲名称1')));
-    await tester.pumpAndSettle();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('不感兴趣'));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    });
-    await tester.pumpAndSettle();
-    expect(f.controller.discoveryPreferences.blocked, {'BV1'});
-    expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey('discovery-card-BV1:0')), findsNothing);
-    expect(f.controller.likes, isEmpty);
-    await tester.runAsync(() async {
-      await tester.tap(find.text('撤销不感兴趣'));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    });
-    await tester.pumpAndSettle();
-    expect(f.controller.discoveryPreferences.blocked, isEmpty);
-  });
+  }
 }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import '../models/appearance.dart';
 
 @immutable
@@ -399,12 +401,18 @@ class PressableStyle extends InheritedTheme {
       PressableStyle(desktop: desktop, child: child);
 }
 
+class _PressableContextIntent extends Intent {
+  const _PressableContextIntent();
+}
+
 class Pressable extends StatefulWidget {
   const Pressable({
     super.key,
     required this.child,
     required this.onPressed,
     this.label,
+    this.onLongPress,
+    this.onSecondaryPressed,
     this.selected = false,
     this.selectionFill = true,
     this.dimWhenDisabled = true,
@@ -415,6 +423,8 @@ class Pressable extends StatefulWidget {
   });
   final Widget child;
   final FutureOr<void> Function()? onPressed;
+  final FutureOr<void> Function()? onLongPress;
+  final FutureOr<void> Function()? onSecondaryPressed;
   final String? label;
   final bool selected, selectionFill, dimWhenDisabled;
   final EdgeInsets padding;
@@ -427,9 +437,18 @@ class Pressable extends StatefulWidget {
 
 class _PressableState extends State<Pressable> {
   bool down = false, hover = false, focus = false, pending = false;
-  Future<void> _invoke() async {
-    if (pending || widget.onPressed == null) return;
-    final result = widget.onPressed!();
+  Future<void> _invoke({bool longPress = false, bool secondary = false}) async {
+    final callback = secondary
+        ? widget.onSecondaryPressed
+        : longPress
+        ? widget.onLongPress
+        : widget.onPressed;
+    if (pending || widget.onPressed == null || callback == null) return;
+    if (longPress) {
+      setState(() => down = false);
+      unawaited(HapticFeedback.lightImpact());
+    }
+    final result = callback();
     if (result is Future) {
       if (!mounted) return;
       setState(() => pending = true);
@@ -471,6 +490,15 @@ class _PressableState extends State<Pressable> {
       enabled: widget.onPressed != null && !pending,
       selected: widget.selected,
       label: widget.label,
+      customSemanticsActions:
+          widget.onSecondaryPressed != null &&
+              widget.onPressed != null &&
+              !pending
+          ? {
+              const CustomSemanticsAction(label: '打开操作菜单'): () =>
+                  unawaited(_invoke(secondary: true)),
+            }
+          : null,
       child: FocusableActionDetector(
         enabled: widget.onPressed != null && !pending,
         onShowFocusHighlight: (v) => setState(() => focus = v),
@@ -478,7 +506,22 @@ class _PressableState extends State<Pressable> {
         mouseCursor: widget.onPressed == null
             ? SystemMouseCursors.basic
             : SystemMouseCursors.click,
+        shortcuts: widget.onSecondaryPressed == null
+            ? null
+            : const {
+                SingleActivator(LogicalKeyboardKey.f10, shift: true):
+                    _PressableContextIntent(),
+                SingleActivator(LogicalKeyboardKey.contextMenu):
+                    _PressableContextIntent(),
+              },
         actions: {
+          if (widget.onSecondaryPressed != null)
+            _PressableContextIntent: CallbackAction<_PressableContextIntent>(
+              onInvoke: (_) {
+                unawaited(_invoke(secondary: true));
+                return null;
+              },
+            ),
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
               unawaited(_invoke());
@@ -488,6 +531,16 @@ class _PressableState extends State<Pressable> {
         },
         child: GestureDetector(
           onTap: widget.onPressed == null || pending ? null : _invoke,
+          onSecondaryTap:
+              widget.onPressed == null ||
+                  pending ||
+                  widget.onSecondaryPressed == null
+              ? null
+              : () => _invoke(secondary: true),
+          onLongPress:
+              widget.onPressed == null || pending || widget.onLongPress == null
+              ? null
+              : () => _invoke(longPress: true),
           onTapDown: widget.onPressed == null || pending
               ? null
               : (_) => setState(() => down = true),

@@ -307,6 +307,25 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
                                         'discovery-play-${candidates[index].id}',
                                       ),
                                       label: '播放${track.title}',
+                                      onSecondaryPressed:
+                                          mobileSongGestures(context)
+                                          ? null
+                                          : () => showTrackActions(
+                                              context,
+                                              widget.p,
+                                              track,
+                                              null,
+                                              discovery: true,
+                                            ),
+                                      onLongPress: mobileSongGestures(context)
+                                          ? () => showTrackActions(
+                                              context,
+                                              widget.p,
+                                              track,
+                                              null,
+                                              discovery: true,
+                                            )
+                                          : null,
                                       padding: EdgeInsets.zero,
                                       radius: TingyuTokens.artworkRadius,
                                       onPressed: () => report(
@@ -333,29 +352,32 @@ class _SearchDiscoveryState extends State<SearchDiscovery> {
                                         ],
                                       ),
                                     ),
-                                    Positioned(
-                                      top: 0,
-                                      right: TingyuTokens.space / 2,
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: t.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            TingyuTokens.radius,
+                                    if (!mobileSongGestures(context) &&
+                                        Theme.of(context).platform !=
+                                            TargetPlatform.macOS)
+                                      Positioned(
+                                        top: 0,
+                                        right: TingyuTokens.space / 2,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: t.surface,
+                                            borderRadius: BorderRadius.circular(
+                                              TingyuTokens.radius,
+                                            ),
                                           ),
-                                        ),
-                                        child: action(
-                                          Icons.more_horiz,
-                                          '推荐歌曲操作${track.title}',
-                                          () => showTrackActions(
-                                            context,
-                                            widget.p,
-                                            track,
-                                            null,
-                                            discovery: true,
+                                          child: action(
+                                            Icons.more_horiz,
+                                            '推荐歌曲操作${track.title}',
+                                            () => showTrackActions(
+                                              context,
+                                              widget.p,
+                                              track,
+                                              null,
+                                              discovery: true,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
                                 Row(

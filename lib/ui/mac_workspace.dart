@@ -973,6 +973,8 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                           final track = tracks[i];
                           return Pressable(
                             key: ValueKey('mac-recent-${track.id}'),
+                            onSecondaryPressed: () =>
+                                showTrackActions(context, p, track, null),
                             label: '播放 ${track.title}',
                             padding: EdgeInsets.zero,
                             onPressed: () => p.playFromCollection(

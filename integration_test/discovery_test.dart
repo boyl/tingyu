@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -82,7 +83,21 @@ void main() {
       }
     }
     final track = f.controller.discovery.tracks.first;
-    await tester.tap(find.byKey(ValueKey('推荐歌曲操作${track.title}')));
+    final card = find.byKey(ValueKey('discovery-play-${track.id}'));
+    await tester.drag(card, const Offset(-100, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('不感兴趣'), findsNothing);
+    expect(f.controller.current, isNull);
+    await Scrollable.ensureVisible(tester.element(card), alignment: 0.5);
+    await tester.pumpAndSettle();
+    if (Platform.isAndroid) {
+      await tester.longPress(card);
+    } else if (Platform.isMacOS) {
+      await tester.tap(card, buttons: kSecondaryMouseButton);
+    } else {
+      await tester.tap(find.byKey(ValueKey('推荐歌曲操作${track.title}')));
+    }
+    expect(f.controller.current, isNull);
     await tester.pumpAndSettle();
     await tester.tap(find.text('不感兴趣'));
     await tester.pumpAndSettle();
@@ -100,6 +115,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(f.controller.discovery.tracks.first.bvid, first);
     expect(f.controller.discovery.moreTracks.length, greaterThan(10));
+    final row = find.byType(TrackRow).first;
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    final rowWidget = tester.widget<TrackRow>(row);
+    if (Platform.isAndroid) {
+      await tester.longPress(
+        find.byKey(
+          ValueKey('play-${rowWidget.presentationId ?? rowWidget.track.id}'),
+        ),
+      );
+    } else {
+      await tester.tap(find.byKey(ValueKey('更多 ${rowWidget.track.title}')));
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('不感兴趣'), findsOneWidget);
+    expect(f.controller.current, isNull);
+    Navigator.of(tester.element(find.text('不感兴趣'))).pop();
+    await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
     await f.close(disposeController: false);
   });
