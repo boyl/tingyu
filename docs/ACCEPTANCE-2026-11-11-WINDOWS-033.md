@@ -25,5 +25,11 @@
 
 ## 本机安装与发布回读
 
-- 本机旧版 `0.1.30+31`，升级采用原 AppId/目录，备份旧程序并核对安装前后用户数据摘要；不卸载或清空资料。实际结果待本次执行完成后记录。
-- 发布前快照 `artifacts/windows-033/github-before.json`，原 Android 资产 ID 734527068、Mac 资产 ID 734527069；发布后核对三项资产、正文、标签和远端提交。
+- 本机 `0.1.30+31` → `0.1.33+34` 覆盖安装 PASS，沿用原 AppId、用户 Programs/tingyu 目录、快捷方式与卸载登记；41 个安装文件逐项摘要一致，安装前后 218 个用户数据文件的数量、长度与 SHA-256 一致。旧程序备份于安装目录 `.install-backups/033-20261111T073940Z`，未卸载、清数据或修改凭据。
+- 当时运行的是独立目录中的同版 0.1.33 预览，不占用正式安装文件；核对进程路径和版本后保持预览会话运行，仅更新正式安装目录，未强制结束进程，也未启动第二个访问同一资料库的实例。SQLite 摘要通过共享只读句柄计算，未写入数据库。
+- 安装证据 `artifacts/windows-033/local-install-verification.json` 与 `local-install.log`；安装前后数据摘要仅保留本地，不提交。
+- 发布 PASS：[v0.1.33](https://github.com/boyl/tingyu/releases/tag/v0.1.33) 为非草稿、非预发布，正文与三端 0.1.33 下载表已回读核对。Windows 资产 ID 734603305，18,765,211 字节，服务器 digest 与本地 SHA-256 一致。
+- Windows 源码标签 `v0.1.33-windows` 解引用为 `ade00ed7df286c3ef15f25ab75508d8fd2c546b0`，与本轮正常推送的源码提交一致。原 `v0.1.33` 标签对象 `792d36767daca9d6c1a49ace299ff31f4d46e2f8` 及其源码 `1c58c08d87ca22ac7b23ee12b4eb8fdd47e2b2d5` 保持。
+- 原 Android 资产 ID 734527068、Mac 资产 ID 734527069 的名称、大小、摘要保持。发布前后快照为 `github-before.json`、`github-published.json`；无强推或覆盖历史资产。
+- 从 GitHub 重新下载 Windows EXE，18,765,211 字节及 SHA-256 与本地安装包完全一致；汇总证据 `artifacts/windows-033/final-verification.json`。
+- 发布后的回执提交只更新记录，不改变已验收源码指纹、安装包或 Windows 源码标签。原有未跟踪 FOLLOWUP 文件保留且未纳入提交。
