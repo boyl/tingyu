@@ -24,7 +24,9 @@ void main() {
         ))
         .load();
     final font = await File(
-      '/System/Library/Fonts/STHeiti Light.ttc',
+      Platform.isWindows
+          ? '${Platform.environment['SystemRoot']}/Fonts/msyh.ttc'
+          : '/System/Library/Fonts/STHeiti Light.ttc',
     ).readAsBytes();
     for (final family in ['Roboto', '.SF UI Text', '.SF UI Display']) {
       await (FontLoader(
@@ -160,11 +162,16 @@ void main() {
       }
     },
   );
-  for (final windows in [false, true]) {
+  for (final variant in [
+    (windows: false, size: const Size(1280, 900)),
+    (windows: true, size: const Size(800, 600)),
+    (windows: true, size: const Size(1280, 900)),
+  ]) {
+    final windows = variant.windows;
     testWidgets(
-      '${windows ? 'Windows' : 'Mac'} sidebar and account panel do not treat stored cookies as valid login',
+      '${windows ? 'Windows' : 'Mac'} ${variant.size} sidebar and account panel do not treat stored cookies as valid login',
       (tester) async {
-        tester.view.physicalSize = const Size(1280, 900);
+        tester.view.physicalSize = variant.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
@@ -187,9 +194,24 @@ void main() {
           await tester.pump(const Duration(milliseconds: 400));
           final entry = find.byKey(const ValueKey('账号与收藏夹'));
           expect(
-            find.descendant(of: entry, matching: find.text('已登录')),
+            find.descendant(of: entry, matching: find.text('测试账号')),
             findsNothing,
           );
+          await fixture.controller.refreshProfile();
+          await tester.pump();
+          expect(
+            find.descendant(of: entry, matching: find.text('测试账号')),
+            findsOneWidget,
+          );
+          for (final code in [null, -352, -412]) {
+            fixture.api.profileFailure = AppFailure('暂时不可用', code: code);
+            await fixture.controller.refreshProfile();
+            await tester.pump();
+            expect(
+              find.descendant(of: entry, matching: find.text('测试账号')),
+              findsOneWidget,
+            );
+          }
           fixture.api.profileFailure = const AppFailure(
             '登录已过期，请重新扫码登录',
             code: -101,
@@ -202,7 +224,14 @@ void main() {
           );
           await screenshot(
             tester,
-            windows ? 'windows-sidebar-expired' : 'mac-sidebar-expired',
+            '${windows ? 'windows' : 'mac'}-${variant.size.width.toInt()}-sidebar-expired',
+          );
+          fixture.api.profileFailure = const AppFailure('网络失败');
+          await fixture.controller.refreshProfile();
+          await tester.pump();
+          expect(
+            find.descendant(of: entry, matching: find.text('测试账号')),
+            findsNothing,
           );
           await tester.tap(entry);
           await tester.pump();
@@ -211,7 +240,22 @@ void main() {
           expect(find.text('登录已过期，请重新扫码登录'), findsNothing);
           await screenshot(
             tester,
-            windows ? 'windows-account-expired' : 'mac-account-expired',
+            '${windows ? 'windows' : 'mac'}-${variant.size.width.toInt()}-account-expired',
+          );
+          fixture.api.profileFailure = null;
+          await fixture.controller.refreshProfile();
+          await tester.pump();
+          expect(find.text('登录哔哩哔哩'), findsNothing);
+          expect(
+            find.descendant(of: entry, matching: find.text('测试账号')),
+            findsOneWidget,
+          );
+          await fixture.controller.logout();
+          await tester.pump();
+          expect(find.text('登录哔哩哔哩'), findsOneWidget);
+          expect(
+            find.descendant(of: entry, matching: find.text('测试账号')),
+            findsNothing,
           );
           expect(tester.takeException(), isNull);
         } finally {

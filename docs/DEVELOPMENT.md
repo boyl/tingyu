@@ -78,6 +78,10 @@ Windows 原生专项使用长参数指定设备，避免 PowerShell 将 `-d` 绑
 pwsh -NoProfile -File tool/flutterw.ps1 drive --no-pub --driver=test_driver/integration_driver.dart --target=integration_test/windows_desktop_test.dart --device-id=windows
 ```
 
+账号状态与会话安全存储专项将 target 改为 `integration_test/windows_session_test.dart`：使用独立临时凭据键和本地响应夹具，验证 Windows 实际安全存储先保存续期记录再确认、重新读取及退出清除，并覆盖桌面账号失效和恢复。不会读取正式登录记录，也不证明真实账号已跨天续期。
+
+`test/account_connection_state_test.dart` 的 `--dart-define=CAPTURE_ACCOUNT_STATE=true` 支持本机 Windows/Mac 字体；Windows 账号状态覆盖 800×600 和 1280×900，截图保存在 `artifacts/account-state-038/`。组件截图与原生测试分别记录。
+
 `flutterw.ps1` 通过 SDK 自带 Dart snapshot 运行 Flutter CLI；不会改动全局 PATH。Flutter/MSBuild 原生构建仍使用其官方内部构建工具。SDK、依赖缓存和编译产物不纳入 Git。
 
 Windows C++ 工具链还需 `Microsoft.VisualStudio.Component.VC.ATL`（安全凭据插件使用 ATL）。如果首次 `pub get` 已下载完成，但提示符号链接权限不足，可执行 `pwsh -NoProfile -File tool/prepare_windows_plugins.ps1` 后重新运行；该工具只在项目生成目录建立指向已解析依赖的目录联接，不调整系统开发者模式或安全设置。依赖变化后需再次核对。

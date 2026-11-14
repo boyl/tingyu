@@ -24,26 +24,26 @@
 <p><img src="docs/screenshots/2026-11-11-context/mac-search.png" alt="tingyu Mac 搜索" width="720"></p>
 <p><img src="docs/screenshots/2026-10-25-cache/mac-storage.png" alt="tingyu Mac 存储设置" width="720"></p>
 
-Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 Mac 搜索截图对应 0.1.34，来源与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 0.1.34 的原生截图与验证见[Windows 记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。其他 Android 截图来自 0.1.23，其他 Mac 截图为 0.1.27–0.1.28 组件夹具，桌面边界见[开发说明](docs/DESKTOP.md)。
+Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 Mac 搜索截图对应 0.1.34，来源与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-034.md)；Windows 0.1.38 的原生截图与账号状态验证见[Windows 记录](docs/ACCEPTANCE-2026-11-14-WINDOWS-038.md)。其他 Android 截图来自 0.1.23，其他 Mac 截图为 0.1.27–0.1.28 组件夹具，桌面边界见[开发说明](docs/DESKTOP.md)。
 
 ## 下载与安装
 
-Android 与 Mac 最新版本为 **0.1.38**；Windows 继续提供 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android、Mac 与 Windows 最新版本均为 **0.1.38**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
 | Android · arm64-v8a · 0.1.38 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.38/tingyu-0.1.38-android-arm64-v8a-release.apk) |
 | macOS 12+ · 0.1.38 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.38/tingyu-0.1.38-macos-release.dmg) |
-| Windows 10/11 · x64 · 0.1.34 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-windows-x64-setup.exe) |
+| Windows 10/11 · x64 · 0.1.38 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.38/tingyu-0.1.38-windows-x64-setup.exe) |
 
 0.1.38 修复登录已过期时，设置页和桌面侧栏仍显示已连接的问题；网络失败继续保留账号资料。界面布局没有变化，沿用现有截图。
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Android 与 Mac 0.1.38 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-14-038.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.38 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-14-038.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-14-WINDOWS-038.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
-Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.34 补齐右键菜单和键盘菜单入口，保留新版推荐、输入法空格及封面/托盘修复；安装包未进行商业代码签名，真实输入法选词和本轮完整人工验收边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。
+Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.38 同步首次播放、封面缓存并发清理、登录续期与账号失效状态修复；安装包未进行商业代码签名，真实账号跨天续期等验证边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-14-WINDOWS-038.md)。降级到 0.1.36 或更旧版本时可能需要重新扫码。
 
 ## 主要功能
 
