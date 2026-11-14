@@ -482,7 +482,11 @@ class LibraryController extends ChangeNotifier {
         }),
       );
     });
+    profile = api.cachedProfile;
     if (api.hasSession) unawaited(refreshProfile(silent: true));
+    _sessionTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+      if (api.hasSession) unawaited(refreshProfile(silent: true));
+    });
     notifyListeners();
   }
 
@@ -1587,18 +1591,20 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  int _profileEpoch = 0;
+  Timer? _sessionTimer;
+
   Future<void> refreshProfile({bool silent = false}) async {
+    final epoch = ++_profileEpoch;
     try {
       final found = await api.profile();
-      if (_disposed) return;
+      if (_disposed || epoch != _profileEpoch) return;
       profile = found;
-      if (!silent) error = '';
+      if (!silent) error = api.sessionWarning ?? '';
     } on AppFailure catch (e) {
-      if (_disposed) return;
-      if (!silent) {
-        error = e.message;
-        profile = null;
-      }
+      if (_disposed || epoch != _profileEpoch) return;
+      if (e.code == -101) profile = null;
+      if (!silent || e.code == -101) error = e.message;
     }
     if (!_disposed) notifyListeners();
   }
@@ -1621,6 +1627,7 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _profileEpoch++;
     await api.logout();
     profile = null;
     notifyListeners();
@@ -1634,6 +1641,7 @@ class LibraryController extends ChangeNotifier {
     ++_playEpoch;
     ++_searchEpoch;
     _saveTimer?.cancel();
+    _sessionTimer?.cancel();
     _modeNoticeTimer?.cancel();
     modeNotice.dispose();
     sleepTimer.removeListener(_timerChanged);

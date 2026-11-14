@@ -20,7 +20,7 @@ class LoginAdapter implements HttpClientAdapter {
   ) async => ResponseBody.fromString(
     jsonEncode({
       'code': 0,
-      'data': {'code': code},
+      'data': {'code': code, 'refresh_token': 'refresh-test'},
     }),
     200,
     headers: {
@@ -50,7 +50,11 @@ void main() {
         dio: Dio()..httpClientAdapter = LoginAdapter(code),
       );
       expect(await api.pollQr('session', isCurrent: () => true), code);
-      expect(store.value, code == 0 ? 'SESSDATA=test-session' : isNull);
+      if (code == 0) {
+        expect(jsonDecode(store.value!)['refreshToken'], 'refresh-test');
+      } else {
+        expect(store.value, isNull);
+      }
     }
   });
   test('confirmation without session cookie is rejected', () async {

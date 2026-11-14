@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:pointycastle/export.dart' as pc;
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' as html;
 import '../models/music.dart';
 import 'storage.dart';
+
+part 'bilibili_session.dart';
 
 class WbiSigner {
   static const mixin = [
@@ -117,8 +122,27 @@ class BilibiliClient {
   String _cookie = '', _guestCookie = '';
   DateTime? _wbiAt;
   String _img = '', _sub = '';
+  String _refreshToken = '', _pendingConfirm = '';
+  Map<String, dynamic>? cachedProfile;
+  DateTime? _sessionChecked;
+  int _sessionEpoch = 0;
+  Future<void>? _maintenance;
+  Future<void> _writes = Future.value();
+  String? sessionWarning;
   Future<void> initialize() async {
-    _cookie = await credentials.read() ?? '';
+    final stored = await credentials.read() ?? '';
+    if (stored.startsWith('{')) {
+      final data = jsonDecode(stored) as Map;
+      _cookie = data['cookie'] as String;
+      _refreshToken = data['refreshToken'] as String? ?? '';
+      _pendingConfirm = data['pendingConfirm'] as String? ?? '';
+      cachedProfile = data['profile'] == null
+          ? null
+          : Map<String, dynamic>.from(data['profile']);
+      _sessionChecked = DateTime.tryParse(data['checkedAt'] as String? ?? '');
+    } else {
+      _cookie = stored;
+    }
   }
 
   bool get hasSession => _cookie.isNotEmpty;
@@ -390,6 +414,7 @@ class BilibiliClient {
   }
 
   Future<int> pollQr(String key, {bool Function()? isCurrent}) async {
+    final epoch = _sessionEpoch;
     final r = await http.get(
       'https://passport.bilibili.com/x/passport-login/web/qrcode/poll',
       queryParameters: {'qrcode_key': key},
@@ -397,23 +422,77 @@ class BilibiliClient {
     );
     if (r.data['code'] != 0) throw const AppFailure('扫码状态查询失败，请刷新二维码');
     final data = r.data['data'] as Map, code = data['code'] as int;
-    if (code == 0 && (isCurrent?.call() ?? true)) {
-      final cookies = r.headers['set-cookie'] ?? [];
-      final value = cookies
-          .map((v) => v.split(';').first)
-          .where((v) => !v.startsWith('sid='))
-          .join('; ');
+    if (code == 0 && epoch == _sessionEpoch && (isCurrent?.call() ?? true)) {
+      final value = _accountCookies(r.headers);
       if (!value.contains('SESSDATA=')) throw const AppFailure('未收到登录凭据，请重新扫码');
-      await credentials.write(value);
-      _cookie = value;
+      final token = data['refresh_token'] as String? ?? '';
+      await _serialize(() async {
+        if (epoch != _sessionEpoch || !(isCurrent?.call() ?? true)) return;
+        await credentials.write(_encodeSession(value, token, '', null, null));
+        _sessionEpoch++;
+        _cookie = value;
+        _refreshToken = token;
+        _pendingConfirm = '';
+        cachedProfile = null;
+        _sessionChecked = null;
+      });
     }
     return code;
   }
 
-  Future<Map<String, dynamic>> profile() => _get('/x/web-interface/nav');
+  Future<Map<String, dynamic>> profile() async {
+    final epoch = _sessionEpoch;
+    await _ensureSessionMaintained();
+    if (epoch != _sessionEpoch) throw const AppFailure('账号已切换，请重试');
+    Map<String, dynamic> found;
+    try {
+      found = await _get('/x/web-interface/nav');
+      if (found['isLogin'] == false) {
+        throw const AppFailure('登录已过期，请重新扫码登录', code: -101);
+      }
+    } on AppFailure catch (e) {
+      if (e.code == -101) {
+        await _serialize(() async {
+          if (epoch != _sessionEpoch) return;
+          cachedProfile = null;
+          await credentials.write(
+            _encodeSession(
+              _cookie,
+              _refreshToken,
+              _pendingConfirm,
+              null,
+              _sessionChecked,
+            ),
+          );
+        });
+      }
+      rethrow;
+    }
+    if (epoch != _sessionEpoch) throw const AppFailure('账号已切换，请重试');
+    await _serialize(() async {
+      if (epoch != _sessionEpoch) return;
+      await credentials.write(
+        _encodeSession(
+          _cookie,
+          _refreshToken,
+          _pendingConfirm,
+          found,
+          _sessionChecked,
+        ),
+      );
+      cachedProfile = found;
+    });
+    return found;
+  }
+
   Future<void> logout() async {
-    await credentials.clear();
-    _cookie = '';
+    _sessionEpoch++;
+    await _serialize(() async {
+      await credentials.clear();
+      _cookie = _refreshToken = _pendingConfirm = '';
+      cachedProfile = null;
+      _sessionChecked = null;
+    });
   }
 
   Future<List<Map<String, dynamic>>> folders(int mid) async {

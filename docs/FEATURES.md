@@ -1,5 +1,7 @@
 # 已有功能与行为契约
 
+登录续期专项见 [会话续期规范](specs/session-refresh.md)：新扫码安全保存刷新令牌，按服务端要求续期；断网和风控保留账号资料，明确失效才切换到登录入口。旧登录需重新扫码一次才能启用续期。
+
 基线：0.1.17；下列2026-10-19增量为当前工作区实现，未表示已发布或真机全验。本文记录已经实现的能力及其边界，不代表所有功能均已在物理设备验收。验收定义见 [ACCEPTANCE.md](ACCEPTANCE.md)，视觉基线见 [UI.md](UI.md)，发布见 [RELEASE.md](RELEASE.md)，重构见 [REFACTORING.md](REFACTORING.md)。新增、变更、移除功能时须在同次发布同步更新本文与对应验收，不把规划功能写为已实现。
 
 ## 功能目录
@@ -24,7 +26,7 @@
 | F10 | 下载与离线库 | 串行任务，等待/解析/传输/暂停/失败/完成状态；`.part` 文件校验完整后才改名并可离线播放。暂停可继续，失败可重试，删除文件保留歌曲关系。重启核对文件存在与长度；临时 CID/真实 CID 共用任务状态 | G05/G06/G13；`test/core_test.dart`、`test/download_interaction_test.dart`、`test/download_attachments_test.dart`、Android 交互 |
 | F11 | 下载分页与导出 | 默认已下载，下载任务独立 Tab；分别保留搜索和滚动，任务完成不跳页。已下载按音频完成时间倒序，补资料不改位置。支持补歌词和系统保存 M4A（含可用封面/歌词）；取消系统保存返回原页，不重复导出或重下音频 | G13；`test/media_export_test.dart`、UI、`integration_test/export_test.dart`、`tool/run_android_export_test.py` |
 | F12 | 歌词与字幕 | 自动匹配、手动选择/编辑 LRC、偏移调整、当前句同步定位；取消不保存，晚到响应不覆盖手动结果，切歌不误写。支持 B 站 CC/AI 字幕转换并注明来源，不当作已校对歌词 | G12、V06；`test/lyrics_test.dart`、`test/lyric_panel_test.dart`、`test/subtitles_test.dart`、Android 交互 |
-| F13 | 账号、头像与收藏夹导入 | 扫码登录、刷新二维码、过期/失效恢复、退出；头像加载失败回退默认人像。登录后选择收藏夹导入，未登录/未选择时禁用；长标题列表可独立滚动，导入结果可查看。凭据只在系统安全存储，不能写入日志、SQLite 或音频 CDN 请求头 | G06/G09；`test/account_avatar_test.dart`、`test/interaction_ui_test.dart`、Android 账号夹具；真实登录另验 |
+| F13 | 账号、头像与收藏夹导入 | 扫码登录、刷新二维码、自动续期、过期/失效恢复、退出；断网/风控保留已缓存账号资料，服务端明确失效才切回登录入口。旧登录需重新扫码一次启用续期；头像加载失败回退默认人像。登录后选择收藏夹导入，未登录/未选择时禁用；长标题列表可独立滚动，导入结果可查看。凭据只在系统安全存储，不能写入日志、SQLite 或音频 CDN 请求头 | G06/G09；`test/account_avatar_test.dart`、`test/interaction_ui_test.dart`、Android 账号夹具；真实登录另验 |
 | F14 | 设置与主题 | 独立设置页，账号、收藏夹、四主题预览、标准/高音质偏好、下载占用/管理和关于；设置内无主导航/迷你播放器，后台播放继续，返回恢复来源状态。主题与音质持久化；设置页整页磨玻璃方案已取消 | G02/G04、V01/V04；`test/theme_preference_test.dart`、UI 与 Android 交互 |
 | F15 | 导航、系统栏与无障碍 | 四分类独立保存输入/滚动，切页收键盘；详情固定返回，按钮和系统返回恢复来源；四主分类移除回顶部浮动入口，队列与独立歌单保留原入口。边到边背景，系统栏常显且图标随主题明暗变化；48dp 操作目标、提示/语义、键盘焦点与减少动态 | G02/G03/G04/G10、V08；Android navigation、系统栏/cutout 检查、UI/token 测试 |
 | F16 | Android 图标与平台服务 | 柔角白色细线折带，透明底；legacy/adaptive/monochrome。Android 媒体服务及桌面媒体/窗口边界已接入；桌面关闭隐藏、托盘恢复、退出释放按平台分别验证。Android 只发布 arm64-v8a | G07/G08/D01、V09；图标资源与 APK 校验、`test/desktop_session_test.dart`、对应系统原生验收 |

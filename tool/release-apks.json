@@ -1,6 +1,6 @@
 {
-  "version": "0.1.36+37",
-  "sourceSha256": "ea897d83b65e5b2ed3d1b0630d0b148e7920c328aabbffe264a95335695ed47e",
+  "version": "0.1.37+38",
+  "sourceSha256": "e52ca347f1fcba1f0c670e6dbcbbb042cadd73a116a06487b4a21189ee59459e",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,19 +8,19 @@
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.36-android-arm64-v8a-release.apk",
-      "bytes": 23965703,
-      "sha256": "19e4ac3f0cf211f4919744cb17ee0748951d756cdd1b360e2c9e43b30df9276b",
+      "path": "artifacts/tingyu-0.1.37-android-arm64-v8a-release.apk",
+      "bytes": 24100003,
+      "sha256": "8371803ed04fa5c43036f2a755f441c606a01ab021a14e47ad2363db52d4d39f",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2037"
+      "versionCode": "2038"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/bars-remain-visible.png",
   "limitations": [
     "physical Android lockscreen/Bluetooth/calls/background scenarios pending",
     "screenshot-related audible output on physical Android devices pending",
-    "Windows native and Mac Intel physical checks pending; macOS ARM native artwork rendering passed",
+    "real account refresh and physical Android/Mac checks pending; Windows package is unchanged",
     "physical glass scrolling smoothness pending; software emulator raster overhead remains high"
   ]
 }

@@ -67,7 +67,7 @@ class FixtureApi extends BilibiliClient {
 
   @override
   Future<Map<String, dynamic>> profile() async {
-    if (!loggedIn) throw const AppFailure('登录已过期，请重新扫码');
+    if (!loggedIn) throw const AppFailure('登录已过期，请重新扫码', code: -101);
     return {'mid': 1, 'uname': '测试账号'};
   }
 

@@ -28,19 +28,19 @@ Windows 与 Mac 沿用同一桌面设计，不重复展示截图。Android 与 M
 
 ## 下载与安装
 
-Android 与 Mac 最新版本为 **0.1.36**；Windows 继续提供 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
+Android 与 Mac 最新版本为 **0.1.37**；Windows 继续提供 **0.1.34**。前往 [Releases](https://github.com/boyl/tingyu/releases/latest) 查看更新说明。
 
 | 平台 | 下载 |
 |---|---|
-| Android · arm64-v8a · 0.1.36 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.36/tingyu-0.1.36-android-arm64-v8a-release.apk) |
-| macOS 12+ · 0.1.36 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.36/tingyu-0.1.36-macos-release.dmg) |
+| Android · arm64-v8a · 0.1.37 | [下载 APK](https://github.com/boyl/tingyu/releases/download/v0.1.37/tingyu-0.1.37-android-arm64-v8a-release.apk) |
+| macOS 12+ · 0.1.37 · Apple Silicon / Intel（Intel 真机待验） | [下载开发版 DMG](https://github.com/boyl/tingyu/releases/download/v0.1.37/tingyu-0.1.37-macos-release.dmg) |
 | Windows 10/11 · x64 · 0.1.34 | [下载安装程序 EXE](https://github.com/boyl/tingyu/releases/download/v0.1.34/tingyu-0.1.34-windows-x64-setup.exe) |
 
-0.1.36 修复封面缓存接近容量上限时，多张图片同时加载却长期显示占位的问题。界面布局没有变化，沿用现有截图。
+0.1.37 加入登录自动续期，修复网络失败被显示成退出登录的问题；旧登录需重新扫码一次启用续期。界面布局没有变化，沿用现有截图。
 
 Android 目前仅提供 arm64-v8a 包，使用开发签名。同签名升级可直接覆盖安装，保留歌单与下载，无需卸载或清空数据。
 
-Android 与 Mac 0.1.36 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-11-036.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
+Android 与 Mac 0.1.37 校验与验证范围见[发布记录](docs/ACCEPTANCE-2026-11-14-037.md)；Windows 校验与验证范围见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。Mac 使用 ad-hoc 签名，未经过 Apple 公证，系统可能阻止直接打开；本版不等同于商店正式发行。
 
 
 Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单、可选桌面快捷方式和系统卸载入口。升级前从托盘退出旧版，卸载保留歌单与下载。Windows 0.1.34 补齐右键菜单和键盘菜单入口，保留新版推荐、输入法空格及封面/托盘修复；安装包未进行商业代码签名，真实输入法选词和本轮完整人工验收边界见[Windows 发布记录](docs/ACCEPTANCE-2026-11-11-WINDOWS-034.md)。
@@ -59,7 +59,7 @@ Windows 运行安装 EXE，按向导选择目录并安装；支持开始菜单�
 
 **需要登录吗？** 公开 BV 内容可先尝试匿名播放；收藏夹等账号内容需要登录。搜索、播放与授权也受 B 站接口和风控影响。
 
-**数据保存在哪里？** 歌单、喜欢和下载保存在本机，登录凭据使用系统安全存储。当前不提供跨设备同步。
+**数据保存在哪里？** 歌单、喜欢和下载保存在本机，登录凭据使用系统安全存储。支持自动续期与断网保留账号资料，旧登录需重新扫码一次启用续期；B 站强制失效时仍需重新登录。当前不提供跨设备同步。
 
 **为什么下载没有继续？** 应用进程被系统结束后，下载不会继续。中断任务可重试，目前不支持 HTTP Range 断点续传。
 
