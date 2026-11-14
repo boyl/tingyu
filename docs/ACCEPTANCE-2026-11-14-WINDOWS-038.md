@@ -42,4 +42,8 @@
 
 ## 发布回读
 
-待远端上传后核对分支 SHA、Windows 标签、原标签、三项资产及服务端摘要，并重新下载 Windows EXE 验证。
+- PASS：[v0.1.38](https://github.com/boyl/tingyu/releases/tag/v0.1.38) 非草稿、非预发布，名称、正文和三端下载表与准备文本一致。Windows 资产 ID `747006020`，18,810,022 字节，服务端 digest 与本地 SHA-256 一致。
+- Windows 源码标签 `v0.1.38-windows` 指向 `41431300f30004db94d6090f306ce4b5f38ff54c`；main 发布提交已推送并回读一致。原 v0.1.38 标签对象 `dd169a0b2a86ff24d3a2c2c0d030eb8306dde4b0` 及其源码 `1b300b4a8c30b1e970bbee403cefe08f8c3a3040` 保持。
+- 原 Android 资产 ID `746859906`、Mac 资产 ID `746859897` 的名称、大小、摘要保持。最终三项资产，无重复创建 Release 或覆盖其他平台包；证据 `artifacts/windows-038/release-before.json`、`release-published.json`。
+- 从 GitHub 重新下载 Windows EXE，长度和 SHA-256 再次一致；`final-verification.json` 保存远端分支/标签、原附件、正文及下载校验结果。
+- 发布后回执提交仅更新本记录，不改变已验收源码指纹、安装包和 Windows 源码标签；本机仍未安装。原未跟踪 FOLLOWUP 文件保留。
