@@ -1,6 +1,6 @@
 {
-  "version": "0.1.37+38",
-  "sourceSha256": "e52ca347f1fcba1f0c670e6dbcbbb042cadd73a116a06487b4a21189ee59459e",
+  "version": "0.1.38+39",
+  "sourceSha256": "ddeb1eef340c13add78c76a91763ad45945c6630539a1796d61d630349fd5016",
   "signing": "development/debug key",
   "signerCertificateSha256": "27279eafd4c4ffc5c68b69af7a3adbc4889031b1a7896ac30e18e86b7950c32c",
   "sameDevelopmentSigner": true,
@@ -8,12 +8,12 @@
   "apks": [
     {
       "abi": "arm64-v8a",
-      "path": "artifacts/tingyu-0.1.37-android-arm64-v8a-release.apk",
+      "path": "artifacts/tingyu-0.1.38-android-arm64-v8a-release.apk",
       "bytes": 24100003,
-      "sha256": "8371803ed04fa5c43036f2a755f441c606a01ab021a14e47ad2363db52d4d39f",
+      "sha256": "2e0f305ff98cd036ee0c0b31de675f080b60d42d0152f99990e964f8c05cd759",
       "zipIntegrity": "PASS",
       "exactAbi": "PASS",
-      "versionCode": "2038"
+      "versionCode": "2039"
     }
   ],
   "runtimeEvidence": "artifacts/acceptance/release/fullscreen.json; artifacts/acceptance/release/bars-remain-visible.png",

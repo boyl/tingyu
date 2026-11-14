@@ -1,6 +1,6 @@
 part of 'app.dart';
 
-const tingyuVersion = '0.1.37';
+const tingyuVersion = '0.1.38';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -102,7 +102,7 @@ class SettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    final connected = p.profile != null || p.api.hasSession;
+    final connected = p.profile != null;
     final bytes = p.downloads.tasks
         .where((x) => x.status == DownloadStatus.completed)
         .fold<int>(0, (sum, task) => sum + task.received);

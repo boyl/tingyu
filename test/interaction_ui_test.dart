@@ -945,7 +945,7 @@ void main() {
           of: find.byType(AccountPanel),
           matching: find.text('登录已过期，请重新扫码'),
         ),
-        findsOneWidget,
+        findsNothing,
       );
       await tap(tester, 'account-login');
       await tester.pump(const Duration(seconds: 2));

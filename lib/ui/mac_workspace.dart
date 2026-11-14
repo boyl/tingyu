@@ -686,7 +686,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
     final name = p.profile?['uname']?.toString().trim() ?? '';
     final label = name.isNotEmpty
         ? name
-        : p.api.hasSession
+        : p.profile != null
         ? '已登录'
         : '登录账号';
     return Pressable(

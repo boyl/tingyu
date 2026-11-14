@@ -1603,8 +1603,12 @@ class LibraryController extends ChangeNotifier {
       if (!silent) error = api.sessionWarning ?? '';
     } on AppFailure catch (e) {
       if (_disposed || epoch != _profileEpoch) return;
-      if (e.code == -101) profile = null;
-      if (!silent || e.code == -101) error = e.message;
+      if (e.code == -101) {
+        profile = null;
+        error = '';
+      } else if (!silent) {
+        error = e.message;
+      }
     }
     if (!_disposed) notifyListeners();
   }

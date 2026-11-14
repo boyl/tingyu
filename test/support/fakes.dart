@@ -50,6 +50,7 @@ class FixtureApi extends BilibiliClient {
   int qrCode = 86101, qrRequests = 0;
   bool loggedIn = false;
   AppFailure? qrFailure;
+  AppFailure? profileFailure;
   @override
   bool get hasSession => loggedIn;
   @override
@@ -67,6 +68,7 @@ class FixtureApi extends BilibiliClient {
 
   @override
   Future<Map<String, dynamic>> profile() async {
+    if (profileFailure != null) throw profileFailure!;
     if (!loggedIn) throw const AppFailure('登录已过期，请重新扫码', code: -101);
     return {'mid': 1, 'uname': '测试账号'};
   }
