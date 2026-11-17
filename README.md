@@ -5,6 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/boyl/tingyu?label=Release)](https://github.com/boyl/tingyu/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/boyl/tingyu/total?label=Downloads&color=blue)](https://github.com/boyl/tingyu/releases)
 [![License](https://img.shields.io/github/license/boyl/tingyu?label=License)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/boyl/tingyu?label=Stars)](https://github.com/boyl/tingyu/stargazers)
 
 [下载](#下载与安装) · [界面](#界面预览) · [功能](#主要功能) · [常见问题](#常见问题) · [开发](docs/DEVELOPMENT.md)
 
