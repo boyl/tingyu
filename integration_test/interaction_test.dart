@@ -239,8 +239,6 @@ void main() {
         await tap('更多 ${firstTrack.title}');
         await capture('track-actions-icons');
         await tap('喜欢');
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         await tap('更多 ${firstTrack.title}');
         await tap('加入歌单');
         await tap('新建歌单');
@@ -249,12 +247,8 @@ void main() {
         await waitFor(() => p.playlists.length == 1);
         expect(p.playlists.single.trackIds, [firstTrack.id]);
         await tap('完成');
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         await tap('更多 ${secondTrack.title}');
         await tap('加入播放队列');
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         await tap('播放队列');
         await tap('上移一位');
         expect(p.queue, [secondTrack.id, firstTrack.id]);
@@ -270,8 +264,6 @@ void main() {
         await capture('collection-sort');
         await tap('sort-recent');
         expect(p.collectionSort[p.playlists.single.id], 'recent');
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         await tap('批量选择');
         await tap('select-${firstTrack.id}');
         await capture('collection-selection');
@@ -290,8 +282,6 @@ void main() {
         await settleAnimations();
         await capture('playlist-edit-description');
         await tap('保存');
-        await tester.binding.handlePopRoute();
-        await settleAnimations();
         expect(p.playlists.single.description, '夜晚听的歌');
         await tap('歌单更多');
         await tap('添加歌曲');
@@ -872,8 +862,6 @@ void main() {
               find.text('100%').evaluate().isNotEmpty,
         );
         Navigator.of(tester.element(find.byType(PlayerVolumePanel))).pop();
-        await settleAnimations();
-        await tester.binding.handlePopRoute();
         await settleAnimations();
         p.setSleepTimer(null);
         await tap('player-sleep-timer');

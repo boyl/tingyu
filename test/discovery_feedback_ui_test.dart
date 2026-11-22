@@ -112,10 +112,11 @@ void main() {
           findsNothing,
         );
         expect(f.controller.likes, isEmpty);
-        await tester.runAsync(() async {
-          await tester.tap(find.text('撤销不感兴趣'));
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-        });
+        expect(find.text('下一首播放'), findsNothing);
+        await tester.tap(find.text('撤销'));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
         await tester.pumpAndSettle();
         expect(f.controller.discoveryPreferences.blocked, isEmpty);
       },

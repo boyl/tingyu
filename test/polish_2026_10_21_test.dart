@@ -51,7 +51,7 @@ void main() {
     },
   );
 
-  testWidgets('cancel like keeps the menu even for the last liked track', (
+  testWidgets('cancel like closes the menu and offers undo for the last liked track', (
     tester,
   ) async {
     final f = (await tester.runAsync(() => TestLibrary.create()))!;
@@ -88,10 +88,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(p.likes, isEmpty);
-    expect(find.text('下一首播放'), findsOneWidget);
-    expect(find.byKey(const ValueKey('喜欢')), findsOneWidget);
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
+    expect(find.text('下一首播放'), findsNothing);
     expect(find.text('撤销'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });

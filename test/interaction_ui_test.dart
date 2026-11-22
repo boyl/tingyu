@@ -643,9 +643,7 @@ void main() {
       await tap(tester, '歌曲排序');
       await tap(tester, 'sort-recent');
       expect(p.collectionSort[p.playlists.single.id], 'recent');
-      expect(find.byKey(const ValueKey('sort-recent')), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      expect(find.byKey(const ValueKey('sort-recent')), findsNothing);
       await tap(tester, '批量选择');
       await tap(tester, 'select-${firstTrack.id}');
       expect(find.text('已选 1 首'), findsOneWidget);
@@ -681,13 +679,15 @@ void main() {
       expect(fixture.controller.playlists.length, 1);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '加入歌单');
+      await tap(tester, '返回歌曲操作');
+      await tap(tester, '加入歌单');
       await tap(tester, '晨间');
       expect(fixture.controller.playlists.single.trackIds, [firstTrack.id]);
       await tap(tester, '完成');
-      await tester.binding.handlePopRoute();
-      await settle(tester);
       await tap(tester, '晨间');
       await tap(tester, '歌单更多');
+      await tap(tester, '编辑歌单');
+      await tap(tester, '取消');
       await tap(tester, '编辑歌单');
       await tester.enterText(
         find.byKey(const ValueKey('playlist-name')),
@@ -706,8 +706,6 @@ void main() {
       await tap(tester, '保存');
       expect(fixture.controller.playlists.single.name, '新的歌单');
       expect(fixture.controller.playlists.single.description, '夜晚听的歌');
-      await tester.binding.handlePopRoute();
-      await settle(tester);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '移出歌单');
       await tap(tester, '确认');
@@ -733,25 +731,19 @@ void main() {
       await mount(tester);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '喜欢');
-      expect(find.byKey(const ValueKey('取消喜欢')), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      expect(find.byKey(const ValueKey('取消喜欢')), findsNothing);
       await tap(tester, 'tab-likes');
       expect(fixture.controller.likes, [firstTrack.id]);
       expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsNothing);
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '取消喜欢');
-      expect(find.byKey(const ValueKey('喜欢')), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      expect(find.byKey(const ValueKey('喜欢')), findsNothing);
       expect(find.text('这里还很安静'), findsOneWidget);
       await tap(tester, 'tab-library');
       await tap(tester, 'play-${firstTrack.id}');
       await tap(tester, '更多 ${secondTrack.title}');
       await tap(tester, '加入播放队列');
       expect(find.text('已加入播放队列'), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
       await tap(tester, '播放队列');
       await tap(tester, '上移一位');
       await tester.binding.handlePopRoute();

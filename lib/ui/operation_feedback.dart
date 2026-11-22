@@ -20,7 +20,11 @@ class OperationFeedback extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> run(Future<void> Function() task, String success) async {
+  Future<bool> run(
+    Future<void> Function() task,
+    String success, {
+    VoidCallback? onSuccess,
+  }) async {
     if (busy || _closed) return false;
     busy = true;
     failed = false;
@@ -31,6 +35,7 @@ class OperationFeedback extends ChangeNotifier {
       await task();
       if (!_closed) {
         message = success;
+        onSuccess?.call();
         failed = false;
       }
       return true;
@@ -39,7 +44,7 @@ class OperationFeedback extends ChangeNotifier {
         failed = true;
         message = e is AppFailure ? e.message : '操作未完成，请重试';
         retry = () async {
-          await run(task, success);
+          await run(task, success, onSuccess: onSuccess);
         };
       }
       return false;
@@ -48,6 +53,29 @@ class OperationFeedback extends ChangeNotifier {
       if (!_closed) notifyListeners();
     }
   }
+
+  Future<bool> runAndClose(
+    BuildContext context,
+    Future<void> Function() task,
+    String success, {
+    Future<void> Function()? undo,
+    bool showMessage = true,
+  }) => run(
+    task,
+    success,
+    onSuccess: () {
+      if (!context.mounted || ModalRoute.of(context)?.isCurrent != true) return;
+      final host = Navigator.of(context, rootNavigator: true).context;
+      Navigator.pop(context);
+      if (undo != null) {
+        offerUndo(host, success, undo);
+      } else if (showMessage) {
+        ScaffoldMessenger.maybeOf(host)
+          ?..removeCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(success)));
+      }
+    },
+  );
 
   Widget status(BuildContext context) => SizedBox(
     height: TingyuTokens.controlSize,
@@ -134,7 +162,7 @@ class TrackMenuDownload extends ConsumerWidget {
       selectionFill: false,
       onPressed: done || transferring || feedback.busy
           ? null
-          : () => feedback.run(() async {
+          : () => feedback.runAndClose(context, () async {
               if (task != null) {
                 await p.downloads.retry(task);
               } else {

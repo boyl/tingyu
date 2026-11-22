@@ -1225,28 +1225,32 @@ Future<void> showPlaylistActions(
         children: [
           session.status(ctx),
           labelButton('编辑歌单', () async {
-            await showDialog<void>(
+            final saved = await showDialog<bool>(
               context: ctx,
               builder: (_) => PlaylistEditDialog(
                 p.playlists.where((x) => x.id == list.id).firstOrNull ?? list,
               ),
             );
+            if (saved == true &&
+                ctx.mounted &&
+                ModalRoute.of(ctx)?.isCurrent == true) {
+              Navigator.pop(ctx);
+            }
           }, icon: Icons.edit_outlined),
           labelButton('添加歌曲', () {
             Navigator.pop(ctx);
             context.push('/playlist/${list.id}/add');
           }, icon: Icons.library_add_outlined),
-          labelButton(
-            '下载全部',
-            () => showBatchTransfer(
-              ctx,
+          labelButton('下载全部', () {
+            Navigator.pop(ctx);
+            showBatchTransfer(
+              context,
               p,
               list.trackIds.toList(),
               () {},
               download: true,
-            ),
-            icon: Icons.download_outlined,
-          ),
+            );
+          }, icon: Icons.download_outlined),
           labelButton(
             '删除歌单',
             session.busy
@@ -1686,8 +1690,16 @@ Future<void> showTrackActions(
       context,
       (ctx) {
         if (playlistChild) {
-          return playlistChoices(ctx, p, track, session, backToActions);
+          return playlistChoices(
+            ctx,
+            p,
+            track,
+            session,
+            () => Navigator.pop(ctx),
+            back: backToActions,
+          );
         }
+        final blocked = p.discoveryPreferences.blocked.contains(track.bvid);
         return SimpleDialog(
           title: Text(
             track.title,
@@ -1698,32 +1710,35 @@ Future<void> showTrackActions(
             session.status(ctx),
             if (discovery)
               labelButton(
-                p.discoveryPreferences.blocked.contains(track.bvid)
-                    ? '撤销不感兴趣'
-                    : '不感兴趣',
+                blocked ? '撤销不感兴趣' : '不感兴趣',
                 session.busy
                     ? null
-                    : () => session.run(
-                        () => p.setDiscoveryBlocked(
-                          track.bvid,
-                          !p.discoveryPreferences.blocked.contains(track.bvid),
-                        ),
-                        p.discoveryPreferences.blocked.contains(track.bvid)
-                            ? '已恢复推荐'
-                            : '已设为不感兴趣，可撤销',
+                    : () => session.runAndClose(
+                        ctx,
+                        () => p.setDiscoveryBlocked(track.bvid, !blocked),
+                        blocked ? '已恢复推荐' : '已设为不感兴趣',
+                        undo: blocked
+                            ? null
+                            : () => p.setDiscoveryBlocked(track.bvid, false),
                       ),
               ),
             if (includeVolume)
               labelButton(
                 '播放音量',
-                () => showPlayerVolume(ctx, p),
+                session.busy
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        showPlayerVolume(context, p);
+                      },
                 icon: Icons.volume_up,
               ),
             labelButton(
               '下一首播放',
               session.busy
                   ? null
-                  : () => session.run(
+                  : () => session.runAndClose(
+                      ctx,
                       () => p.enqueue(track, next: true),
                       '已设为下一首',
                     ),
@@ -1733,7 +1748,11 @@ Future<void> showTrackActions(
               '加入播放队列',
               session.busy
                   ? null
-                  : () => session.run(() => p.enqueue(track), '已加入播放队列'),
+                  : () => session.runAndClose(
+                      ctx,
+                      () => p.enqueue(track),
+                      '已加入播放队列',
+                    ),
               icon: Icons.add_to_queue,
             ),
             labelButton(
@@ -1742,12 +1761,17 @@ Future<void> showTrackActions(
                   ? null
                   : () async {
                       final liked = !p.likes.contains(track.id);
-                      await session.run(() async {
-                        await p.setLiked(track, liked);
-                        removedRevision = liked
-                            ? null
-                            : p.likeRevision(track.id);
-                      }, liked ? '已喜欢' : '已取消喜欢');
+                      await session.runAndClose(
+                        ctx,
+                        () async {
+                          await p.setLiked(track, liked);
+                          removedRevision = liked
+                              ? null
+                              : p.likeRevision(track.id);
+                        },
+                        liked ? '已喜欢' : '已取消喜欢',
+                        showMessage: liked,
+                      );
                     },
               icon: p.likes.contains(track.id)
                   ? Icons.favorite
@@ -1797,7 +1821,8 @@ Future<void> showTrackActions(
               '在 B 站打开',
               session.busy
                   ? null
-                  : () => session.run(
+                  : () => session.runAndClose(
+                      ctx,
                       () => BilibiliLinkLauncher().openVideo(track),
                       '已请求打开 B 站',
                     ),
@@ -1833,11 +1858,12 @@ SimpleDialog playlistChoices(
   LibraryController p,
   Track track,
   OperationFeedback session,
-  VoidCallback finish,
-) => SimpleDialog(
+  VoidCallback finish, {
+  VoidCallback? back,
+}) => SimpleDialog(
   title: Row(
     children: [
-      action(Icons.arrow_back, '返回歌曲操作', finish),
+      if (back != null) action(Icons.arrow_back, '返回歌曲操作', back),
       const Expanded(child: Text('添加至歌单')),
     ],
   ),
@@ -1871,7 +1897,7 @@ SimpleDialog playlistChoices(
             },
       icon: Icons.add,
     ),
-    labelButton('完成', finish),
+    labelButton('完成', session.busy ? null : finish),
   ],
 );
 
@@ -3605,7 +3631,7 @@ Future<void> showQueueTrackActions(
             '移至下一首',
             session.busy || i < 0 || id == p.current?.id
                 ? null
-                : () => session.run(() async {
+                : () => session.runAndClose(ctx, () async {
                     final track = p.library[id];
                     if (track == null) throw const AppFailure('歌曲已不存在');
                     await p.enqueue(track, next: true);

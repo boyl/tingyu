@@ -1,11 +1,11 @@
 {
-  "version": "0.1.38+39",
-  "sourceSha256": "ddeb1eef340c13add78c76a91763ad45945c6630539a1796d61d630349fd5016",
+  "version": "0.1.39+40",
+  "sourceSha256": "86d8d709f730dde5fe37e7325a2ac63a4dc0b40188e8f641bde2bfec472165cd",
   "macos": {
-    "path": "artifacts/tingyu-0.1.38-macos-release.dmg",
-    "bytes": 27889970,
-    "sha256": "aab8e35fa974406e20f39b7e989bc284f5a4c4a3894394645a9d8227e21eb30a",
-    "version": "0.1.38",
+    "path": "artifacts/tingyu-0.1.39-macos-release.dmg",
+    "bytes": 27890348,
+    "sha256": "81963c1d0cdaa9720328f7ae298eb3327716ecba60c811a2590ce1b468b9cf4b",
+    "version": "0.1.39",
     "rebuilt": true,
     "architectures": [
       "x86_64",
@@ -23,7 +23,7 @@
     "version": "0.1.38+39",
     "sourceSha256": "ac4e1e221e118aa44cd04d938da24d2839d18af897eb48eb4703df4299948d1c",
     "sourceTag": "v0.1.38-windows",
-    "rebuilt": true,
+    "rebuilt": false,
     "architecture": "x64",
     "signing": "unsigned",
     "payloadFiles": 41,

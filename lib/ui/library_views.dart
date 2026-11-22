@@ -346,9 +346,12 @@ Future<void> showCollectionSort(
       ])
         Pressable(
           key: ValueKey('sort-${option.$1}'),
-          onPressed: () async {
+          onPressed: () => report(ctx, () async {
             await p.setCollectionSort(collectionKey, option.$1);
-          },
+            if (ctx.mounted && ModalRoute.of(ctx)?.isCurrent == true) {
+              Navigator.pop(ctx);
+            }
+          }),
           child: Row(
             children: [
               TingyuIcon(option.$3),
@@ -775,14 +778,18 @@ class _PlaylistEditDialogState extends ConsumerState<PlaylistEditDialog> {
           setState(() => error = '请输入歌单名称');
           return;
         }
-        await ref
-            .read(libraryProvider)
-            .editPlaylist(
-              widget.list,
-              name: name.text,
-              description: description.text,
-            );
-        if (context.mounted) Navigator.pop(context);
+        await report(context, () async {
+          await ref
+              .read(libraryProvider)
+              .editPlaylist(
+                widget.list,
+                name: name.text,
+                description: description.text,
+              );
+          if (context.mounted && ModalRoute.of(context)?.isCurrent == true) {
+            Navigator.pop(context, true);
+          }
+        });
       }),
     ],
   );

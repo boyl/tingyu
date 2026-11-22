@@ -809,8 +809,8 @@
       "codepoint": 57687,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1534",
-        "lib/ui/library_views.dart:433",
+        "lib/ui/app.dart:1538",
+        "lib/ui/library_views.dart:436",
         "lib/ui/preferences_views.dart:563"
       ],
       "designUses": []
@@ -823,8 +823,8 @@
       "codepoint": 57688,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1534",
-        "lib/ui/library_views.dart:433",
+        "lib/ui/app.dart:1538",
+        "lib/ui/library_views.dart:436",
         "lib/ui/preferences_views.dart:563"
       ],
       "designUses": []
@@ -881,7 +881,7 @@
       "codepoint": 61453,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1234"
+        "lib/ui/app.dart:1239"
       ],
       "designUses": []
     },
@@ -893,8 +893,8 @@
       "codepoint": 57912,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1367",
-        "lib/ui/app.dart:1443"
+        "lib/ui/app.dart:1371",
+        "lib/ui/app.dart:1447"
       ],
       "designUses": []
     },
@@ -906,8 +906,8 @@
       "codepoint": 61585,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4170",
-        "lib/ui/app.dart:4450",
+        "lib/ui/app.dart:4196",
+        "lib/ui/app.dart:4476",
         "lib/ui/mac_account_views.dart:289",
         "lib/ui/mac_workspace.dart:668"
       ],
@@ -933,7 +933,7 @@
       "codepoint": 61752,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:3436"
+        "lib/ui/app.dart:3462"
       ],
       "designUses": []
     },
@@ -945,7 +945,7 @@
       "codepoint": 58291,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4355"
+        "lib/ui/app.dart:4381"
       ],
       "designUses": []
     },
@@ -969,7 +969,7 @@
       "codepoint": 58389,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4175",
+        "lib/ui/app.dart:4201",
         "lib/ui/mac_workspace.dart:648",
         "lib/ui/mac_workspace.dart:806",
         "lib/ui/preferences_views.dart:148"
@@ -1008,7 +1008,7 @@
       "codepoint": 983153,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4673"
+        "lib/ui/app.dart:4699"
       ],
       "designUses": []
     },
@@ -1032,7 +1032,7 @@
       "codepoint": 58627,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4472"
+        "lib/ui/app.dart:4498"
       ],
       "designUses": []
     },
@@ -1044,7 +1044,7 @@
       "codepoint": 58628,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:4472"
+        "lib/ui/app.dart:4498"
       ],
       "designUses": []
     },
@@ -1069,7 +1069,7 @@
       "codepoint": 58655,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:2029"
+        "lib/ui/app.dart:2055"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v10/controls.html",
@@ -1092,7 +1092,7 @@
       "codepoint": 58657,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:2027"
+        "lib/ui/app.dart:2053"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html"
@@ -1106,9 +1106,9 @@
       "codepoint": 58710,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1444",
+        "lib/ui/app.dart:1448",
         "lib/ui/library_views.dart:343",
-        "lib/ui/operation_feedback.dart:163",
+        "lib/ui/operation_feedback.dart:191",
         "lib/ui/playback_settings_views.dart:167",
         "lib/ui/playback_settings_views.dart:314",
         "lib/ui/playback_settings_views.dart:579",
@@ -1154,7 +1154,7 @@
       "codepoint": 58785,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:2026"
+        "lib/ui/app.dart:2052"
       ],
       "designUses": [
         "design-review/2026-10-19/layout-v4/controls.html",
@@ -1292,7 +1292,7 @@
       "codepoint": 59077,
       "matchTextDirection": false,
       "uses": [
-        "lib/ui/app.dart:1720",
+        "lib/ui/app.dart:1734",
         "lib/ui/mac_workspace.dart:1864",
         "lib/ui/volume_views.dart:73"
       ],

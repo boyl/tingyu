@@ -121,13 +121,13 @@ void main() {
       expect(f.controller.discoveryPreferences.blocked, contains(track.bvid));
       expect(find.byKey(ValueKey('discovery-card-${track.id}')), findsNothing);
       expect(f.controller.likes, likes);
-      await tester.runAsync(() async {
-        await tester.tap(find.text('撤销不感兴趣'));
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-      });
+      expect(find.text('下一首播放'), findsNothing);
+      await tester.tap(find.text('撤销'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pumpAndSettle();
       expect(f.controller.discoveryPreferences.blocked, isEmpty);
-      Navigator.of(tester.element(find.text('不感兴趣'))).pop();
       await tester.pumpAndSettle();
       await tester.runAsync(
         () => f.controller.setDiscoveryBlocked(track.bvid, true),
