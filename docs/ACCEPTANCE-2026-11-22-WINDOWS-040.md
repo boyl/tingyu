@@ -35,3 +35,11 @@
 真实账号跨天续期、真实输入法选词、屏幕阅读器、物理听感、完整媒体键组合及长期使用未专项验证。工程报告的 `humanHandoffReady` 保持 false；原生夹具和主窗口检查不代表完整人工验收。本轮没有重新运行 Android / macOS 原生验收，没有改动其既有资产或签名。CMake 依赖兼容警告未造成构建失败；Flutter drive 的插件检测提示保留在日志，驱动实际连接并返回全部测试通过。
 
 发布前完成 README、功能/验收/UI 来源、版本记录和清单同步；发布后独立回读三项资产及原标签，并下载 Windows 安装包核对摘要，回读结果另行记录。
+
+## 发布回读（2026-11-22 12:15，北京时间）
+
+- [v0.1.40 Release](https://github.com/boyl/tingyu/releases/tag/v0.1.40) 为非草稿、非预发布，标题、说明与三端下载表符合最终正文；远端 README 与本地一致。
+- Windows 安装程序为 18,811,653 字节，服务端 digest 与重新下载文件 SHA-256 均为 `22343388057538ec947b1b0e11a9e8f289192780eba575dbe7b17ef5324fab4b`。
+- 原 Android/Mac 资产 ID、名称、大小和摘要均未改变，现共三项附件。
+- `v0.1.40` 仍指向 `d4fc1caa51f3f0cc18ccbed08f2d54a7b411cffa`；`v0.1.40-windows` 指向发布记录提交 `e5fce1f04cf53ff25a7a546d1cb2af30aca8a789`。此次回读记录是后续纯文档提交，不移动成品标签。
+- 完整远端快照及下载核验结果保留于本地 `artifacts/windows-040/release-published.json`、`release-verification.json`；原有未跟踪 FOLLOWUP 文档未纳入提交。
