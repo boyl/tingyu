@@ -19,3 +19,13 @@ Android 与 Mac 同步发布 0.1.39+40，Windows 下载沿用 0.1.38。菜单外
 - 最终源码指纹 `86d8d709f730dde5fe37e7325a2ac63a4dc0b40188e8f641bde2bfec472165cd`。Android 版本码 2040、唯一 arm64-v8a、同一开发证书、ZIP 完整性和同包系统栏生命周期通过。APK SHA-256 为 `78699f9e068034f6db585445635e8942826d20dc19edc6f266868f49889a6c49`。
 - Mac 使用共享菜单，组件覆盖推荐操作和撤销。DMG 完整性、挂载副本严格 ad-hoc 签名、主程序及 Dart 产物双架构与源包一致。最低 macOS 12.0，DMG SHA-256 为 `81963c1d0cdaa9720328f7ae298eb3327716ecba60c811a2590ce1b468b9cf4b`。实际 Mac 菜单手工操作、Intel 真机与 Apple 公证未验。
 - 本地证据保存在 `artifacts/release-039/`。物理 Android 设备、真实账号和外部 B 站客户端跳转仍待人工复核。
+
+## 0.1.40 发布验收
+
+Android 与 Mac 同步发布 0.1.40+41，Windows 下载沿用 0.1.38。操作提示跟随主题，普通提示停留 0.5 秒；歌曲从来源列表消失时提供 3 秒撤销。
+
+- 从 v0.1.39 基线生成干净快照，执行完整工程验收，403 项离线测试通过、4 项跳过。公开 B 站播放与下载、Android 原生导航、交互、导出和滚动检查通过。
+- 最终源码指纹 `3efda34a0285f50526137c819a59f3668058bdd4da2346c4703c19ffd681197d`。Android 版本码 2041、唯一 arm64-v8a、同一开发证书、ZIP 完整性和同包系统栏生命周期通过。APK SHA-256 为 `e727dd8ab4218485c8587337d5d657ea7ed1568e627ce40796f6d9d916b51429`。
+- Mac 使用共享菜单，组件覆盖推荐操作和撤销。DMG 完整性、挂载副本严格 ad-hoc 签名、主程序及 Dart 产物双架构与源包一致。最低 macOS 12.0，DMG SHA-256 为 `3d4ff28361bd73a5ab5e4a348b1951519bf23b2dcb1e9d7a2484edf2cdf78598`。Android 模拟器及本机 Mac 窗口已截取两种实际反馈。Intel 真机未验，Mac 未经 Apple 公证。
+- 普通与撤销提示替换时，360×800 与 1060×720 布局的组件测量各 244 帧，底边中点最大位移均为 0 逻辑像素。[Android 普通提示](../screenshots/2026-11-22-notices/android-normal.png) · [Android 撤销提示](../screenshots/2026-11-22-notices/android-undo.png) · [Mac 普通提示](../screenshots/2026-11-22-notices/mac-normal.png) · [Mac 撤销提示](../screenshots/2026-11-22-notices/mac-undo.png)
+- 本地证据保存在 `artifacts/release-040/`。物理 Android 设备、真实账号和外部 B 站客户端跳转仍待人工复核。

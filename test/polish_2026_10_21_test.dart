@@ -8,6 +8,37 @@ import 'package:tingyu/ui/theme.dart';
 import 'support/fakes.dart';
 
 void main() {
+  for (final (name, _, tokens) in TingyuTokens.themes) {
+    testWidgets('compact operation notice uses $name theme', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: tingyuTheme(name),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showOperationNotice(context, '已喜欢'),
+                child: const Text('操作'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('操作'));
+      await tester.pumpAndSettle();
+      final notice = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(notice.behavior, SnackBarBehavior.floating);
+      expect(notice.width, lessThan(140));
+      expect(notice.duration, const Duration(milliseconds: 500));
+      expect(
+        notice.backgroundColor,
+        Color.alphaBlend(tokens.accent.withValues(alpha: .05), tokens.surface),
+      );
+      expect(tester.widget<Text>(find.text('已喜欢')).style?.color, tokens.text);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      expect(find.text('已喜欢'), findsNothing);
+    });
+  }
   testWidgets(
     'record diameter stays fixed when lyrics arrive and tracks change',
     (tester) async {
@@ -51,47 +82,57 @@ void main() {
     },
   );
 
-  testWidgets('cancel like closes the menu and offers undo for the last liked track', (
-    tester,
-  ) async {
-    final f = (await tester.runAsync(() => TestLibrary.create()))!;
-    addTearDown(() => f.close(disposeController: false));
-    final p = f.controller;
-    await tester.runAsync(() => p.toggleLike(firstTrack));
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [libraryProvider.overrideWith((_) => p)],
-        child: MaterialApp(
-          theme: tingyuTheme('bili'),
-          home: Scaffold(
-            body: ListenableBuilder(
-              listenable: p,
-              builder: (context, _) => p.likes.isEmpty
-                  ? const SizedBox.shrink()
-                  : Builder(
-                      builder: (context) => TextButton(
-                        onPressed: () =>
-                            showTrackActions(context, p, firstTrack, null),
-                        child: const Text('open'),
+  testWidgets(
+    'cancel like closes the menu and offers undo for the last liked track',
+    (tester) async {
+      final f = (await tester.runAsync(() => TestLibrary.create()))!;
+      addTearDown(() => f.close(disposeController: false));
+      final p = f.controller;
+      await tester.runAsync(() => p.toggleLike(firstTrack));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [libraryProvider.overrideWith((_) => p)],
+          child: MaterialApp(
+            theme: tingyuTheme('bili'),
+            home: Scaffold(
+              body: ListenableBuilder(
+                listenable: p,
+                builder: (context, _) => p.likes.isEmpty
+                    ? const SizedBox.shrink()
+                    : Builder(
+                        builder: (context) => TextButton(
+                          onPressed: () => showTrackActions(
+                            context,
+                            p,
+                            firstTrack,
+                            null,
+                            fromLikes: true,
+                          ),
+                          child: const Text('open'),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('取消喜欢')));
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 40)),
-    );
-    await tester.pumpAndSettle();
-    expect(p.likes, isEmpty);
-    expect(find.text('下一首播放'), findsNothing);
-    expect(find.text('撤销'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('取消喜欢')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 40)),
+      );
+      await tester.pumpAndSettle();
+      expect(p.likes, isEmpty);
+      expect(find.text('下一首播放'), findsNothing);
+      expect(find.text('撤销'), findsOneWidget);
+      expect(
+        tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+        const Duration(seconds: 3),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   testWidgets(
     'batch download reports resolution failure and keeps retry in place',
     (tester) async {

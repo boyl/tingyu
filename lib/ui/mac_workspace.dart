@@ -34,7 +34,14 @@ class DesktopWorkspace extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PressableStyle(
     desktop: true,
-    child: _MacWorkspaceBody(initialPage: initialPage, platform: platform),
+    child: SnackBarTheme(
+      data: SnackBarTheme.of(context).copyWith(
+        insetPadding: const EdgeInsets.only(
+          bottom: TingyuTokens.macDock + TingyuTokens.space * 3,
+        ),
+      ),
+      child: _MacWorkspaceBody(initialPage: initialPage, platform: platform),
+    ),
   );
 }
 
@@ -1150,6 +1157,7 @@ class _MacWorkspaceState extends ConsumerState<_MacWorkspaceBody>
                       track,
                       key: ValueKey(track.id),
                       sourceIds: visible,
+                      fromLikes: page == 'likes',
                       playlist: list,
                       selecting: state.selecting,
                       selected: state.selected.contains(track.id),

@@ -732,6 +732,12 @@ void main() {
       await tap(tester, '更多 ${firstTrack.title}');
       await tap(tester, '喜欢');
       expect(find.byKey(const ValueKey('取消喜欢')), findsNothing);
+      await tap(tester, '更多 ${firstTrack.title}');
+      await tap(tester, '取消喜欢');
+      expect(find.text('撤销'), findsNothing);
+      expect(find.byKey(ValueKey('play-${firstTrack.id}')), findsOneWidget);
+      await tap(tester, '更多 ${firstTrack.title}');
+      await tap(tester, '喜欢');
       await tap(tester, 'tab-likes');
       expect(fixture.controller.likes, [firstTrack.id]);
       expect(find.byKey(ValueKey('play-${secondTrack.id}')), findsNothing);
@@ -742,8 +748,21 @@ void main() {
       await tap(tester, 'tab-library');
       await tap(tester, 'play-${firstTrack.id}');
       await tap(tester, '更多 ${secondTrack.title}');
-      await tap(tester, '加入播放队列');
-      expect(find.text('已加入播放队列'), findsOneWidget);
+      final enqueue = find.byKey(const ValueKey('加入播放队列'));
+      await tester.ensureVisible(enqueue);
+      await tester.tap(enqueue);
+      final notice = find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text('已加入播放队列'),
+      );
+      for (var i = 0; i < 30 && notice.evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(notice, findsOneWidget);
+      await settle(tester);
       await tap(tester, '播放队列');
       await tap(tester, '上移一位');
       await tester.binding.handlePopRoute();

@@ -70,9 +70,7 @@ class OperationFeedback extends ChangeNotifier {
       if (undo != null) {
         offerUndo(host, success, undo);
       } else if (showMessage) {
-        ScaffoldMessenger.maybeOf(host)
-          ?..removeCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(success)));
+        showOperationNotice(host, success);
       }
     },
   );
@@ -117,18 +115,72 @@ void offerUndo(
   String message,
   Future<void> Function() undo,
 ) {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  messenger?.hideCurrentSnackBar();
-  messenger?.showSnackBar(
-    SnackBar(
-      content: Text(message),
-      duration: const Duration(seconds: 5),
-      action: SnackBarAction(
-        label: '撤销',
-        onPressed: () => unawaited(report(context, undo)),
+  showOperationNotice(context, message, undo: undo);
+}
+
+void showOperationNotice(
+  BuildContext context,
+  String message, {
+  Future<void> Function()? undo,
+}) {
+  final tokens = context.tokens;
+  final viewport = MediaQuery.sizeOf(context).width;
+  final style = Theme.of(
+    context,
+  ).textTheme.bodyMedium!.copyWith(color: tokens.text);
+  final scale = MediaQuery.textScalerOf(context);
+  final label = TextPainter(
+    text: TextSpan(text: message, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: scale,
+    maxLines: 1,
+  )..layout();
+  // SnackBarAction has a 64dp minimum button, 32dp inner padding and
+  // two outer margins totalling 16dp in our floating SnackBar.
+  final actionWidth = undo == null
+      ? 0.0
+      : 16 + math.max(64.0, 32 + scale.scale(14) * 2);
+  final preferredWidth = label.width.ceilToDouble() + 34 + actionWidth;
+  label.dispose();
+  final width = preferredWidth.clamp(1.0, (viewport - 32).clamp(1.0, 360.0));
+  ScaffoldMessenger.maybeOf(context)
+    ?..removeCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        width: width.toDouble(),
+        backgroundColor: Color.alphaBlend(
+          tokens.accent.withValues(alpha: .05),
+          tokens.surface,
+        ),
+        elevation: 2,
+        actionOverflowThreshold: .65,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(TingyuTokens.radius),
+          side: BorderSide(color: tokens.line),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: undo == null ? 8 : 0,
+        ),
+        content: Text(
+          message,
+          textAlign: undo == null ? TextAlign.center : TextAlign.start,
+          style: style,
+        ),
+        duration: undo == null
+            ? const Duration(milliseconds: 500)
+            : const Duration(seconds: 3),
+        persist: false,
+        action: undo == null
+            ? null
+            : SnackBarAction(
+                label: '撤销',
+                textColor: tokens.accentInk,
+                onPressed: () => unawaited(report(context, undo)),
+              ),
       ),
-    ),
-  );
+    );
 }
 
 /// One shared icon slot for every download state in the song menu.

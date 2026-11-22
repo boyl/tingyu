@@ -1109,6 +1109,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         track,
         playlist: list,
         sourceIds: ids,
+        fromLikes: widget.page == 'likes',
         selecting: selecting,
         selected: selection.contains(id),
         onSelect: () => setState(() {
@@ -1492,12 +1493,13 @@ class TrackRow extends ConsumerWidget {
     this.selected = false,
     this.onSelect,
     this.presentationId,
+    this.fromLikes = false,
     this.discovery = false,
   });
 
   /// Stable result identity when playback replaces a provisional track CID.
   final String? presentationId;
-  final bool discovery;
+  final bool discovery, fromLikes;
   final bool selecting, selected;
   final VoidCallback? onSelect;
   final Playlist? addToPlaylist;
@@ -1560,6 +1562,7 @@ class TrackRow extends ConsumerWidget {
                       track,
                       playlist,
                       discovery: discovery,
+                      fromLikes: fromLikes,
                     ),
               onLongPress: selecting || !mobileSongGestures(context)
                   ? null
@@ -1569,6 +1572,7 @@ class TrackRow extends ConsumerWidget {
                       track,
                       playlist,
                       discovery: discovery,
+                      fromLikes: fromLikes,
                     ),
               selected: selecting && selected,
               selectionFill: false,
@@ -1630,7 +1634,17 @@ class TrackRow extends ConsumerWidget {
             action(
               liked ? Icons.favorite : Icons.favorite_border,
               '喜欢 ${track.title}',
-              () => p.toggleLike(track),
+              () => report(context, () async {
+                final host = Navigator.of(context, rootNavigator: true).context;
+                final undo = await setRowLiked(p, track, !liked, fromLikes);
+                if (host.mounted) {
+                  showOperationNotice(
+                    host,
+                    liked ? '已取消喜欢' : '已喜欢',
+                    undo: undo,
+                  );
+                }
+              }),
               selected: liked,
             ),
           ],
@@ -1662,6 +1676,7 @@ class TrackRow extends ConsumerWidget {
                 track,
                 playlist,
                 discovery: discovery,
+                fromLikes: fromLikes,
               ),
             ),
         ],
@@ -1670,19 +1685,38 @@ class TrackRow extends ConsumerWidget {
   }
 }
 
+Future<Future<void> Function()?> setRowLiked(
+  LibraryController p,
+  Track track,
+  bool liked,
+  bool fromLikes,
+) async {
+  final index = p.likes.indexOf(track.id);
+  await p.setLiked(track, liked);
+  if (liked || !fromLikes || index < 0 || p.likes.contains(track.id)) {
+    return null;
+  }
+  final revision = p.likeRevision(track.id);
+  return () async {
+    if (p.likeRevision(track.id) == revision && !p.likes.contains(track.id)) {
+      await p.setLiked(track, true, restoreIndex: index);
+    }
+  };
+}
+
 Future<void> showTrackActions(
   BuildContext context,
   LibraryController p,
   Track track,
   Playlist? list, {
+  bool fromLikes = false,
   bool includeVolume = false,
   bool discovery = false,
 }) async {
   // The originating list row can disappear after unliking/removing its item.
   final feedbackContext = Navigator.of(context, rootNavigator: true).context;
   final session = OperationFeedback();
-  final originalLikeIndex = p.likes.indexOf(track.id);
-  int? removedRevision;
+  Future<void> Function()? undoUnlike;
   var playlistChild = false;
   void backToActions() => session.update(() => playlistChild = false);
   try {
@@ -1764,13 +1798,15 @@ Future<void> showTrackActions(
                       await session.runAndClose(
                         ctx,
                         () async {
-                          await p.setLiked(track, liked);
-                          removedRevision = liked
-                              ? null
-                              : p.likeRevision(track.id);
+                          undoUnlike = await setRowLiked(
+                            p,
+                            track,
+                            liked,
+                            fromLikes,
+                          );
                         },
                         liked ? '已喜欢' : '已取消喜欢',
-                        showMessage: liked,
+                        showMessage: liked || !fromLikes,
                       );
                     },
               icon: p.likes.contains(track.id)
@@ -1835,18 +1871,8 @@ Future<void> showTrackActions(
       isChild: () => playlistChild,
       onBack: backToActions,
     );
-    if (feedbackContext.mounted &&
-        originalLikeIndex >= 0 &&
-        !p.likes.contains(track.id) &&
-        removedRevision != null &&
-        removedRevision == p.likeRevision(track.id)) {
-      final revision = removedRevision;
-      offerUndo(feedbackContext, '已取消喜欢', () async {
-        if (p.likeRevision(track.id) == revision &&
-            !p.likes.contains(track.id)) {
-          await p.setLiked(track, true, restoreIndex: originalLikeIndex);
-        }
-      });
+    if (feedbackContext.mounted && undoUnlike != null) {
+      offerUndo(feedbackContext, '已取消喜欢', undoUnlike!);
     }
   } finally {
     session.dispose();
