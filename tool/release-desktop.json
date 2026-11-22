@@ -17,17 +17,17 @@
     "mountedBundleSignature": "PASS"
   },
   "windows": {
-    "path": "artifacts/windows-038/installer/tingyu-0.1.38-windows-x64-setup.exe",
-    "bytes": 18810022,
-    "sha256": "449c40ac1247de460bc6d4c1fcef1b49936c0087faa23061f18f13675d039b7b",
-    "version": "0.1.38+39",
-    "sourceSha256": "ac4e1e221e118aa44cd04d938da24d2839d18af897eb48eb4703df4299948d1c",
-    "sourceTag": "v0.1.38-windows",
-    "rebuilt": false,
+    "path": "artifacts/windows-040/installer/tingyu-0.1.40-windows-x64-setup.exe",
+    "bytes": 18811653,
+    "sha256": "22343388057538ec947b1b0e11a9e8f289192780eba575dbe7b17ef5324fab4b",
+    "version": "0.1.40+41",
+    "sourceSha256": "8130c1aed57bc07713ced2c5f666383012d694d0146d309b19132b3af0e42b4d",
+    "sourceTag": "v0.1.40-windows",
+    "rebuilt": true,
     "architecture": "x64",
     "signing": "unsigned",
     "payloadFiles": 41,
     "installerRegression": "PASS",
-    "url": "https://github.com/boyl/tingyu/releases/download/v0.1.38/tingyu-0.1.38-windows-x64-setup.exe"
+    "url": "https://github.com/boyl/tingyu/releases/download/v0.1.40/tingyu-0.1.40-windows-x64-setup.exe"
   }
 }

@@ -1,30 +1,26 @@
 {
-  "filename": "tingyu-0.1.38-windows-x64-setup.exe",
-  "version": "0.1.38+39",
-  "bytes": 18810022,
-  "sha256": "449c40ac1247de460bc6d4c1fcef1b49936c0087faa23061f18f13675d039b7b",
-  "sourceSha256": "ac4e1e221e118aa44cd04d938da24d2839d18af897eb48eb4703df4299948d1c",
-  "baseCommit": "1b300b4a8c30b1e970bbee403cefe08f8c3a3040",
-  "releaseTag": "v0.1.38",
-  "sourceTag": "v0.1.38-windows",
+  "filename": "tingyu-0.1.40-windows-x64-setup.exe",
+  "version": "0.1.40+41",
+  "bytes": 18811653,
+  "sha256": "22343388057538ec947b1b0e11a9e8f289192780eba575dbe7b17ef5324fab4b",
+  "sourceSha256": "8130c1aed57bc07713ced2c5f666383012d694d0146d309b19132b3af0e42b4d",
+  "baseCommit": "d4fc1caa51f3f0cc18ccbed08f2d54a7b411cffa",
+  "releaseTag": "v0.1.40",
+  "sourceTag": "v0.1.40-windows",
   "signing": "未商业签名的开发版",
-  "acceptance": "docs/ACCEPTANCE-2026-11-14-WINDOWS-038.md",
+  "acceptance": "docs/ACCEPTANCE-2026-11-22-WINDOWS-040.md",
   "verification": {
-    "windowsNativeScenarios": 16,
-    "windowsSessionScenarios": 6,
-    "windowsCoverCacheScenarios": 1,
-    "windowsPlaybackCacheScenarios": 1,
-    "windowsLiveRecommendationScenarios": 1,
-    "offlineTests": 400,
+    "windowsNativeScenarios": 17,
+    "offlineTests": 404,
     "skipped": 3,
     "payloadFiles": 41,
     "packagingTests": 6,
-    "accountStateScreenshots": 4,
-    "nativeScreenshots": 2
+    "localInstallation": "PASS",
+    "preservedDataFiles": 218
   },
   "limitations": [
     "真实账号跨天续期、真实输入法选词、屏幕阅读器及物理听感本轮未专项验收",
-    "原生截图使用隔离夹具，不代替 Release 完整人工验收",
-    "完整系统媒体键与鼠标键盘组合未逐项复验"
+    "原生回归使用隔离夹具，实际主窗口检查不代替完整人工验收",
+    "Android 与 Mac 沿用已发布资产，本轮不重新构建或冒称复验"
   ]
 }
